@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option csharp_namespace = "tsx_aggregator.Services";
+
+service StockDataService {
+    rpc GetStocksData(GetStocksDataRequest) returns (GetStocksDataReply);
+}
+
+message GetStocksDataRequest {
+    string exchange = 1;
+}
+
+message GetStocksDataReply {
+    bool success = 1;
+    string error_message = 2;
+    repeated GetStocksDataReplyItem stocksData = 3;
+}
+
+message GetStocksDataReplyItem {
+    string exchange = 1;
+    string company_symbol = 2;
+    string instrument_symbol = 3;
+    string company_name = 4;
+    string instrument_name = 5;
+    google.protobuf.Timestamp created_date = 6;
+    int64 current_num_shares = 7;
+    int64 current_goodwill = 8;
+    int64 current_intangibles = 9;
+    int64 current_long_term_debt = 10;
+    int64 current_dividends_paid = 11;
+    int64 current_retained_earnings = 12;
+    int64 oldest_retained_earnings = 13;
+    int64 average_net_cash_flow = 14;
+    int64 average_owner_earnings = 15;
+}

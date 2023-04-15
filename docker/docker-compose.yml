@@ -1,0 +1,29 @@
+version: '3.4'
+
+services:
+  db:
+    image: postgres:14.5-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  redis:
+    image: docker.io/bitnami/redis:7.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+
+volumes:
+  db:
+    driver: local
+  redis_data:
+    driver: local
