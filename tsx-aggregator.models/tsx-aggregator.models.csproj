@@ -15,8 +15,4 @@
     <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="RawData\" />
-  </ItemGroup>
-
 </Project>

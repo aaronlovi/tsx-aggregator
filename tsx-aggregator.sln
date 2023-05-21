@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tsx-aggregator.models", "ts
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "puppeteer-prototype", "puppeteer-prototype\puppeteer-prototype.csproj", "{AFC6F768-6D56-446D-994C-987225BBAA01}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "stock-market.webapi", "stock-market-webapi\stock-market.webapi.csproj", "{C1723AFF-0C01-4D01-A19C-EE20BB77505F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{AFC6F768-6D56-446D-994C-987225BBAA01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFC6F768-6D56-446D-994C-987225BBAA01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFC6F768-6D56-446D-994C-987225BBAA01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,6 @@ using dbm_persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Serilog.Core;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
 using static tsx_aggregator.shared.Constants;
@@ -98,17 +97,16 @@ public class Aggregator : BackgroundService
         foreach (InstrumentReportDto rpt in rawReports)
         {
             ReportTypes rptType = (ReportTypes)rpt.ReportType;
-            ReportPeriodTypes rptPeriod = (ReportPeriodTypes)rpt.ReportPeriodType;
-
-            if (!rptType.IsValid())
-            {
-                _logger.LogWarning("ProcessNewListedCompanyEvent - unexpected report type: {ReportType}. Instrument: {rpt}",
+            if (!rptType.IsValid()) {
+                _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected report type: {ReportType}. Instrument: {rpt}",
                     rptType, rpt);
                 continue;
             }
+
+            ReportPeriodTypes rptPeriod = (ReportPeriodTypes)rpt.ReportPeriodType;
             if (!rptPeriod.IsValid())
             {
-                _logger.LogWarning("ProcessNewListedCompanyEvent - unexpected report period type: {ReportPeriodType}. Instrument: {rpt}",
+                _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected report period type: {ReportPeriodType}. Instrument: {rpt}",
                     rptPeriod, rpt);
                 continue;
             }
@@ -136,15 +134,16 @@ public class Aggregator : BackgroundService
                     break;
                 case ReportTypes.Undefined:
                 default:
-                    _logger.LogWarning("ProcessNewListedCompanyEvent - unexpected report type {ReportType}",
+                    _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected report type {ReportType}",
                         rpt.ReportType);
                     break;
             }
         }
-        companyReport.ProcessReports();
-        int overallScore = companyReport.OverallScore;
-        _logger.LogInformation("Company {Company}: Score {Score}",
-            companyReport.ToShortString, overallScore);
+        var warnings = new List<string>();
+        companyReport.ProcessReports(warnings);
+        foreach (var warning in warnings)
+            _logger.LogWarning("ProcessCompanyDataChanged: " + warning);
+        _logger.LogInformation("#ProcessCompanyDataChanged Company {Company}", companyReport.ToShortString);
 
         string serializedReport = JsonSerializer.Serialize(companyReport);
         var processedReportDto = new ProcessedInstrumentReportDto(instrumentEvt.InstrumentId, serializedReport, DateTimeOffset.UtcNow, null);
