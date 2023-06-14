@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using tsx_aggregator.Raw;
+using tsx_aggregator.Services;
 
 namespace tsx_aggregator;
 
@@ -15,17 +16,18 @@ public class Program {
 
         IHost host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services => {
-                _ = services.AddHostedService<Aggregator>();
-                _ = services.AddHostedService<RawCollector>();
-                _ = services.AddSingleton<PostgresExecutor>();
-
-                _ = services.AddSingleton<DbMigrations>();
 
                 // TODO: Add support for DbmInMemory if the connection string is not specified
-                _ = services.AddSingleton<IDbmService, DbmService>();
-                _ = services.AddSingleton<Registry>();
 
-                _ = services.AddGrpc();
+                services.AddHostedService<Aggregator>()
+                    .AddHostedService<RawCollector>()
+                    .AddHostedService<StocksDataRequestsProcessor>()
+                    .AddSingleton<PostgresExecutor>()
+                    .AddSingleton<DbMigrations>()
+                    .AddSingleton<IDbmService, DbmService>()
+                    .AddSingleton<Registry>()
+                    .AddSingleton<StockDataSvc>()
+                    .AddGrpc();
             })
             .ConfigureLogging(builder => {
 

@@ -116,7 +116,7 @@ public class CompanyReport
     }
     public decimal DebtToEquityRatio => Utilities.DivSafe(CurLongTermDebt, CurTotalShareholdersEquity);
     public int NumAnnualProcessedCashFlowReports => _annualProcessedCashFlowItems.Count;
-    public string ToShortString => $"{Symbol}/{Name}";
+    [JsonIgnore] public string ToShortString => $"{Symbol}/{Name}";
 
     #endregion
 

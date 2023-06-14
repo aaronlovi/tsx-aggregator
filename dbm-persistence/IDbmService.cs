@@ -27,4 +27,7 @@ public interface IDbmService {
     ValueTask<Result> PersistStateFsmState(StateFsmState stateFsmState, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
+
+    // Data Requests
+    
 }
