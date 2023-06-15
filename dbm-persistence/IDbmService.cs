@@ -30,4 +30,6 @@ public interface IDbmService {
 
     // Data Requests
     
+    ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);
+
 }

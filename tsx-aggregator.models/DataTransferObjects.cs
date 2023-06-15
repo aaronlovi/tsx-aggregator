@@ -29,6 +29,19 @@ public record ProcessedInstrumentReportDto(
     DateTimeOffset CreatedDate,
     DateTimeOffset? ObsoletedDate);
 
+public record ProcessedFullInstrumentReportDto(
+    long InstrumentId,
+    string CompanySymbol,
+    string CompanyName,
+    string InstrumentSymbol,
+    string InstrumentName,
+    string SerializedReport,
+    DateTimeOffset InstrumentCreatedDate,
+    DateTimeOffset? InstrumentObsoletedDate,
+    DateTimeOffset ReportCreatedDate,
+    DateTimeOffset? ReportObsoletedDate,
+    int NumAnnualCashFlowReports);
+
 public record InstrumentDto : CompanyAndInstrumentSymbol {
     public InstrumentDto(
         ulong instrumentId,

@@ -1,3 +1,4 @@
+using static tsx_aggregator.Services.StockDataService;
 
 namespace stock_market_webapi;
 
@@ -12,6 +13,12 @@ public class Program {
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
+        builder.Services.AddGrpc();
+        builder.Services.AddGrpcReflection();
+        builder.Services.AddGrpcClient<StockDataServiceClient>(options => {
+            options.Address = new Uri("http://localhost:7001");
+        });
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -23,6 +30,7 @@ public class Program {
         app.UseHttpsRedirection();
 
         app.UseAuthorization();
+
 
 
         app.MapControllers();

@@ -16,11 +16,11 @@ namespace tsx_aggregator.Services;
 public class StockDataSvc : StockDataService.StockDataServiceBase {
     private long _reqId;
     private readonly ILogger _logger;
-    private readonly StocksDataRequestsProcessor _requestProcessor;
+    private readonly IStocksDataRequestsProcessor _requestProcessor;
 
     public StockDataSvc(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<StockDataSvc>>();
-        _requestProcessor = svp.GetRequiredService<StocksDataRequestsProcessor>();
+        _requestProcessor = svp.GetRequiredService<IStocksDataRequestsProcessor>();
     }
 
     public override async Task<GetStocksDataReply> GetStocksData(GetStocksDataRequest request, ServerCallContext context) {
@@ -62,6 +62,6 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
         }
 
         // Local helper methods
-        GetStocksDataReply Failure(string errMsg) => new GetStocksDataReply() { Success = false, ErrorMessage = errMsg };
+        static GetStocksDataReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
     }
 }

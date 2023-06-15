@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace tsx_aggregator.shared;
 
@@ -14,5 +15,11 @@ public static class Utilities {
     public static void SafeDispose(object? o) {
         if (o is IDisposable d)
             d.Dispose();
+    }
+
+    public static CancellationTokenSource CreateLinkedTokenSource(CancellationTokenSource? cts, CancellationToken ct) {
+        return cts is not null
+            ? CancellationTokenSource.CreateLinkedTokenSource(ct, cts.Token)
+            : CancellationTokenSource.CreateLinkedTokenSource(ct);
     }
 }

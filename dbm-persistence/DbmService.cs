@@ -199,6 +199,16 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     #endregion
 
+    #region Data Request
+
+    public async ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct) {
+        var stmt = new GetProcessedStockDataByExchangeStmt(exchange);
+        DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
+        return new Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>(res.Success, res.ErrMsg, stmt.ProcessedInstrumentReports);
+    }
+
+    #endregion
+
     public void Dispose() {
         // Dispose of Postgres executor
         _exec.Dispose();

@@ -8,7 +8,7 @@ namespace tsx_aggregator.models;
 
 public class CompanyReportBuilder {
     private readonly ILogger _logger;
-    private CompanyReport _rpt;
+    private readonly CompanyReport _rpt;
 
     public CompanyReportBuilder(string instrumentSymbol, string instrumentName, string exchange, long numShares, ILogger logger) {
         _rpt = new(instrumentSymbol, instrumentName, exchange, numShares);
@@ -30,7 +30,7 @@ public class CompanyReportBuilder {
             return this;
         }
 
-        using JsonDocument doc = JsonDocument.Parse(rpt.ReportJson);
+        using JsonDocument doc = JsonDocument.Parse(rawReport.ReportJson);
         JsonElement root = doc.RootElement;
         var reportData = new RawReportDataMap();
         foreach (JsonProperty prop in root.EnumerateObject()) {
@@ -55,14 +55,14 @@ public class CompanyReportBuilder {
                 break;
         }
 
-
+        return this;
     }
 
     public CompanyReport Build() {
         var warnings = new List<string>();
         _rpt.ProcessReports(warnings);
         foreach (var warning in warnings)
-            _logger.LogWarning("CompanyReportBuilder: " + warning);
+            _logger.LogWarning("CompanyReportBuilder: {Warning}", warning);
 
         return _rpt;
     }

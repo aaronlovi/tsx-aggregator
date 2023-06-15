@@ -4,27 +4,48 @@ using tsx_aggregator.shared;
 namespace tsx_aggregator.models;
 
 public class CompanyFullDetailReport {
-    public CompanyFullDetailReport(long id, decimal pricePerShare, CompanyReport companyReport) {
-        Id = id;
-        PricePerShare = pricePerShare;
+    public CompanyFullDetailReport(
+        string exchange,
+        string companySymbol,
+        string instrumentSymbol,
+        string companyName,
+        string instrumentName,
+        decimal pricePerShare,
+        decimal curLongTermDebt,
+        decimal curTotalShareholdersEquity,
+        decimal curBookValue,
+        long curNumShares,
+        decimal averageNetCashFlow,
+        decimal averageOwnerEarnings,
+        decimal curDividendsPaid,
+        decimal curRetainedEarnings,
+        decimal oldestRetainedEarnings,
+        int numAnnualProcessedCashFlowReports) {
 
-        CurLongTermDebt = companyReport.CurLongTermDebt;
-        CurTotalShareholdersEquity = companyReport.CurTotalShareholdersEquity;
-        CurBookValue = companyReport.CurBookValue;
-        CurNumShares = companyReport.CurNumShares;
-        AverageNetCashFlow = companyReport.AverageNetCashFlow;
-        AverageOwnerEarnings = companyReport.AverageOwnerEarnings;
-        CurDividendsPaid = companyReport.CurDividendsPaid;
-        LongTermDebtToBookRatio = companyReport.LongTermDebtToBookRatio;
-        CurRetainedEarnings = companyReport.CurRetainedEarnings;
-        OldestRetainedEarnings = companyReport.OldestRetainedEarnings;
-        NumAnnualProcessedCashFlowReports = companyReport.NumAnnualProcessedCashFlowReports;
+        Exchange = exchange;
+        CompanySymbol = companySymbol;
+        InstrumentSymbol = instrumentSymbol;
+        CompanyName = companyName;
+        InstrumentName = instrumentName;
+        PricePerShare = pricePerShare;
+        CurLongTermDebt = curLongTermDebt;
+        CurTotalShareholdersEquity = curTotalShareholdersEquity;
+        CurBookValue = curBookValue;
+        CurNumShares = curNumShares;
+        AverageNetCashFlow = averageNetCashFlow;
+        AverageOwnerEarnings = averageOwnerEarnings;
+        CurDividendsPaid = curDividendsPaid;
+        CurRetainedEarnings = curRetainedEarnings;
+        OldestRetainedEarnings = oldestRetainedEarnings;
+        NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
     }
 
-    public long Id { get; init; }
+    public string Exchange { get; init; }
+    public string CompanySymbol { get; init; }
+    public string InstrumentSymbol { get; init; }
+    public string CompanyName { get; init; }
+    public string InstrumentName { get; init; }
     public decimal PricePerShare { get; init; }
-
-    // From CompanyReport
     public decimal CurLongTermDebt { get; init; }
     public decimal CurTotalShareholdersEquity { get; init; }
     public decimal CurBookValue { get; init; }
@@ -32,7 +53,6 @@ public class CompanyFullDetailReport {
     public decimal AverageNetCashFlow { get; init; }
     public decimal AverageOwnerEarnings { get; init; }
     public decimal CurDividendsPaid { get; init; }
-    public decimal LongTermDebtToBookRatio { get; init; }
     public decimal CurRetainedEarnings { get; init; }
     public decimal OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
@@ -41,6 +61,7 @@ public class CompanyFullDetailReport {
     public decimal CurMarketCap => CurNumShares * PricePerShare;
     public decimal DebtToEquityRatio => Utilities.DivSafe(CurLongTermDebt, CurTotalShareholdersEquity);
     public decimal CurPriceToBookRatio => Utilities.DivSafe(CurMarketCap, CurBookValue);
+    public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
     public bool DidRetainedEarningsIncrease => CurRetainedEarnings > OldestRetainedEarnings;
     public decimal EstimatedNextYearBookValue_FromCashFlow {
         get {
