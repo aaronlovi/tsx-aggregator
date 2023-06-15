@@ -23,18 +23,4 @@
         </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Content Remove="Protos\requests.proto" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="Protos\requests.proto" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Protobuf Update="Protos\requests.proto">
-        <GrpcServices>Both</GrpcServices>
-      </Protobuf>
-    </ItemGroup>
-
 </Project>

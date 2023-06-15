@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
@@ -25,7 +24,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
 
     public override async Task<GetStocksDataReply> GetStocksData(GetStocksDataRequest request, ServerCallContext context) {
         long reqId = Interlocked.Increment(ref _reqId);
-        using var reqIdContext = _logger.BeginScope(new Dictionary<string, object>() {
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
             [LogUtils.ReqIdContext] = reqId, [LogUtils.ExchangeContext] = request.Exchange
         });
 

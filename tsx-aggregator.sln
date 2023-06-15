@@ -15,6 +15,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "puppeteer-prototype", "pupp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "stock-market.webapi", "stock-market-webapi\stock-market.webapi.csproj", "{C1723AFF-0C01-4D01-A19C-EE20BB77505F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{61DFDBE1-02A4-4D57-8094-83475138FE52}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using tsx_aggregator.models;
 using tsx_aggregator.Services;
 using static tsx_aggregator.Services.StockDataService;
@@ -9,7 +8,7 @@ namespace stock_market_webapi.Controllers;
 [ApiController]
 public class CompaniesController : Controller {
 
-    private StockDataServiceClient _client;
+    private readonly StockDataServiceClient _client;
 
     public CompaniesController(StockDataServiceClient client)
     {
