@@ -130,7 +130,8 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     OldestRetainedEarnings = oldestRetainedEarnings,
                     CurrentBookValue = currentBookValue,
                     AverageNetCashFlow = averageNetCashFlow,
-                    AverageOwnerEarnings = averageOwnerEarnings
+                    AverageOwnerEarnings = averageOwnerEarnings,
+                    PerSharePrice = 0M
                 };
                 getStocksDataReply.StocksData.Add(item);
             }

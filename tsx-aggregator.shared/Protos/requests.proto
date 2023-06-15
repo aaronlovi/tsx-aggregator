@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "decimal-value.proto";
 
 option csharp_namespace = "tsx_aggregator.Services";
 
@@ -37,4 +38,5 @@ message GetStocksDataReplyItem {
     int64 average_net_cash_flow = 16;
     int64 average_owner_earnings = 17;
     int32 num_annual_processed_cash_flow_reports = 18;
+    DecimalValue per_share_price = 19;
 }
