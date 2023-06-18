@@ -1,15 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using tsx_aggregator.models;
 
 namespace tsx_aggregator.Raw;
+
 internal class Registry {
 
     private readonly List<InstrumentDto> _instruments; // Sorted by company symbol then instrument symbol
 
 	public Registry() {
 		_instruments = new List<InstrumentDto>();
+        DirectoryInitialized = new TaskCompletionSource();
 	}
+
+    /// <summary>
+    /// Set when the list of instruments has been initialized
+    /// </summary>
+    public TaskCompletionSource DirectoryInitialized { get; }
 
     public int NumInstruments {
 		get {
@@ -23,6 +31,9 @@ internal class Registry {
             foreach (var instrument in directory)
                 _instruments.Add(instrument);
             _instruments.Sort(CompanyAndInstrumentSymbol.CompareBySymbols);
+            
+            // Notify subscribers that the list of instruments has been initialized
+            DirectoryInitialized.TrySetResult();
         }
     }
 
@@ -105,6 +116,12 @@ internal class Registry {
             var dummy = new InstrumentDto(0, string.Empty, sym.CompanySymbol, string.Empty, sym.InstrumentSymbol, string.Empty, DateTimeOffset.UtcNow, null);
             int index = _instruments.BinarySearch(dummy, CompanyAndInstrumentSymbol.ComparerBySymbols);
             return index >= 0 ? _instruments[index] : null;
+        }
+    }
+
+    public IReadOnlyCollection<InstrumentDto> GetInstruments() {
+        lock (_instruments) {
+            return _instruments.ToArray();
         }
     }
 }

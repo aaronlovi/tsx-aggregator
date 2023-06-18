@@ -48,7 +48,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
 
         await foreach (StocksDataRequestsInputBase inputBase in _inputChannel.Reader.ReadAllAsync(stoppingToken)) {
 
-            _logger.LogInformation("StocksDataRequestsProcessor - Got a message");
+            _logger.LogInformation("StocksDataRequestsProcessor - Got a message {Input}", inputBase);
 
             using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = inputBase.ReqId });
             using var thisRequestCts = Utilities.CreateLinkedTokenSource(inputBase.CancellationTokenSource, stoppingToken);

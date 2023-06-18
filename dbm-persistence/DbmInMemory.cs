@@ -82,6 +82,10 @@ public sealed class DbmInMemory : IDbmService {
         return ValueTask.FromResult(Result.SUCCESS);
     }
 
+    public ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct) {
+        return ValueTask.FromResult(Result.SUCCESS);
+    }
+
     public ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
         return ValueTask.FromResult<(Result, IReadOnlyList<InstrumentReportDto>)>((Result.SUCCESS, Array.Empty<InstrumentReportDto>()));
     }

@@ -192,21 +192,24 @@ public record CompanyAndInstrumentSymbol(string CompanySymbol, string Instrument
 public class StateFsmState {
     private DateTime? _nextFetchDirectoryTime;
     private DateTime? _nextFetchInstrumentDataTime;
+    private DateTime? _nextFetchQuotesTime;
     private CompanyAndInstrumentSymbol _prevCompanyAndInstrumentSymbol;
 
-    public StateFsmState() : this(null, null, CompanyAndInstrumentSymbol.Empty) { }
+    public StateFsmState() : this(null, null, null, CompanyAndInstrumentSymbol.Empty) { }
 
     public StateFsmState(
         DateTime? nextFetchDirectoryTime,
         DateTime? nextFetchInstrumentDataTime,
+        DateTime? nextFetchQuotesTime,
         CompanyAndInstrumentSymbol prevCompanyAndInstrumentSymbol) {
         _nextFetchDirectoryTime = nextFetchDirectoryTime;
         _nextFetchInstrumentDataTime = nextFetchInstrumentDataTime;
+        _nextFetchQuotesTime = nextFetchQuotesTime;
         _prevCompanyAndInstrumentSymbol = prevCompanyAndInstrumentSymbol;
     }
 
     public StateFsmState(StateFsmState other)
-        : this(other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.PrevCompanyAndInstrumentSymbol) {
+        : this(other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.NextFetchQuotesTime, other.PrevCompanyAndInstrumentSymbol) {
     }
 
     public bool IsDirty { get; private set; }
@@ -227,6 +230,14 @@ public class StateFsmState {
         }
     }
 
+    public DateTime? NextFetchQuotesTime {
+        get => _nextFetchQuotesTime;
+        set {
+            _nextFetchQuotesTime = value;
+            IsDirty = true;
+        }
+    }
+
     public CompanyAndInstrumentSymbol PrevCompanyAndInstrumentSymbol {
         get => _prevCompanyAndInstrumentSymbol;
         set {
@@ -235,7 +246,7 @@ public class StateFsmState {
         }
     }
 
-    public DateTime? GetNextTimeout() {
+    public DateTime? GetNextRawDataTimeout() {
         DateTime? minDate = null;
         minDate = LesserDateAccountingForUndefined(minDate, _nextFetchDirectoryTime);
         minDate = LesserDateAccountingForUndefined(minDate, _nextFetchInstrumentDataTime);

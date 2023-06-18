@@ -9,9 +9,11 @@
 
   <ItemGroup>
     <None Remove="Migrations\R__001__CreateTables.sql" />
+    <None Remove="Migrations\R__002__AddStockQuotesPriceFsmState.sql" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Migrations\R__002__AddStockQuotesPriceFsmState.sql" />
     <EmbeddedResource Include="Migrations\R__001__CreateTables.sql" />
   </ItemGroup>
 

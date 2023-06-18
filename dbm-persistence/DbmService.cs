@@ -186,6 +186,11 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
+    public async ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct) {
+        var stmt = new UpdateNextTimeToFetchQuotesStmt(nextTimeToFetchQuotes);
+        return await _exec.ExecuteWithRetry(stmt, ct);
+    }
+
     public async ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
         var stmt = new GetRawFinancialsByInstrumentIdStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);

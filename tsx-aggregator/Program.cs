@@ -54,11 +54,14 @@ public class Program {
                     .AddSingleton<DbMigrations>()
                     .AddSingleton<IDbmService, DbmService>()
                     .AddSingleton<Registry>()
+                    .AddSingleton<RawCollector>()
                     .AddSingleton<StockDataSvc>()
                     .AddSingleton<IStocksDataRequestsProcessor, StocksDataRequestsProcessor>()
+                    .AddSingleton<IQuoteService, QuoteService>()
                     //.AddHostedService(p => p.GetRequiredService<Aggregator>())
-                    //.AddHostedService(p => p.GetRequiredService<RawCollector>())
+                    .AddHostedService(p => p.GetRequiredService<RawCollector>())
                     .AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>())
+                    .AddHostedService(p => p.GetRequiredService<IQuoteService>())
                     .AddGrpc();
             })
             .ConfigureLogging(builder => {

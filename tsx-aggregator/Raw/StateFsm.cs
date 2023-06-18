@@ -30,7 +30,7 @@ internal class StateFsm {
 
     public StateFsmState State { get; set; }
 
-    public DateTime? NextTimeout => State.GetNextTimeout();
+    public DateTime? NextTimeout => State.GetNextRawDataTimeout();
 
     public void Update(DateTime curTime, StateFsmOutputs output) {
         _curTime = curTime;

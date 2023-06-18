@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using tsx_aggregator.models;
@@ -25,6 +26,7 @@ public interface IDbmService {
     ValueTask<Result> InsertInstrumentEvent(InstrumentEventDto instrumentEventDto, CancellationToken ct);
     ValueTask<(Result, StateFsmState?)> GetStateFsmState(CancellationToken ct);
     ValueTask<Result> PersistStateFsmState(StateFsmState stateFsmState, CancellationToken ct);
+    ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
 
