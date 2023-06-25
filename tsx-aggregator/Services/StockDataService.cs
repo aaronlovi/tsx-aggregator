@@ -16,10 +16,12 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
     private long _reqId;
     private readonly ILogger _logger;
     private readonly IStocksDataRequestsProcessor _requestProcessor;
+    private readonly IQuoteService _quotesService;
 
     public StockDataSvc(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<StockDataSvc>>();
         _requestProcessor = svp.GetRequiredService<IStocksDataRequestsProcessor>();
+        _quotesService = svp.GetRequiredService<IQuoteService>();
     }
 
     public override async Task<GetStocksDataReply> GetStocksData(GetStocksDataRequest request, ServerCallContext context) {
@@ -39,7 +41,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
             using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
             using var req = new GetStocksForExchangeRequest(reqId, request.Exchange, cts);
             if (!_requestProcessor.PostRequest(req)) {
-                _logger.LogWarning("GetStocksData - Failed to post request, aborting");
+                _logger.LogWarning("GetStocksData - Failed to post request to request processor, aborting");
                 return Failure("Failed to post request");
             }
 
@@ -49,12 +51,36 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Got an invalid repsonse");
             }
 
-            // Get the list of instrument symbols from the reply, and request the quotes service to fill out the stock price for each one.
-            // If the quote service does not have a price for the instrument symbol, then remove that symbol from the reply.
-            // If the quote service has a price for the instrument symbol, then add that price to the reply.
+            var symbols = new List<string>();
+            foreach (GetStocksDataReplyItem replyItem in reply.StocksData) {
+                symbols.Add(replyItem.InstrumentSymbol);
+            }
 
+            using CancellationTokenSource cts2 = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var req2 = new QuoteServiceFillPricesForSymbolsInput(reqId, cts2, symbols);
+            if (!_quotesService.PostRequest(req2)) {
+                _logger.LogWarning("GetStocksData - Failed to post request to quotes service, aborting");
+                return Failure("Failed to post request to quotes service");
+            }
 
-            _logger.LogInformation("GetStocksData - complete");
+            object? response2 = await req2.Completed.Task;
+            if (response2 is not IDictionary<string, decimal> prices) {
+                _logger.LogWarning("GetStocksData - Received invalid response from quotes service");
+                return Failure("Got an invalid repsonse from quotes service");
+            }
+
+            int numItemsMissingPrices = 0;
+            for (int i = reply.StocksData.Count - 1; i >= 0; i--) {
+                GetStocksDataReplyItem replyItem = reply.StocksData[i];
+                if (prices.TryGetValue(replyItem.InstrumentSymbol, out decimal price)) {
+                    replyItem.PerSharePrice = price;
+                } else {
+                    reply.StocksData.RemoveAt(i);
+                    numItemsMissingPrices++;
+                }
+            }
+
+            _logger.LogInformation("GetStocksData - complete. Num items missing prices {NumItemsMissingPrices}", numItemsMissingPrices);
             return reply;
 
         } catch (OperationCanceledException) {

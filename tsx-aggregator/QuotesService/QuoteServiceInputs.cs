@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,4 +61,14 @@ public sealed class QuoteServiceTimeoutInput : QuoteServiceInputBase {
     }
 
     public DateTime CurTimeUtc { get; init; }
+}
+
+public sealed class QuoteServiceFillPricesForSymbolsInput : QuoteServiceInputBase
+{
+    public QuoteServiceFillPricesForSymbolsInput(long reqId, CancellationTokenSource? cancellationTokenSource, IReadOnlyList<string> symbols)
+        : base(reqId, cancellationTokenSource) {
+        Symbols = symbols;
+    }
+
+    public IReadOnlyList<string> Symbols { get; init; }
 }

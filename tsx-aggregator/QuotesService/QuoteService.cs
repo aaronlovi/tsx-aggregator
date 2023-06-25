@@ -44,6 +44,11 @@ public class QuoteService : BackgroundService, IQuoteService {
 
     public DateTime? NextFetchQuotesTime => _nextFetchQuotesTime;
 
+    public bool PostRequest(QuoteServiceInputBase inp)
+    {
+        return _inputChannel.Writer.TryWrite(inp);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
 
@@ -78,6 +83,11 @@ public class QuoteService : BackgroundService, IQuoteService {
                         await ProcessQuoteServiceTimeoutInput(ti, thisRequestCts.Token);
                         break;
                     }
+                    case QuoteServiceFillPricesForSymbolsInput fillPricesInput:
+                    {
+                        ProcessQuoteServiceFillPricesForSymbolsInput(fillPricesInput);
+                        break;
+                    }
                     default: {
                         _logger.LogError("QuoteService main loop - Invalid request type received, dropping input");
                         break;
@@ -90,7 +100,7 @@ public class QuoteService : BackgroundService, IQuoteService {
     }
 
     private async Task ProcessQuoteServiceTimeoutInput(QuoteServiceTimeoutInput ti, CancellationToken ct) {
-        _logger.LogInformation("QuoteService - Processing QuoteServiceTimeoutInput {CurTime}", ti.CurTimeUtc);
+        _logger.LogInformation("ProcessQuoteServiceTimeoutInput {CurTime}", ti.CurTimeUtc);
 
         try {
             // Create the Google credential object
@@ -223,6 +233,28 @@ public class QuoteService : BackgroundService, IQuoteService {
                 _inputChannel.Writer.TryWrite(new QuoteServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
             }
         }, ct);
+    }
+
+    private void ProcessQuoteServiceFillPricesForSymbolsInput(QuoteServiceFillPricesForSymbolsInput inp)
+    {
+        _logger.LogInformation("ProcessQuoteServiceFillPricesForSymbolsInput {NumPricesToFill}", inp.Symbols.Count);
+
+        var prices = new Dictionary<string, decimal>();
+
+        try {
+            // Fill in the prices
+            foreach (string symbol in inp.Symbols) {
+                if (_pricesByInstrumentSymbol.TryGetValue(symbol, out decimal price)) {
+                    prices[symbol] = price;
+                }
+            }
+
+            inp.Completed.TrySetResult(prices);
+
+        } catch (Exception ex) {
+            _logger.LogError(ex, "ProcessQuoteServiceFillPricesForSymbolsInput - general fault");
+            inp.Completed.TrySetException(ex);
+        }
     }
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
