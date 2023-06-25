@@ -37,7 +37,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
             }
 
             using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-            using GetStocksForExchangeRequest req = new GetStocksForExchangeRequest(reqId, request.Exchange, cts);
+            using var req = new GetStocksForExchangeRequest(reqId, request.Exchange, cts);
             if (!_requestProcessor.PostRequest(req)) {
                 _logger.LogWarning("GetStocksData - Failed to post request, aborting");
                 return Failure("Failed to post request");
@@ -48,6 +48,11 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 _logger.LogWarning("GetStocksData - Received invalid response");
                 return Failure("Got an invalid repsonse");
             }
+
+            // Get the list of instrument symbols from the reply, and request the quotes service to fill out the stock price for each one.
+            // If the quote service does not have a price for the instrument symbol, then remove that symbol from the reply.
+            // If the quote service has a price for the instrument symbol, then add that price to the reply.
+
 
             _logger.LogInformation("GetStocksData - complete");
             return reply;

@@ -14,6 +14,8 @@ using tsx_aggregator.Services;
 namespace tsx_aggregator;
 
 public class Program {
+    private const string DefaultPortStr = "7001";
+    
     public static async Task<int> Main(string[] args) {
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
@@ -41,7 +43,7 @@ public class Program {
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
             .ConfigureServices((context, services) => {
 
-                var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"], CultureInfo.InvariantCulture);
+                var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"] ?? DefaultPortStr, CultureInfo.InvariantCulture);
                 services.Configure<KestrelServerOptions>(opt => {
                     opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
                     opt.AllowAlternateSchemes = true;
