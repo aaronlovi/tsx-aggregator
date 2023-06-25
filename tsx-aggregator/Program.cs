@@ -52,6 +52,7 @@ public class Program {
                 // TODO: Add support for DbmInMemory if the connection string is not specified
 
                 services
+                    .AddHttpClient()
                     .AddSingleton<PostgresExecutor>()
                     .AddSingleton<DbMigrations>()
                     .AddSingleton<IDbmService, DbmService>()

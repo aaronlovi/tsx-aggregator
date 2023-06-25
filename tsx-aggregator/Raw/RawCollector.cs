@@ -20,6 +20,7 @@ internal class RawCollector : BackgroundService {
     private readonly IServiceProvider _svp;
     private readonly Registry _registry;
     private readonly StateFsm _stateFsm;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public RawCollector(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<Aggregator>>();
@@ -27,6 +28,7 @@ internal class RawCollector : BackgroundService {
         _svp = svp;
         _registry = svp.GetRequiredService<Registry>();
         _stateFsm = new(DateTime.UtcNow, _registry);
+        _httpClientFactory = svp.GetRequiredService<IHttpClientFactory>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -151,7 +153,7 @@ internal class RawCollector : BackgroundService {
         };
 
         try {
-            using var httpClient = new HttpClient();
+            var httpClient = _httpClientFactory.CreateClient();
             httpClient.DefaultRequestHeaders.Add("accept", "application/json, text/javascript, */*; q=0.01");
             httpClient.DefaultRequestHeaders.Add("accept-language", "en-US,en;q=0.9");
             httpClient.DefaultRequestHeaders.Add("sec-fetch-dest", "empty");
@@ -175,7 +177,7 @@ internal class RawCollector : BackgroundService {
 
                 _logger.LogInformation("FetchInstrumentDirectory - fetching letter:{Letter}", curLetter);
 
-                HttpResponseMessage response = await httpClient.SendAsync(request, ct);
+                using HttpResponseMessage response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) {
                     _logger.LogWarning("FetchInstrumentDirectory - letter:{Letter}, HTTP request failed with status code: {StatusCode}",
                         curLetter, response.StatusCode);

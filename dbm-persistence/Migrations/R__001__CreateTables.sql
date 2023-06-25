@@ -1,6 +1,6 @@
-﻿-- create function now_utc() returns timestamp as $$
---   select now() at time zone 'utc';
--- $$ language sql;
+﻿create or replace function now_utc() returns timestamp as $$
+   select now() at time zone 'utc';
+$$ language sql;
 
 CREATE TABLE if not exists processed_instrument_reports (
 	instrument_id BIGINT NOT NULL,
