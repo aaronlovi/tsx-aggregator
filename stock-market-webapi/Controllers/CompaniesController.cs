@@ -31,7 +31,7 @@ public class CompaniesController : Controller {
                 instrumentSymbol: item.InstrumentSymbol,
                 companyName: item.CompanyName,
                 instrumentName: item.InstrumentName,
-                pricePerShare: 0M,
+                pricePerShare: item.PerSharePrice,
                 curLongTermDebt: item.CurrentLongTermDebt,
                 curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
                 curBookValue: item.CurrentBookValue,

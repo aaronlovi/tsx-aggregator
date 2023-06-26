@@ -608,7 +608,7 @@ public class CompanyReport
 
     private void LogMissingPropertyWarning(DateOnly reportDate, string missingPropertyName, IList<string> warnings)
     {
-        warnings.Add($"Missing property '${missingPropertyName}'.Report date: ${reportDate}");
+        warnings.Add($"Missing property '{missingPropertyName}'. Report date: {reportDate}");
     }
 
     #endregion

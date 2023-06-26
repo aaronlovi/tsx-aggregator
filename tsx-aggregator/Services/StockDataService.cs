@@ -38,6 +38,10 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("No context supplied");
             }
 
+            _logger.LogInformation("GetStocksData - Waiting for QuoteService to be ready");
+            await _quotesService.QuoteServiceReady.Task.WaitAsync(context.CancellationToken);
+            _logger.LogInformation("GetStocksData - QuoteService is ready");
+
             using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
             using var req = new GetStocksForExchangeRequest(reqId, request.Exchange, cts);
             if (!_requestProcessor.PostRequest(req)) {

@@ -131,7 +131,8 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     CurrentBookValue = currentBookValue,
                     AverageNetCashFlow = averageNetCashFlow,
                     AverageOwnerEarnings = averageOwnerEarnings,
-                    PerSharePrice = 0M
+                    PerSharePrice = 0M, // To be filled out later by the quotes service
+                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports
                 };
                 getStocksDataReply.StocksData.Add(item);
             }

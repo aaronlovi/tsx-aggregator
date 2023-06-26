@@ -38,11 +38,14 @@ public class QuoteService : BackgroundService, IQuoteService {
         _svp = svp;
         _inputChannel = Channel.CreateUnbounded<QuoteServiceInputBase>();
         _pricesByInstrumentSymbol = new();
+        QuoteServiceReady = new();
 
         _logger.LogInformation("QuoteService - Created");
     }
 
     public DateTime? NextFetchQuotesTime => _nextFetchQuotesTime;
+
+    public TaskCompletionSource QuoteServiceReady { get; }
 
     public bool PostRequest(QuoteServiceInputBase inp)
     {
@@ -66,8 +69,7 @@ public class QuoteService : BackgroundService, IQuoteService {
         }
 
         _nextFetchQuotesTime = state.NextFetchQuotesTime;
-
-        SetupTimeoutTask(stoppingToken);
+        _ = PostRequest(new QuoteServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
 
         while (!stoppingToken.IsCancellationRequested) {
 
@@ -121,6 +123,14 @@ public class QuoteService : BackgroundService, IQuoteService {
 
             _logger.LogInformation("Found {NumPrices} old quotes", oldPrices.Count);
             _pricesByInstrumentSymbol = oldPrices;
+
+            // Mark the Quote service as ready to accept price requests
+            QuoteServiceReady.TrySetResult();
+
+            if (ti.CurTimeUtc < _nextFetchQuotesTime) {
+                _logger.LogInformation("Not time to fetch new quotes yet, skipping");
+                return;
+            }
 
             // Clear the worksheet
             ClearColumns(service);
@@ -260,8 +270,8 @@ public class QuoteService : BackgroundService, IQuoteService {
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
         ILogger logger = svp.GetRequiredService<ILogger<QuoteService>>();
         IQuoteService quoteService = svp.GetRequiredService<IQuoteService>();
-        DateTime nextFetchQuotesTime = quoteService.NextFetchQuotesTime ?? DateTime.MaxValue;
         while (!ct.IsCancellationRequested) {
+            DateTime nextFetchQuotesTime = quoteService.NextFetchQuotesTime ?? DateTime.MaxValue;
             logger.LogInformation("QuoteService heartbeat - Next quotes fetch time {NextFetchQuotesTime}", nextFetchQuotesTime);
             await Task.Delay(Constants.OneMinute, ct);
         }
