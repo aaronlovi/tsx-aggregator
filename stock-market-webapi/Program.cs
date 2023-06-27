@@ -6,9 +6,17 @@ public class Program {
     public static void Main(string[] args) {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
+        builder.Services.AddCors(options => {
+            options.AddPolicy("AllowAll", builder => {
+                builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            });
+        });
 
+        // Add services to the container.
         builder.Services.AddControllers();
+
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -27,11 +35,16 @@ public class Program {
             app.UseSwaggerUI();
         }
 
+        app.UseCors(x => x
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+
         app.UseHttpsRedirection();
 
         app.UseAuthorization();
 
-
+        //app.UseCors("AllowAllOrigins");
 
         app.MapControllers();
 

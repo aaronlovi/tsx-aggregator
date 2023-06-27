@@ -44,6 +44,20 @@ public class CompaniesController : Controller {
                 numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
         }
 
+        // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
+        output.Sort((a, b) => {
+            int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
+            if (scoreCompare != 0)
+                return scoreCompare;
+
+            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            return bAvgReturn.CompareTo(aAvgReturn);
+        });
+
+        // Keep only the top 30 companies
+        output = output.Take(30).ToList();
+
         return Ok(output);
     }
 
