@@ -58,6 +58,10 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     await ProcessGetStocksForExchangeRequest(getStocksForExchangeRequest, thisRequestCts.Token);
                     break;
                 }
+                case GetStockDetailsForExchangeRequest getStockDetailsForExchangeRequest: {
+                    await ProcessGetStockDetailsRequest(getStockDetailsForExchangeRequest, thisRequestCts.Token);
+                    break;
+                }
                 default: {
                     _logger.LogError("StocksDataFetch main loop - Invalid request type received, dropping input");
                     break;
@@ -139,6 +143,95 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
                     dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
+            }
+        }
+
+        static bool GetDataPoint(JsonElement root, string fieldName, out long retVal) {
+            if (root.TryGetProperty(fieldName, out JsonElement jsonVal) && jsonVal.ValueKind == JsonValueKind.Number) {
+                retVal = (long)Math.Round(jsonVal.GetDecimal(), 0, MidpointRounding.ToEven);
+                return true;
+            } else {
+                retVal = 0;
+                return false;
+            }
+        }
+    }
+
+    private async Task ProcessGetStockDetailsRequest(GetStockDetailsForExchangeRequest request, CancellationToken ct) {
+        using var logContext = _logger.BeginScope(new Dictionary<string, string> {
+            [LogUtils.ExchangeContext] = request.Exchange,
+            [LogUtils.InstrumentSymbolContext] = request.InstrumentSymbol
+        });
+        _logger.LogInformation("ProcessGetStockDetailsRequest");
+
+        Result<ProcessedFullInstrumentReportDto> res = await _dbm.GetProcessedStockDataByExchangeAndSymbol(request.Exchange, request.InstrumentSymbol, ct);
+
+        if (res.Success) {
+            _logger.LogInformation("ProcessGetStockDetailsRequest Success");
+        } else if (res.Data is null) {
+            res = res with { Success = false, ErrMsg = "No data found" };
+            _logger.LogInformation("ProcessGetStockDetailsRequest Succeeded, but returned a null result");
+        } else {
+            _logger.LogInformation("ProcessGetStockDetailsRequest Failed - {Error}", res.ErrMsg);
+        }
+
+        var reply = new GetStocksDetailReply() {
+            Success = res.Success,
+            ErrorMessage = res.ErrMsg
+        };
+        if (res.Data is not null) {
+            reply.StockDetail = TransformCompanyItem(request.Exchange, res.Data, _logger);
+        }
+
+        request.Completed.TrySetResult(reply);
+
+        // Local helper methods
+
+        static GetStocksDataReplyItem? TransformCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, ILogger logger) {
+            try {
+                using var doc = JsonDocument.Parse(dto.SerializedReport);
+                JsonElement root = doc.RootElement;
+                if (!GetDataPoint(root, "CurNumShares", out var curNumShares)
+                    || !GetDataPoint(root, "CurTotalShareholdersEquity", out var curTotalShareholdersEquity)
+                    || !GetDataPoint(root, "CurGoodwill", out var curGoodWill)
+                    || !GetDataPoint(root, "CurIntangibles", out var curIntangibles)
+                    || !GetDataPoint(root, "CurLongTermDebt", out var curLongTermDebt)
+                    || !GetDataPoint(root, "CurDividendsPaid", out var curDividendsPaid)
+                    || !GetDataPoint(root, "CurRetainedEarnings", out var curRetainedEarnings)
+                    || !GetDataPoint(root, "OldestRetainedEarnings", out var oldestRetainedEarnings)
+                    || !GetDataPoint(root, "CurBookValue", out var currentBookValue)
+                    || !GetDataPoint(root, "AverageNetCashFlow", out var averageNetCashFlow)
+                    || !GetDataPoint(root, "AverageOwnerEarnings", out var averageOwnerEarnings)) {
+                    logger.LogWarning("ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
+                        dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
+                    return null;
+                }
+
+                return new GetStocksDataReplyItem() {
+                    Exchange = exchange,
+                    CompanySymbol = dto.CompanySymbol,
+                    InstrumentSymbol = dto.InstrumentSymbol,
+                    CompanyName = dto.CompanyName,
+                    InstrumentName = dto.InstrumentName,
+                    CreatedDate = Timestamp.FromDateTimeOffset(dto.ReportCreatedDate),
+                    CurrentNumShares = curNumShares,
+                    CurrentTotalShareholdersEquity = curTotalShareholdersEquity,
+                    CurrentGoodwill = curGoodWill,
+                    CurrentIntangibles = curIntangibles,
+                    CurrentLongTermDebt = curLongTermDebt,
+                    CurrentDividendsPaid = curDividendsPaid,
+                    CurrentRetainedEarnings = curRetainedEarnings,
+                    OldestRetainedEarnings = oldestRetainedEarnings,
+                    CurrentBookValue = currentBookValue,
+                    AverageNetCashFlow = averageNetCashFlow,
+                    AverageOwnerEarnings = averageOwnerEarnings,
+                    PerSharePrice = 0M, // To be filled out later by the quotes service
+                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports
+                };
+            } catch (Exception ex) {
+                logger.LogError(ex, "ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
+                    dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
+                return null;
             }
         }
 

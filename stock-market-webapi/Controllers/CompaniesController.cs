@@ -8,24 +8,25 @@ namespace stock_market_webapi.Controllers;
 [ApiController]
 public class CompaniesController : Controller {
 
+    private const int GetCompaniesMaxNumCompanies = 30;
+
     private readonly StockDataServiceClient _client;
 
-    public CompaniesController(StockDataServiceClient client)
-    {
+    public CompaniesController(StockDataServiceClient client) {
         _client = client;
     }
 
     [HttpGet("companies")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<CompanyFullDetailReport>>> GetCompanies() {
+    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetCompanies() {
         GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
         if (!reply.Success)
             return BadRequest("abc");
 
-        var output = new List<CompanyFullDetailReport>();
+        var fullDetailReports = new List<CompanyFullDetailReport>();
         foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            output.Add(new CompanyFullDetailReport(
+            fullDetailReports.Add(new CompanyFullDetailReport(
                 exchange: item.Exchange,
                 companySymbol: item.CompanySymbol,
                 instrumentSymbol: item.InstrumentSymbol,
@@ -45,7 +46,7 @@ public class CompaniesController : Controller {
         }
 
         // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
-        output.Sort((a, b) => {
+        fullDetailReports.Sort((a, b) => {
             int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
             if (scoreCompare != 0)
                 return scoreCompare;
@@ -55,21 +56,41 @@ public class CompaniesController : Controller {
             return bAvgReturn.CompareTo(aAvgReturn);
         });
 
-        // Keep only the top 30 companies
-        output = output.Take(30).ToList();
+        // Keep only the top 'GetCompaniesMaxNumCompanies' companies, and transform to summary reports
+        var summaryReports = fullDetailReports
+            .Take(GetCompaniesMaxNumCompanies)
+            .Select(CompanySummaryReport.FromDetailedReport)
+            .ToList();
 
-        return Ok(output);
+        return Ok(summaryReports);
     }
 
-    [HttpGet("companies/sort/{dataPoint}")]
-    public ActionResult<IEnumerable<CompanyFullDetailReport>> GetCompaniesSortedBy(string dataPoint) {
-        // Retrieve and return the list of companies sorted by the specified data point
-        throw new NotImplementedException("NYI");
-    }
+    [HttpGet("companies/{exchange}/{instrumentSymbol}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<CompanyFullDetailReport>> GetCompany(string exchange, string instrumentSymbol) {
+        GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = "TSX", InstrumentSymbol = instrumentSymbol });
+        if (!reply.Success)
+            return BadRequest("abc");
 
-    [HttpGet("companies/{id}")]
-    public ActionResult<CompanyFullDetailReport> GetCompany(int id) {
-        // Retrieve and return the company with the specified ID from your data source
-        throw new NotImplementedException("NYI");
+        var fullDetailReport = new CompanyFullDetailReport(
+            exchange: reply.StockDetail.Exchange,
+            companySymbol: reply.StockDetail.CompanySymbol,
+            instrumentSymbol: reply.StockDetail.InstrumentSymbol,
+            companyName: reply.StockDetail.CompanyName,
+            instrumentName: reply.StockDetail.InstrumentName,
+            pricePerShare: reply.StockDetail.PerSharePrice,
+            curLongTermDebt: reply.StockDetail.CurrentLongTermDebt,
+            curTotalShareholdersEquity: reply.StockDetail.CurrentTotalShareholdersEquity,
+            curBookValue: reply.StockDetail.CurrentBookValue,
+            curNumShares: reply.StockDetail.CurrentNumShares,
+            averageNetCashFlow: reply.StockDetail.AverageNetCashFlow,
+            averageOwnerEarnings: reply.StockDetail.AverageOwnerEarnings,
+            curDividendsPaid: reply.StockDetail.CurrentDividendsPaid,
+            curRetainedEarnings: reply.StockDetail.CurrentRetainedEarnings,
+            oldestRetainedEarnings: reply.StockDetail.OldestRetainedEarnings,
+            numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports);
+
+        return Ok(fullDetailReport);
     }
 }

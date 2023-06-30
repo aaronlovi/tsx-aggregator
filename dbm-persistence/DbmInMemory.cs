@@ -97,4 +97,8 @@ public sealed class DbmInMemory : IDbmService {
     public ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct) {
         return ValueTask.FromResult(new Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>(true, string.Empty, Array.Empty<ProcessedFullInstrumentReportDto>()));
     }
+
+    public ValueTask<Result<ProcessedFullInstrumentReportDto>> GetProcessedStockDataByExchangeAndSymbol(string exchange, string instrumentSymbol, CancellationToken ct) {
+        return ValueTask.FromResult(new Result<ProcessedFullInstrumentReportDto>(true, string.Empty, null));
+    }
 }

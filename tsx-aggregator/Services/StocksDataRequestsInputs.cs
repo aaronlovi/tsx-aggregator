@@ -62,3 +62,17 @@ public sealed class GetStocksForExchangeRequest : StocksDataRequestsInputBase {
 
     public string Exchange { get; init; }
 }
+
+public sealed class GetStockDetailsForExchangeRequest : StocksDataRequestsInputBase {
+    public GetStockDetailsForExchangeRequest(long reqId, string exchange, string instrumentSymbol, CancellationTokenSource? cts) : base(reqId, cts) {
+        if (string.IsNullOrWhiteSpace(exchange))
+            throw new ArgumentNullException(nameof(exchange));
+        if (string.IsNullOrWhiteSpace(instrumentSymbol))
+            throw new ArgumentNullException(nameof(instrumentSymbol));
+        Exchange = exchange;
+        InstrumentSymbol = instrumentSymbol;
+    }
+
+    public string Exchange { get; init; }
+    public string InstrumentSymbol { get; init; }
+}

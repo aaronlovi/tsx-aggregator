@@ -1,5 +1,4 @@
-﻿using System;
-using tsx_aggregator.shared;
+﻿using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
 

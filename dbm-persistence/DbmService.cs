@@ -212,6 +212,12 @@ public sealed class DbmService : IDisposable, IDbmService {
         return new Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>(res.Success, res.ErrMsg, stmt.ProcessedInstrumentReports);
     }
 
+    public async ValueTask<Result<ProcessedFullInstrumentReportDto>> GetProcessedStockDataByExchangeAndSymbol(string exchange, string instrumentSymbol, CancellationToken ct) {
+        var stmt = new GetProcessedStockDataByExchangeAndInstrumentSymbolStmt(exchange, instrumentSymbol);
+        DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
+        return new Result<ProcessedFullInstrumentReportDto>(res.Success, res.ErrMsg, stmt.ProcessedInstrumentReport);
+    }
+
     #endregion
 
     public void Dispose() {

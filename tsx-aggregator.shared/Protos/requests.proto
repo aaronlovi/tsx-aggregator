@@ -7,6 +7,7 @@ option csharp_namespace = "tsx_aggregator.Services";
 
 service StockDataService {
     rpc GetStocksData(GetStocksDataRequest) returns (GetStocksDataReply);
+    rpc GetStocksDetail(GetStocksDetailRequest) returns (GetStocksDetailReply);
 }
 
 message GetStocksDataRequest {
@@ -17,6 +18,17 @@ message GetStocksDataReply {
     bool success = 1;
     string error_message = 2;
     repeated GetStocksDataReplyItem stocksData = 3;
+}
+
+message GetStocksDetailRequest {
+    string exchange = 1;
+    string instrument_symbol = 2;
+}
+
+message GetStocksDetailReply {
+    bool success = 1;
+    string error_message = 2;
+    GetStocksDataReplyItem stockDetail = 3;
 }
 
 message GetStocksDataReplyItem {
