@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace dbm_persistence;
 
 internal static class DbUtils {
     static internal NpgsqlParameter CreateNullableDateTimeParam(string paramName, DateTimeOffset? nullableDate) {
-        return nullableDate is null
-            ? new NpgsqlParameter<DBNull>(paramName, DBNull.Value)
-            : new NpgsqlParameter<DateTime>(paramName, nullableDate.Value.UtcDateTime);
+        var param = new NpgsqlParameter(paramName, NpgsqlDbType.TimestampTz) {
+            Value = nullableDate?.UtcDateTime ?? (object)DBNull.Value
+        };
+        return param;
     }
 }
 
