@@ -288,10 +288,10 @@ internal class RawCollector : BackgroundService {
     private async Task ProcessFetchInstrumentData(FetchInstrumentData outputItem, CancellationToken ct) {
         _logger.LogInformation("ProcessFetchInstrumentData(company:{Company},instrument:{Instrument})",
             outputItem.CompanySymbol, outputItem.InstrumentSymbol);
-        var companyAndInstrumentSymbol = new CompanyAndInstrumentSymbol(outputItem.CompanySymbol, outputItem.InstrumentSymbol);
-        var instrumentDto = _registry.GetInstrument(companyAndInstrumentSymbol);
+        var insrumentKey = new InstrumentKey(outputItem.CompanySymbol, outputItem.InstrumentSymbol, outputItem.Exchange);
+        var instrumentDto = _registry.GetInstrument(insrumentKey);
         if (instrumentDto is null) {
-            _logger.LogWarning("ProcessFetchInstrumentData - Failed to find {Company} in the registry", companyAndInstrumentSymbol);
+            _logger.LogWarning("ProcessFetchInstrumentData - Failed to find {Company} in the registry", insrumentKey);
             return;
         }
 

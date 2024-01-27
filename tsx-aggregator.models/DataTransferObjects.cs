@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using tsx_aggregator.shared;
+using static tsx_aggregator.models.InstrumentKey;
 
 namespace tsx_aggregator.models;
 
@@ -42,7 +43,7 @@ public record ProcessedFullInstrumentReportDto(
     DateTimeOffset? ReportObsoletedDate,
     int NumAnnualCashFlowReports);
 
-public record InstrumentDto : CompanyAndInstrumentSymbol {
+public record InstrumentDto : InstrumentKey {
     public InstrumentDto(
         ulong instrumentId,
         string exchange,
@@ -52,7 +53,7 @@ public record InstrumentDto : CompanyAndInstrumentSymbol {
         string instrumentName,
         DateTimeOffset createdDate,
         DateTimeOffset? obsoletedDate)
-        : base(companySymbol, instrumentSymbol) {
+        : base(companySymbol, instrumentSymbol, exchange) {
         InstrumentId = instrumentId;
         Exchange = exchange;
         CompanyName = companyName;
@@ -62,7 +63,6 @@ public record InstrumentDto : CompanyAndInstrumentSymbol {
     }
 
     public ulong InstrumentId { get; init; }
-    public string Exchange { get; init; }
     public string CompanyName { get; init; }
     public string InstrumentName { get; init; }
     public DateTimeOffset CreatedDate { get; init; }
@@ -165,19 +165,21 @@ public record InstrumentDto : CompanyAndInstrumentSymbol {
     }
 }
 
-public record CompanyAndInstrumentSymbol(string CompanySymbol, string InstrumentSymbol) {
-    public static readonly CompanyAndInstrumentSymbol Empty = new(string.Empty, string.Empty);
+public record InstrumentKey(string CompanySymbol, string InstrumentSymbol, string Exchange) {
+    public static readonly InstrumentKey Empty = new(string.Empty, string.Empty, string.Empty);
     public static readonly ComparerBySymbols_ ComparerBySymbols = new();
 
-    public static int CompareBySymbols(CompanyAndInstrumentSymbol c1, CompanyAndInstrumentSymbol c2) {
-        int res = c1.CompanySymbol.CompareTo(c2.CompanySymbol);
+    public static int CompareBySymbols(InstrumentKey k1, InstrumentKey k2) {
+        int res = k1.CompanySymbol.CompareTo(k2.CompanySymbol);
         if (res == 0)
-            res = c1.InstrumentSymbol.CompareTo(c2.InstrumentSymbol);
+            res = k1.InstrumentSymbol.CompareTo(k2.InstrumentSymbol);
+        if (res == 0)
+            res = k1.Exchange.CompareTo(k2.Exchange);
         return res;
     }
 
-    public class ComparerBySymbols_ : IComparer<CompanyAndInstrumentSymbol> {
-        public int Compare(CompanyAndInstrumentSymbol? x, CompanyAndInstrumentSymbol? y) {
+    public class ComparerBySymbols_ : IComparer<InstrumentKey> {
+        public int Compare(InstrumentKey? x, InstrumentKey? y) {
             if (x is null && y is null)
                 return 0;
             if (x is null)
@@ -193,23 +195,23 @@ public class StateFsmState {
     private DateTime? _nextFetchDirectoryTime;
     private DateTime? _nextFetchInstrumentDataTime;
     private DateTime? _nextFetchQuotesTime;
-    private CompanyAndInstrumentSymbol _prevCompanyAndInstrumentSymbol;
+    private InstrumentKey _prevInstrumentKey;
 
-    public StateFsmState() : this(null, null, null, CompanyAndInstrumentSymbol.Empty) { }
+    public StateFsmState() : this(null, null, null, InstrumentKey.Empty) { }
 
     public StateFsmState(
         DateTime? nextFetchDirectoryTime,
         DateTime? nextFetchInstrumentDataTime,
         DateTime? nextFetchQuotesTime,
-        CompanyAndInstrumentSymbol prevCompanyAndInstrumentSymbol) {
+        InstrumentKey prevInstrumentKey) {
         _nextFetchDirectoryTime = nextFetchDirectoryTime;
         _nextFetchInstrumentDataTime = nextFetchInstrumentDataTime;
         _nextFetchQuotesTime = nextFetchQuotesTime;
-        _prevCompanyAndInstrumentSymbol = prevCompanyAndInstrumentSymbol;
+        _prevInstrumentKey = prevInstrumentKey;
     }
 
     public StateFsmState(StateFsmState other)
-        : this(other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.NextFetchQuotesTime, other.PrevCompanyAndInstrumentSymbol) {
+        : this(other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.NextFetchQuotesTime, other.PrevInstrumentKey) {
     }
 
     public bool IsDirty { get; private set; }
@@ -238,10 +240,10 @@ public class StateFsmState {
         }
     }
 
-    public CompanyAndInstrumentSymbol PrevCompanyAndInstrumentSymbol {
-        get => _prevCompanyAndInstrumentSymbol;
+    public InstrumentKey PrevInstrumentKey {
+        get => _prevInstrumentKey;
         set {
-            _prevCompanyAndInstrumentSymbol = value;
+            _prevInstrumentKey = value;
             IsDirty = true;
         }
     }

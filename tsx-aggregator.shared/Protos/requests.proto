@@ -8,6 +8,7 @@ option csharp_namespace = "tsx_aggregator.Services";
 service StockDataService {
     rpc GetStocksData(GetStocksDataRequest) returns (GetStocksDataReply);
     rpc GetStocksDetail(GetStocksDetailRequest) returns (GetStocksDetailReply);
+    rpc GetStockSearchResults(GetStockSearchResultsRequest) returns (GetStockSearchResultsReply);
 }
 
 message GetStocksDataRequest {
@@ -51,4 +52,20 @@ message GetStocksDataReplyItem {
     int64 average_owner_earnings = 17;
     int32 num_annual_processed_cash_flow_reports = 18;
     DecimalValue per_share_price = 19;
+}
+
+message GetStockSearchResultsRequest {
+    string search_term = 1;
+}
+
+message GetStockSearchResultsReply {
+    bool success = 1;
+    string error_message = 2;
+    repeated GetStockSearchResultsReplyItem searchResults = 3;
+}
+
+message GetStockSearchResultsReplyItem {
+    string exchange = 1;
+    string instrument_symbol = 2;
+    string company_name = 3;
 }

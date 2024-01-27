@@ -13,13 +13,15 @@ internal class FetchDirectory : StateFsmOutputItemBase {
 }
 
 internal class FetchInstrumentData : StateFsmOutputItemBase {
-    public FetchInstrumentData(string companySymbol, string instrumentSymbol) : base() {
+    public FetchInstrumentData(string companySymbol, string instrumentSymbol, string exchange) : base() {
         CompanySymbol = companySymbol;
         InstrumentSymbol = instrumentSymbol;
+        Exchange = exchange;
     }
 
     public string CompanySymbol { get; init; }
     public string InstrumentSymbol { get; init; }
+    public string Exchange { get; init; }
 }
 
 internal class PersistState : StateFsmOutputItemBase {
@@ -28,7 +30,7 @@ internal class PersistState : StateFsmOutputItemBase {
 
 
 internal class StateFsmOutputs {
-    private List<StateFsmOutputItemBase> _outputList;
+    private readonly List<StateFsmOutputItemBase> _outputList;
 
     public StateFsmOutputs() {
         _outputList = new();

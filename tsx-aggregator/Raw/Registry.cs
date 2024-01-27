@@ -30,7 +30,7 @@ internal class Registry {
         lock (_instruments) {
             foreach (var instrument in directory)
                 _instruments.Add(instrument);
-            _instruments.Sort(CompanyAndInstrumentSymbol.CompareBySymbols);
+            _instruments.Sort(InstrumentKey.CompareBySymbols);
             
             // Notify subscribers that the list of instruments has been initialized
             DirectoryInitialized.TrySetResult();
@@ -39,7 +39,7 @@ internal class Registry {
 
     public void AddInstrument(InstrumentDto newInstrument) {
         lock (_instruments) {
-            int index = _instruments.BinarySearch(newInstrument, CompanyAndInstrumentSymbol.ComparerBySymbols);
+            int index = _instruments.BinarySearch(newInstrument, InstrumentKey.ComparerBySymbols);
             if (index >= _instruments.Count) {
                 _instruments.Add(newInstrument);
             } else if (index < 0) {
@@ -50,7 +50,7 @@ internal class Registry {
 
     public void RemoveInstrument(InstrumentDto obsoletedInstrument) {
         lock (_instruments) {
-            int index = _instruments.BinarySearch(obsoletedInstrument, CompanyAndInstrumentSymbol.ComparerBySymbols);
+            int index = _instruments.BinarySearch(obsoletedInstrument, InstrumentKey.ComparerBySymbols);
             if (index < 0)
                 return;
             _instruments.RemoveAt(index);
@@ -63,7 +63,7 @@ internal class Registry {
         lock (_instruments) {
             foreach (var instrumentMap in newDirectory.Values) {
                 foreach (var instrument in instrumentMap.Values) {
-                    int index = _instruments.BinarySearch(instrument, CompanyAndInstrumentSymbol.ComparerBySymbols);
+                    int index = _instruments.BinarySearch(instrument, InstrumentKey.ComparerBySymbols);
                     if (index < 0)
                         newInstrumentList.Add(instrument);
                 }
@@ -95,15 +95,15 @@ internal class Registry {
 
     // Gets the next symbol in the instrument list.
     // If given 'prevCompanyAndInstrumentSymbol' is the last symbol, then returns the first symbol in the instrument list
-    public CompanyAndInstrumentSymbol? GetNextCompanyAndInstrumentSymbol(CompanyAndInstrumentSymbol prevCompanyAndInstrumentSymbol) {
-        CompanyAndInstrumentSymbol? firstCompanyAndInstrumentSymbol = null;
+    public InstrumentKey? GetNextInstrumentKey(InstrumentKey prevInstrumentKey) {
+        InstrumentKey? firstCompanyAndInstrumentSymbol = null;
 
         foreach (InstrumentDto instrument in _instruments) {
-            var curCompanyAndInstrumentSymbol = new CompanyAndInstrumentSymbol(instrument.CompanySymbol, instrument.InstrumentSymbol);
-            firstCompanyAndInstrumentSymbol ??= curCompanyAndInstrumentSymbol;
-            int compareRes = CompanyAndInstrumentSymbol.CompareBySymbols(prevCompanyAndInstrumentSymbol, curCompanyAndInstrumentSymbol);
+            var curKey = new InstrumentKey(instrument.CompanySymbol, instrument.InstrumentSymbol, instrument.Exchange);
+            firstCompanyAndInstrumentSymbol ??= curKey;
+            int compareRes = InstrumentKey.CompareBySymbols(prevInstrumentKey, curKey);
             if (compareRes < 0)
-                return curCompanyAndInstrumentSymbol;
+                return curKey;
         }
 
         return firstCompanyAndInstrumentSymbol;
@@ -111,10 +111,10 @@ internal class Registry {
 
     // Gets an instrument from the directory by looking up the given 'CompanyAndInstrumentSymbol'
     // May return undefined if the instrument is not found
-    public InstrumentDto? GetInstrument(CompanyAndInstrumentSymbol sym) {
+    public InstrumentDto? GetInstrument(InstrumentKey k) {
         lock (_instruments) {
-            var dummy = new InstrumentDto(0, string.Empty, sym.CompanySymbol, string.Empty, sym.InstrumentSymbol, string.Empty, DateTimeOffset.UtcNow, null);
-            int index = _instruments.BinarySearch(dummy, CompanyAndInstrumentSymbol.ComparerBySymbols);
+            var dummy = new InstrumentDto(0, k.Exchange, k.CompanySymbol, string.Empty, k.InstrumentSymbol, string.Empty, DateTimeOffset.UtcNow, null);
+            int index = _instruments.BinarySearch(dummy, InstrumentKey.ComparerBySymbols);
             return index >= 0 ? _instruments[index] : null;
         }
     }

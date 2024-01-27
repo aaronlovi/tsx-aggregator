@@ -23,8 +23,8 @@ internal sealed class UpdateStateFsmStateStmt : NonQueryDbStmtBase {
         return new NpgsqlParameter[] {
             new NpgsqlParameter<DateTime>("next_fetch_directory_time", _stateFsmState.NextFetchDirectoryTime.GetValueOrDefault()),
             new NpgsqlParameter<DateTime>("next_fetch_instrument_data_time", _stateFsmState.NextFetchInstrumentDataTime.GetValueOrDefault()),
-            new NpgsqlParameter<string>("prev_company_symbol", _stateFsmState.PrevCompanyAndInstrumentSymbol.CompanySymbol),
-            new NpgsqlParameter<string>("prev_instrument_symbol", _stateFsmState.PrevCompanyAndInstrumentSymbol.InstrumentSymbol)
+            new NpgsqlParameter<string>("prev_company_symbol", _stateFsmState.PrevInstrumentKey.CompanySymbol),
+            new NpgsqlParameter<string>("prev_instrument_symbol", _stateFsmState.PrevInstrumentKey.InstrumentSymbol)
         };
     }
 }

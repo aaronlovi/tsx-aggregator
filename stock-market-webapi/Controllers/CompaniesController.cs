@@ -9,6 +9,7 @@ namespace stock_market_webapi.Controllers;
 public class CompaniesController : Controller {
 
     private const int GetCompaniesMaxNumCompanies = 30;
+    private const int GetMaxQuickSearchNumResults = 5;
 
     private readonly StockDataServiceClient _client;
 
@@ -92,5 +93,20 @@ public class CompaniesController : Controller {
             numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports);
 
         return Ok(fullDetailReport);
+    }
+
+    [HttpGet("companies/quicksearch/{searchTerm}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<CompanySearchResult>>> SearchCompanies(string searchTerm) {
+        GetStockSearchResultsReply reply = await _client.GetStockSearchResultsAsync(new GetStockSearchResultsRequest() { SearchTerm = searchTerm });
+        if (!reply.Success)
+            return BadRequest("abc");
+
+        var searchResult = new List<CompanySearchResult>();
+        foreach (var res in reply.SearchResults.Take(GetMaxQuickSearchNumResults))
+            searchResult.Add(new CompanySearchResult(res.Exchange, res.CompanyName, res.InstrumentSymbol));
+
+        return Ok(searchResult);
     }
 }

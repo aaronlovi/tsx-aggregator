@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using tsx_aggregator.models;
@@ -68,23 +70,33 @@ internal class TsxCompanyProcessorFsm {
     }
 
     private void ProcessGotResponse(GotResponse gr, List<TsxCompanyProcessorFsmOutputBase> outputList) {
-        var isEnhancedQuotesResponse = gr.Url.Includes("getEnhancedQuotes.json?symbols=");
-        var isFinancialReportsResponse = gr.Url.Includes("getFinancialsEnhancedBySymbol.json?symbol=");
+        var isEnhancedQuotesResponse = gr.Url.Includes("getEnhancedQuotes.json?");
+        var isFinancialReportsResponse = gr.Url.Includes("getFinancialsEnhancedBySymbol.json?");
         var isQuarterlyResponse = isFinancialReportsResponse && gr.Url.Includes("reportType=Q");
         var isAnnualResponse = isFinancialReportsResponse && gr.Url.Includes("reportType=A");
 
-        if (isEnhancedQuotesResponse || isFinancialReportsResponse) {
-            var arr = gr.Url.Split('&', StringSplitOptions.RemoveEmptyEntries);
-            var token = arr[0];
-            arr = token.Split('=', StringSplitOptions.RemoveEmptyEntries);
-            var symbol = arr[^1];
+        var nameValuePairs = HttpUtility.ParseQueryString(gr.Url);
 
-            if (!symbol.Equals(_instrumentDto.InstrumentSymbol, StringComparison.Ordinal)) {
-                string errMsg = $"Symbol {symbol} does not match current instrument: {_instrumentDto}";
+        if (isEnhancedQuotesResponse) {
+            if (!nameValuePairs.AllKeys.Contains("symbols")) {
+                string errMsg = $"Url {gr.Url} does not contain 'symbols'";
                 _logger.LogWarning("Update error: {Error}", errMsg);
                 outputList.Add(new TsxCompanyProcessorFsmOutputEncounteredError(errMsg));
                 return;
             }
+            if (!DoesSymbolMatch("symbols", nameValuePairs))
+                return;
+        }
+
+        if (isFinancialReportsResponse) {
+            if (!nameValuePairs.AllKeys.Contains("symbol")) {
+                string errMsg = $"Url {gr.Url} does not contain 'symbol'";
+                _logger.LogWarning("Update error: {Error}", errMsg);
+                outputList.Add(new TsxCompanyProcessorFsmOutputEncounteredError(errMsg));
+                return;
+            }
+            if (!DoesSymbolMatch("symbol", nameValuePairs))
+                return;
         }
 
         if (isEnhancedQuotesResponse)
@@ -104,6 +116,19 @@ internal class TsxCompanyProcessorFsm {
             _logger.LogInformation("Update: Waiting on other responses");
             outputList.Add(new TsxCompanyProcessorFsmOutputInProgress());
             _state = TsxCompanyProcessorFsmStates.InProgress;
+        }
+
+        // Local helper methods
+
+        bool DoesSymbolMatch(string key, NameValueCollection nvPairs) {
+            var symbol = nvPairs.Get(key) ?? string.Empty;
+            if (!symbol.Equals(_instrumentDto.InstrumentSymbol, StringComparison.Ordinal)) {
+                string errMsg = $"Symbol {symbol} does not match current instrument: {_instrumentDto}";
+                _logger.LogWarning("Update error: {Error}", errMsg);
+                outputList.Add(new TsxCompanyProcessorFsmOutputEncounteredError(errMsg));
+                return false;
+            }
+            return true;
         }
     }
 

@@ -17,11 +17,13 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
     private readonly ILogger _logger;
     private readonly IStocksDataRequestsProcessor _requestProcessor;
     private readonly IQuoteService _quotesService;
+    private readonly ISearchService _searchService;
 
     public StockDataSvc(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<StockDataSvc>>();
         _requestProcessor = svp.GetRequiredService<IStocksDataRequestsProcessor>();
         _quotesService = svp.GetRequiredService<IQuoteService>();
+        _searchService = svp.GetRequiredService<ISearchService>();
     }
 
     public override async Task<GetStocksDataReply> GetStocksData(GetStocksDataRequest request, ServerCallContext context) {
@@ -166,5 +168,55 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
 
         // Local helper methods
         static GetStocksDetailReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+    }
+
+    public override async Task<GetStockSearchResultsReply> GetStockSearchResults(GetStockSearchResultsRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() { [LogUtils.ReqIdContext] = reqId });
+
+        try {
+            _logger.LogInformation("GetStockSearchResults");
+
+            if (context is null) {
+                _logger.LogWarning("GetStockSearchResults - Null context");
+                return Failure("No context supplied");
+            }
+
+            _logger.LogInformation("GetStockSearchResults - Waiting for SearchService to be ready");
+            await _searchService.SearchServiceReady.Task.WaitAsync(context.CancellationToken);
+            _logger.LogInformation("GetStockSearchResults - SearchService is ready");
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var req = new SearchServiceQuickSearchRequestInput(reqId, request.SearchTerm, cts);
+            if (!_searchService.PostRequest(req)) {
+                _logger.LogWarning("GetStockSearchResults - Failed to post request to search service, aborting");
+                return Failure("Failed to post request");
+            }
+
+            object? response = await req.Completed.Task;
+            if (response is not List<GetStockSearchResultsReplyItem> searchResults) {
+                _logger.LogWarning("GetStockSearchResults - Received invalid response");
+                return Failure("Got an invalid repsonse");
+            }
+
+            var reply = new GetStockSearchResultsReply() { Success = true };
+            foreach (GetStockSearchResultsReplyItem item in searchResults) {
+                reply.SearchResults.Add(item);
+            }
+
+            _logger.LogInformation("GetStockSearchResults - completed with {NumResults} results", searchResults.Count);
+
+            return reply;
+
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("GetStockSearchResults canceled");
+            return Failure("GetStockSearchResults - Canceled");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "GetStockSearchResults - General Fault");
+            return Failure("GetStockSearchResults ran into a general error");
+        }
+
+        // Local helper methods
+        static GetStockSearchResultsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
     }
 }

@@ -23,9 +23,9 @@ internal class StateFsm {
         set => State.NextFetchInstrumentDataTime = value;
     }
 
-    public CompanyAndInstrumentSymbol PrevCompanyAndInstrumentSymbol {
-        get => State.PrevCompanyAndInstrumentSymbol;
-        set => State.PrevCompanyAndInstrumentSymbol = value;
+    public InstrumentKey PrevInstrumentKey {
+        get => State.PrevInstrumentKey;
+        set => State.PrevInstrumentKey = value;
     }
 
     public StateFsmState State { get; set; }
@@ -43,10 +43,10 @@ internal class StateFsm {
 
         if (NextFetchInstrumentDataTime is null || _curTime > NextFetchInstrumentDataTime) {
             NextFetchInstrumentDataTime = _curTime.AddMinutes(4);
-            CompanyAndInstrumentSymbol? nextCompanyAndInstrumentSymbol_ = _registry.GetNextCompanyAndInstrumentSymbol(PrevCompanyAndInstrumentSymbol);
-            if (nextCompanyAndInstrumentSymbol_ is not null) {
-                PrevCompanyAndInstrumentSymbol = nextCompanyAndInstrumentSymbol_;
-                output.OutputList.Add(new FetchInstrumentData(nextCompanyAndInstrumentSymbol_.CompanySymbol, nextCompanyAndInstrumentSymbol_.InstrumentSymbol));
+            InstrumentKey? nextKey = _registry.GetNextInstrumentKey(PrevInstrumentKey);
+            if (nextKey is not null) {
+                PrevInstrumentKey = nextKey;
+                output.OutputList.Add(new FetchInstrumentData(nextKey.CompanySymbol, nextKey.InstrumentSymbol, nextKey.Exchange));
             }
         }
 

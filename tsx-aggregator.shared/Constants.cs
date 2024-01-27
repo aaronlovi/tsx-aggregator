@@ -28,5 +28,6 @@ public static class Constants {
     public const string TsxExchange = "TSX";
 
     public static readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan FiveMinutes = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan TwoHours = TimeSpan.FromHours(2);
 }

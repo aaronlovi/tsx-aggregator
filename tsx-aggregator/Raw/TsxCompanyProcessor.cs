@@ -22,7 +22,10 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     private readonly CancellationToken _externalCancellationToken;
     private TsxCompanyData? _companyReport;
 
-    private TsxCompanyProcessor(InstrumentDto instrumentDto, IServiceProvider svp, CancellationToken externalCancellationToken) {
+    private TsxCompanyProcessor(
+        InstrumentDto instrumentDto,
+        IServiceProvider svp,
+        CancellationToken externalCancellationToken) {
         _logger = svp.GetRequiredService<ILogger<TsxCompanyProcessor>>();
         _instrumentDto = instrumentDto;
         _fsm = new(_instrumentDto, svp.GetRequiredService<ILogger<TsxCompanyProcessorFsm>>());
@@ -54,8 +57,8 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     public static async Task<TsxCompanyProcessor> Create(InstrumentDto instrumentDto, IServiceProvider svp, CancellationToken externalCancellationToken) {
-        var processor = new TsxCompanyProcessor(instrumentDto, svp, externalCancellationToken);
         await Init();
+        var processor = new TsxCompanyProcessor(instrumentDto, svp, externalCancellationToken);
         return processor;
     }
 
@@ -64,14 +67,15 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         DateTime dateTimstart = DateTime.UtcNow;
 
         try {
-            using IBrowser browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+            var launchOptions = new LaunchOptions { Headless = true };
+            using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
             using IPage page = await browser.NewPageAsync();
             page.DefaultNavigationTimeout = 60000;
             page.Response += ProcessPageResponse;
-            using CancellationTokenSource _cts = new(TimeSpan.FromSeconds(60));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             _ = await page.GoToAsync($"https://money.tmx.com/en/quote/{_instrumentDto.InstrumentSymbol}/financials-filings");
 
-            await _tcs.Task.WaitAsync(_cts.Token);
+            await _tcs.Task.WaitAsync(cts.Token);
 
             await browser.CloseAsync();
 
@@ -88,20 +92,35 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     private static async Task Init() {
-        var browserFetcher = new BrowserFetcher();
-        _ = await browserFetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+        using var browserFetcher = new BrowserFetcher();
+        await browserFetcher.DownloadAsync();
     }
 
     private async void ProcessPageResponse(object? sender, ResponseCreatedEventArgs e) {
         if (e.Response.Status != HttpStatusCode.OK)
             return;
 
-        if (e.Response.Url.Contains("getEnhancedQuotes.json") || e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json")) {
+        //_logger.LogInformation("Response received for {Url},{IsEnhancedQuotes},{IsFinancialsEnhanced}",
+        //    e.Response.Url,
+        //    e.Response.Url.Contains("getEnhancedQuotes.json"),
+        //    e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json"));
+
+        if (!e.Response.Url.Contains("getEnhancedQuotes.json")
+            && !e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json"))
+            return;
+
+        var headers = e.Response.Headers;
+        if (!headers.ContainsKey("content-encoding"))
+            return;
+
+        try {
             string responseText = await e.Response.TextAsync();
             _ = _inputChannel.Writer.TryWrite(new GotResponse() {
                 Text = responseText,
                 Url = e.Response.Url
             });
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Error when reading response body for URL {Url}", e.Response.Url);
         }
     }
 

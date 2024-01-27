@@ -62,10 +62,12 @@ public class Program {
                     .AddSingleton<StockDataSvc>()
                     .AddSingleton<IStocksDataRequestsProcessor, StocksDataRequestsProcessor>()
                     .AddSingleton<IQuoteService, QuoteService>()
+                    .AddSingleton<ISearchService, SearchService>()
                     .AddHostedService(p => p.GetRequiredService<Aggregator>())
                     .AddHostedService(p => p.GetRequiredService<RawCollector>())
                     .AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>())
                     .AddHostedService(p => p.GetRequiredService<IQuoteService>())
+                    .AddHostedService(p => p.GetRequiredService<ISearchService>())
                     .AddGrpc();
             })
             .ConfigureLogging(builder => {
