@@ -39,7 +39,7 @@ internal sealed class BrowserUtils : IAsyncDisposable {
 
         _callbackFn = callbackFn;
 
-        await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+        //await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
 
         try {
             _browser = await Puppeteer.LaunchAsync(_options);
