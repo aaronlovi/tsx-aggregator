@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,19 @@ public class Startup {
     public void ConfigureServices(IServiceCollection services) {
         services.AddGrpc();
 
+        VerifyCriticalConfiguration();
+
         // project-specific configurations
+    }
+
+    private void VerifyCriticalConfiguration() {
+        var connectionString = _config.GetConnectionString("tsx-scraper");
+        if (string.IsNullOrEmpty(connectionString))
+            throw new Exception("Missing 'tsx-scraper' connection string in app configuration");
+
+        var databaseSchema = _config["DatabaseSchema"];
+        if (string.IsNullOrEmpty(databaseSchema))
+            throw new Exception("Missing 'DatabaseSchema' in app configuration");
     }
 
     public void Configure(IApplicationBuilder app) {
