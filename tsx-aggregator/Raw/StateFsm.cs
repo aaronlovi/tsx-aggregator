@@ -6,31 +6,30 @@ namespace tsx_aggregator.Raw;
 internal class StateFsm {
     private DateTime _curTime;
     private readonly Registry _registry;
+    private StateFsmState _state;
 
     public StateFsm(DateTime curTime, Registry registry) {
         _curTime = curTime;
         _registry = registry;
-        State = new();
+        _state = new();
     }
 
     public DateTime? NextFetchDirectoryTime {
-        get => State.NextFetchDirectoryTime;
-        set => State.NextFetchDirectoryTime = value;
+        get => _state.NextFetchDirectoryTime;
+        set => _state.NextFetchDirectoryTime = value;
     }
 
     public DateTime? NextFetchInstrumentDataTime {
-        get => State.NextFetchInstrumentDataTime;
-        set => State.NextFetchInstrumentDataTime = value;
+        get => _state.NextFetchInstrumentDataTime;
+        set => _state.NextFetchInstrumentDataTime = value;
     }
 
     public InstrumentKey PrevInstrumentKey {
-        get => State.PrevInstrumentKey;
-        set => State.PrevInstrumentKey = value;
+        get => _state.PrevInstrumentKey;
+        set => _state.PrevInstrumentKey = value;
     }
 
-    public StateFsmState State { get; set; }
-
-    public DateTime? NextTimeout => State.GetNextRawDataTimeout();
+    public DateTime? NextTimeout => _state.GetNextRawDataTimeout();
 
     public void Update(DateTime curTime, StateFsmOutputs output) {
         _curTime = curTime;
@@ -50,7 +49,22 @@ internal class StateFsm {
             }
         }
 
-        if (State.IsDirty)
+        if (_state.IsDirty)
             output.OutputList.Add(new PersistState());
     }
+
+    /// <summary>
+    /// Used when state is restored from the database
+    /// </summary>
+    /// <remarks>
+    /// TODO: Use a new constructor and the memento pattern instead
+    /// </remarks>
+    public void SetState(StateFsmState state) => _state = state;
+
+    /// <summary>
+    /// Gets a copy of the current state.
+    /// Expected to be used for persisting current state to the database
+    /// </summary>
+    /// <returns></returns>
+    public StateFsmState GetCopyOfState() => new StateFsmState(_state);
 }
