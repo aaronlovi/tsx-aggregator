@@ -13,6 +13,11 @@ using tsx_aggregator.shared;
 
 namespace tsx_aggregator;
 
+/// <summary>
+/// Processor for a single instrument.
+/// Basically, creates a Puppeteer browser to scrape financial data from the TMX Money website.
+/// Contains an asynchronous loop which is kept alive until all responses from the web page are complete.
+/// </summary>
 internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     private readonly ILogger _logger;
     private readonly InstrumentDto _instrumentDto;
@@ -77,6 +82,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
 
             await _tcs.Task.WaitAsync(cts.Token);
 
+            page.Response -= ProcessPageResponse;
             await browser.CloseAsync();
 
             return Result<TsxCompanyData>.SetSuccess(CompanyReport!);
