@@ -94,22 +94,22 @@ internal class Registry {
     }
 
     // Gets the next symbol in the instrument list.
-    // If given 'prevCompanyAndInstrumentSymbol' is the last symbol, then returns the first symbol in the instrument list
+    // If given 'prevInstrumentKey' is the last symbol, then returns the first symbol in the instrument list
     public InstrumentKey? GetNextInstrumentKey(InstrumentKey prevInstrumentKey) {
-        InstrumentKey? firstCompanyAndInstrumentSymbol = null;
+        InstrumentKey? firstInstrumentKey = null;
 
         foreach (InstrumentDto instrument in _instruments) {
             var curKey = new InstrumentKey(instrument.CompanySymbol, instrument.InstrumentSymbol, instrument.Exchange);
-            firstCompanyAndInstrumentSymbol ??= curKey;
+            firstInstrumentKey ??= curKey;
             int compareRes = InstrumentKey.CompareBySymbols(prevInstrumentKey, curKey);
             if (compareRes < 0)
                 return curKey;
         }
 
-        return firstCompanyAndInstrumentSymbol;
+        return firstInstrumentKey;
     }
 
-    // Gets an instrument from the directory by looking up the given 'CompanyAndInstrumentSymbol'
+    // Gets an instrument from the directory by looking up the given 'InstrumentKey'
     // May return undefined if the instrument is not found
     public InstrumentDto? GetInstrument(InstrumentKey k) {
         lock (_instruments) {
