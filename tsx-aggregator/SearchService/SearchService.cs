@@ -106,13 +106,15 @@ public class SearchService : BackgroundService, ISearchService {
     }
 
     private void SetupTimeoutTask(CancellationToken ct) {
-        DateTime nowUtc = DateTime.UtcNow;
         _ = Task.Delay(Constants.FiveMinutes, ct).ContinueWith(t => {
             if (t.IsCanceled) {
                 _logger.LogInformation("SetupTimeoutTask - Timeout task cancelled");
                 return;
             } else if (t.IsFaulted) {
-                _logger.LogError("SetupTimeoutTask - Timeout task faulted: {ErrMsg}", t.Exception?.Message);
+                Exception? outerEx = t.Exception;
+                Exception? innerEx = outerEx?.InnerException;
+                _logger.LogError(innerEx, "SetupTimeoutTask - unexpected faulted state. Outer exception: {OuterMessage}. Inner Exception: {Message}, StackTrace: {StackTrace}",
+                    outerEx?.Message, innerEx?.Message, innerEx?.StackTrace);
                 return;
             } else {
                 _logger.LogInformation("SetupTimeoutTask - Timeout reached, posting timeout message");
@@ -121,7 +123,9 @@ public class SearchService : BackgroundService, ISearchService {
         }, ct);
     }
 
-    // Method to build the Trie from the company registry
+    /// <summary>
+    /// Method to build the Trie from the company registry
+    /// </summary>
     private void BuildTrie(IReadOnlyCollection<InstrumentDto> companies) {
         foreach (var company in companies) {
             string symbol = company.InstrumentSymbol.ToLower();
@@ -136,7 +140,9 @@ public class SearchService : BackgroundService, ISearchService {
         }
     }
 
-    // Method to insert a word into the Trie
+    /// <summary>
+    /// Method to insert a word into the Trie
+    /// </summary>
     private static void InsertIntoTrie(TrieNode<InstrumentKey> node, string word, string companySymbol, string instrumentSymbol, string exchange) {
         foreach (char c in word) {
             if (!node.Children.ContainsKey(c))
@@ -195,7 +201,7 @@ public class SearchService : BackgroundService, ISearchService {
         return results;
     }
 
-    private void CollectWords(TrieNode<InstrumentKey> node, ISet<InstrumentKey> results) {
+    private static void CollectWords(TrieNode<InstrumentKey> node, ISet<InstrumentKey> results) {
         if (node is null)
             return;
 
@@ -210,7 +216,7 @@ public class SearchService : BackgroundService, ISearchService {
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
         ILogger logger = svp.GetRequiredService<ILogger<SearchService>>();
-        //ISearchService searchService = svp.GetRequiredService<ISearchService>();
+
         while (!ct.IsCancellationRequested) {
             logger.LogInformation("SearchService heartbeat");
             await Task.Delay(Constants.OneMinute, ct);
