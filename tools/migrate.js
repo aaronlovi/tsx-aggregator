@@ -5,10 +5,15 @@ const { config, DynamoDB } = aws;
 const { Client } = pkg;
 
 // Initialize AWS SDK
+// I am using us-east-2 (Ohio) as my region
+// Additional credentials are configured using the AWS CLI,
+// see https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html
 config.update({ region: 'us-east-2' });
 const dynamoDB = new DynamoDB.DocumentClient();
 
 // Connect to Postgres
+// My local credentials will not help you :)
+// You need to create a connection to your own local database...
 const postgresClient = new Client({
     user: 'postgres',
     host: '127.0.0.1',
@@ -44,6 +49,7 @@ try {
             break; // Abort early to inspect the error
         }
 
+        // Generate the DynamoDB object
         const params = {
             TableName: 'Instruments',
             Item: {

@@ -80,10 +80,12 @@ To use the `migrate.js` tool for data migration, follow these steps:
 
 5. Once the migration is complete, verify the data in your DynamoDB table using the AWS Management Console or AWS CLI.
 
-## Contributing
-
-If you have suggestions, bug reports, or improvements for these auxiliary tools, please feel free to contribute. You can create issues and pull requests in this repository to collaborate with the project maintainers.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This source code is made available for reading and reference purposes only. You may not use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of this software without explicit permission from the author.
+
+**All Rights Reserved**
+
+## Contact
+
+Aaron Lovi - aaronlovi@gmail.com
