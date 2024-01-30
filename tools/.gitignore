@@ -1,0 +1,105 @@
+# Dependency directories
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Optional: Logs and debugging
+logs/
+*.log
+*.log.*
+*.log-*
+*.pid
+*.seed
+*.pid.lock
+npm-debug.log.*
+yarn-debug.log.*
+yarn-error.log.*
+
+# Optional: Coverage output
+coverage/
+
+# Optional: nyc test coverage
+.nyc_output/
+
+# Optional: Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt/
+
+# Optional: Bower dependency directory (https://bower.io/)
+bower_components/
+
+# Optional: node-waf configuration
+.lock-wscript
+
+# Optional: Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release/
+
+# Optional: Dependency files
+.pnp.js
+*.pnp.*
+yarn.lock
+package-lock.json
+yarn-error.log
+composer.lock
+vendor/
+npm-debug.log
+.npm
+.npmrc
+
+# Optional: ESLint cache
+.eslintcache
+
+# Optional: flow-typed files
+flow-typed/
+
+# Optional: TypeScript cache
+*.tsbuildinfo
+
+# Optional: Jupyter Notebook
+.ipynb_checkpoints/
+
+# Optional: TernJS port file (https://ternjs.net/)
+.tern-port
+
+# Optional: Visual Studio Code directories
+.vscode/
+.idea/
+
+# Optional: macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Optional: Thumbnails
+._*
+
+# Optional: Files that might appear on external disks
+.Spotlight-V100
+.Trashes
+
+# Optional: Windows
+Thumbs.db
+ehthumbs.db
+
+# Optional: Folder config file (https://help.github.com/en/articles/repository-metadata-on-github)
+.github/
+
+# Optional: Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Optional: Windows shortcuts
+*.lnk
+
+# Optional: JetBrains IDE files
+.idea/
+*.iml
+
+# Optional: Visual Studio files
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw??
