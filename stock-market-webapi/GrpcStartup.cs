@@ -8,7 +8,5 @@ public class GrpcStartup {
         });
     }
 
-    public void Configure(IApplicationBuilder app) {
-        app.UseRouting();
-    }
+    public void Configure(IApplicationBuilder app) => app.UseRouting();
 }

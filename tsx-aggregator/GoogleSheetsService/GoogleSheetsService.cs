@@ -5,8 +5,9 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using tsx_aggregator.models;
 
 namespace tsx_aggregator.Services;
 
@@ -45,58 +46,26 @@ namespace tsx_aggregator.Services;
 /// </code>
 /// </example>
 public class GoogleSheetsService : IGoogleSheetsService {
-    private readonly IConfiguration _configuration;
+    private readonly GoogleCredentialsOptions _googleCredentials;
     private readonly ILogger _logger;
     private readonly SheetsService _sheetService;
-    private string? _credentialKeyFileName;
-    private string? _googleApplicationName;
-    private string? _spreadsheetId;
-    private string? _spreadsheetName;
     private bool disposedValue;
 
-    private string CredentialKeyFileName {
-        get {
-            _credentialKeyFileName ??= _configuration["GoogleCredentials:CredentialFilePath"] ?? string.Empty;
-            return _credentialKeyFileName;
-        }
-    }
-
-    private string GoogleApplicationName {
-        get {
-            _googleApplicationName ??= _configuration["GoogleCredentials:GoogleApplicationName"] ?? string.Empty;
-            return _googleApplicationName;
-        }
-    }
-
-    private string SpreadsheetId {
-        get {
-            _spreadsheetId ??= _configuration["GoogleCredentials:SpreadsheetId"] ?? string.Empty;
-            return _spreadsheetId;
-        }
-    }
-
-    private string SpreadsheetName {
-        get {
-            _spreadsheetName ??= _configuration["GoogleCredentials:SpreadsheetName"] ?? string.Empty;
-            return _spreadsheetName;
-        }
-    }
-
-    public GoogleSheetsService(ILogger<GoogleSheetsService> logger, IConfiguration configuration) {
+    public GoogleSheetsService(
+        ILogger<GoogleSheetsService> logger,
+        IOptions<GoogleCredentialsOptions> googleCredentials) {
         _logger = logger;
-        _configuration = configuration;
-
-        EnsureConfigurationIsValid();
+        _googleCredentials = googleCredentials.Value;
 
         // Create the Google credential object
         var credential = GoogleCredential
-            .FromFile(CredentialKeyFileName)
+            .FromFile(_googleCredentials.CredentialFilePath)
             .CreateScoped(new[] { SheetsService.Scope.Spreadsheets });
 
         // Initialize the SheetsService instance
         _sheetService = new SheetsService(new BaseClientService.Initializer() {
             HttpClientInitializer = credential,
-            ApplicationName = GoogleApplicationName
+            ApplicationName = _googleCredentials.GoogleApplicationName
         });
 
         _logger.LogInformation("GoogleSheetsService - Created");
@@ -104,7 +73,9 @@ public class GoogleSheetsService : IGoogleSheetsService {
 
     public void ClearColumns() {
         var request = new ClearValuesRequest();
-        _sheetService.Spreadsheets.Values.Clear(request, SpreadsheetId, SpreadsheetName).Execute();
+        _sheetService.Spreadsheets.Values
+            .Clear(request, _googleCredentials.SpreadsheetId, _googleCredentials.SpreadsheetName)
+            .Execute();
     }
 
     public Dictionary<string, decimal> ReadQuotes(
@@ -114,9 +85,9 @@ public class GoogleSheetsService : IGoogleSheetsService {
         var quotes = new Dictionary<string, decimal>();
 
         // Define a range that will get all rows with data in the spreadsheet
-        string range = $"{SpreadsheetName}!{instrumentSymbolColumn}1:{quoteColumn}";
+        string range = $"{_googleCredentials.SpreadsheetName}!{instrumentSymbolColumn}1:{quoteColumn}";
 
-        var request = _sheetService.Spreadsheets.Values.Get(SpreadsheetId, range);
+        var request = _sheetService.Spreadsheets.Values.Get(_googleCredentials.SpreadsheetId, range);
         ValueRange response = request.Execute();
 
         foreach (IList<object> row in response.Values) {
@@ -147,32 +118,16 @@ public class GoogleSheetsService : IGoogleSheetsService {
         SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum valueType) {
 
         // Set the range of cells to update
-        string range = $"{SpreadsheetName}!{column}1:{column}{values.Count}";
+        string range = $"{_googleCredentials.SpreadsheetName}!{column}1:{column}{values.Count}";
 
         // Create the ValueRange object
         var valueRange = new ValueRange { Values = values };
 
         // Execute the update request
-        var request = _sheetService.Spreadsheets.Values.Update(valueRange, SpreadsheetId, range);
+        var request = _sheetService.Spreadsheets.Values
+            .Update(valueRange, _googleCredentials.SpreadsheetId, range);
         request.ValueInputOption = valueType;
         _ = request.Execute();
-    }
-
-    private void EnsureConfigurationIsValid() {
-        if (string.IsNullOrEmpty(CredentialKeyFileName))
-            LogAndThrow(nameof(CredentialKeyFileName));
-        if (string.IsNullOrEmpty(GoogleApplicationName))
-            LogAndThrow(nameof(GoogleApplicationName));
-        if (string.IsNullOrEmpty(SpreadsheetId))
-            LogAndThrow(nameof(SpreadsheetId));
-        if (string.IsNullOrEmpty(SpreadsheetName))
-            LogAndThrow(nameof(SpreadsheetName));
-
-        // Local helper functions
-        void LogAndThrow(string paramName) {
-            _logger.LogError("{Parameter} is not set", paramName);
-            throw new ArgumentException($"{paramName} is not set", paramName);
-        }
     }
 
     #region IDISPOSABLE

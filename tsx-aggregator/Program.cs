@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
+using tsx_aggregator.models;
 using tsx_aggregator.Raw;
 using tsx_aggregator.Services;
 
@@ -44,15 +46,20 @@ public class Program {
             .ConfigureServices((context, services) => {
 
                 var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"] ?? DefaultPortStr, CultureInfo.InvariantCulture);
-                services.Configure<KestrelServerOptions>(opt => {
-                    opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
-                    opt.AllowAlternateSchemes = true;
-                });
+                services
+                    .Configure<KestrelServerOptions>(opt =>
+                    {
+                        opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
+                        opt.AllowAlternateSchemes = true;
+                    })
+                    .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials));
+;
 
                 // TODO: Add support for DbmInMemory if the connection string is not specified
 
                 services
                     .AddHttpClient()
+                    .AddSingleton<IValidateOptions<GoogleCredentialsOptions>, GoogleCredentialsOptionsValidator>()
                     .AddSingleton<PostgresExecutor>()
                     .AddSingleton<DbMigrations>()
                     .AddSingleton<IDbmService, DbmService>()
@@ -70,6 +77,14 @@ public class Program {
                     .AddHostedService(p => p.GetRequiredService<IQuoteService>())
                     .AddHostedService(p => p.GetRequiredService<ISearchService>())
                     .AddGrpc();
+
+                // Configures GoogleCredentialsOptions using the Options pattern
+                // Validates the GoogleCredentialsOptions instance when the application starts.
+                services
+                    .AddOptions<GoogleCredentialsOptions>()
+                    .Bind(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
             })
             .ConfigureLogging(builder => {
 
