@@ -63,6 +63,7 @@ public class Program {
                     .AddSingleton<IStocksDataRequestsProcessor, StocksDataRequestsProcessor>()
                     .AddSingleton<IQuoteService, QuoteService>()
                     .AddSingleton<ISearchService, SearchService>()
+                    .AddSingleton<IGoogleSheetsService, GoogleSheetsService>()
                     .AddHostedService(p => p.GetRequiredService<Aggregator>())
                     .AddHostedService(p => p.GetRequiredService<RawCollector>())
                     .AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>())

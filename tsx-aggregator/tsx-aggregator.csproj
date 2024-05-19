@@ -11,7 +11,7 @@
     <ItemGroup>
         <PackageReference Include="Google.Apis.Sheets.v4" Version="1.66.0.3148" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-        <PackageReference Include="Npgsql" Version="8.0.1" />
+        <PackageReference Include="Npgsql" Version="8.0.3" />
         <PackageReference Include="PuppeteerSharp" Version="13.0.2" />
         <PackageReference Include="Serilog" Version="3.1.1" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />

@@ -4,10 +4,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using dbm_persistence;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,14 +14,10 @@ using tsx_aggregator.shared;
 namespace tsx_aggregator.Services;
 
 public class QuoteService : BackgroundService, IQuoteService {
-    private const string CredentialKeyFileName = "linear-hangar-381814-2526009b7ea3.json";
-    private const string GoogleApplicationName = "google sheets finance";
-    private const string SpreadsheetId = "1QnzbL0I4AQCYSAZBiCyKUcbBI6HTlJkhglU5eW5Lk5Y";
-    private const string SpreadsheetName = "Sheet1";
-
     private readonly ILogger _logger;
     private readonly Registry _registry;
     private readonly IDbmService _dbm;
+    private readonly IGoogleSheetsService _sheetsService;
     private readonly IServiceProvider _svp;
     private readonly Channel<QuoteServiceInputBase> _inputChannel;
     private DateTime? _nextFetchQuotesTime;
@@ -35,6 +27,7 @@ public class QuoteService : BackgroundService, IQuoteService {
         _logger = svp.GetRequiredService<ILogger<QuoteService>>();
         _registry = svp.GetRequiredService<Registry>();
         _dbm = svp.GetRequiredService<IDbmService>();
+        _sheetsService = svp.GetRequiredService<IGoogleSheetsService>();
         _svp = svp;
         _inputChannel = Channel.CreateUnbounded<QuoteServiceInputBase>();
         _pricesByInstrumentSymbol = new();
@@ -47,10 +40,7 @@ public class QuoteService : BackgroundService, IQuoteService {
 
     public TaskCompletionSource QuoteServiceReady { get; }
 
-    public bool PostRequest(QuoteServiceInputBase inp)
-    {
-        return _inputChannel.Writer.TryWrite(inp);
-    }
+    public bool PostRequest(QuoteServiceInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
@@ -105,17 +95,8 @@ public class QuoteService : BackgroundService, IQuoteService {
         _logger.LogInformation("ProcessQuoteServiceTimeoutInput {CurTime}", ti.CurTimeUtc);
 
         try {
-            // Create the Google credential object
-            var credential = GoogleCredential.FromFile(CredentialKeyFileName).CreateScoped(new[] { SheetsService.Scope.Spreadsheets });
-
-            // Initialize the SheetsService instance
-            var service = new SheetsService(new BaseClientService.Initializer() {
-                HttpClientInitializer = credential,
-                ApplicationName = GoogleApplicationName
-            });
-
             // Read the old quotes, in case there is an outage and we cannot get the current quotes
-            Dictionary<string, decimal> oldPrices = ReadQuotes(service, "A", "B");
+            Dictionary<string, decimal> oldPrices = _sheetsService.ReadQuotes("A", "B");
             if (oldPrices.Count == 0) {
                 _logger.LogError("Failed to read old quotes, aborting");
                 return;
@@ -133,22 +114,22 @@ public class QuoteService : BackgroundService, IQuoteService {
             }
 
             // Clear the worksheet
-            ClearColumns(service);
+            _sheetsService.ClearColumns();
 
             // Write the raw instrument symbols to the worksheet
             List<IList<object>> instrumentSymbols = GetInstrumentSymbols();
-            WriteToRange(service, column: "A", instrumentSymbols, SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW);
+            _sheetsService.WriteRawValuesToRange("A", instrumentSymbols);
 
             // Write the formulas to the worksheet
             ConvertInstrumentSymbolsToGoogleFinanceForumula(instrumentSymbols);
-            WriteToRange(service, column: "B", instrumentSymbols, SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED);
+            _sheetsService.WriteUserEnteredValuesToRange("B", instrumentSymbols);
 
             // Update the next time to get stock quotes
             _nextFetchQuotesTime = ti.CurTimeUtc + Constants.TwoHours;
             await _dbm.UpdateNextTimeToFetchQuotes(_nextFetchQuotesTime.Value, ct);
 
             // Get the new quotes
-            Dictionary<string, decimal> newPrices = ReadQuotes(service, "A", "B");
+            Dictionary<string, decimal> newPrices = _sheetsService.ReadQuotes("A", "B");
 
             _logger.LogInformation("Found {NumPrices} new quotes", newPrices.Count);
             _pricesByInstrumentSymbol = newPrices;
@@ -164,7 +145,7 @@ public class QuoteService : BackgroundService, IQuoteService {
     }
 
     private List<IList<object>> GetInstrumentSymbols() {
-        List<IList<object>> retVal = new List<IList<object>>();
+        var retVal = new List<IList<object>>();
 
         IReadOnlyCollection<InstrumentDto> instruments = _registry.GetInstruments();
         foreach (InstrumentDto instrument in instruments) {
@@ -172,50 +153,6 @@ public class QuoteService : BackgroundService, IQuoteService {
         }
 
         return retVal;
-    }
-
-    private static void WriteToRange(SheetsService service, string column, List<IList<object>> values, SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum valueType) {
-
-        // Set the range of cells to update
-        string range = $"{SpreadsheetName}!{column}1:{column}{values.Count}";
-
-        // Create the ValueRange object
-        var valueRange = new ValueRange { Values = values };
-
-        // Execute the update request
-        var request = service.Spreadsheets.Values.Update(valueRange, SpreadsheetId, range);
-        request.ValueInputOption = valueType;
-        _ = request.Execute();
-    }
-
-    private static Dictionary<string, decimal> ReadQuotes(SheetsService service, string instrumentSymbolColumn, string quoteColumn) {
-        var quotes = new Dictionary<string, decimal>();
-
-        // Define a range that will get all rows with data in the spreadsheet
-        string range = $"{SpreadsheetName}!{instrumentSymbolColumn}1:{quoteColumn}";
-
-        var request = service.Spreadsheets.Values.Get(SpreadsheetId, range);
-        ValueRange response = request.Execute();
-
-        foreach (IList<object> row in response.Values) {
-            if (row.Count != 2)
-                continue;
-            string instrumentSymbol = row[0]?.ToString() ?? string.Empty;
-            if (string.IsNullOrEmpty(instrumentSymbol))
-                continue;
-            if (!decimal.TryParse(row[1].ToString(), out decimal perSharePrice))
-                continue;
-            if (quotes.ContainsKey(instrumentSymbol))
-                continue;
-            quotes.Add(instrumentSymbol, perSharePrice);
-        }
-
-        return quotes;
-    }
-
-    private static void ClearColumns(SheetsService service) {
-        var request = new ClearValuesRequest();
-        service.Spreadsheets.Values.Clear(request, SpreadsheetId, SpreadsheetName).Execute();
     }
 
     private static void ConvertInstrumentSymbolsToGoogleFinanceForumula(List<IList<object>> values) {
