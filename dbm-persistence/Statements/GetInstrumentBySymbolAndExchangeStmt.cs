@@ -32,9 +32,7 @@ internal class GetInstrumentBySymbolAndExchangeStmt : QueryDbStmtBase {
 
     public InstrumentDto? Results => _instrumentDto;
 
-    protected override void ClearResults() {
-        _instrumentDto = null;
-    }
+    protected override void ClearResults() => _instrumentDto = null;
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new List<NpgsqlParameter> {
@@ -46,7 +44,7 @@ internal class GetInstrumentBySymbolAndExchangeStmt : QueryDbStmtBase {
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         _instrumentDto = new(
-            (ulong)reader.GetInt64(0),
+            reader.GetInt64(0),
             reader.GetString(1),
             reader.GetString(2),
             reader.GetString(3),

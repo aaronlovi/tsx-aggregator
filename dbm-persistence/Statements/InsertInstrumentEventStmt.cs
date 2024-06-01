@@ -10,9 +10,9 @@ internal sealed class InsertInstrumentEventStmt : NonQueryDbStmtBase {
         + " VALUES (@instrument_id, @event_date, @event_type, @is_processed)";
 
     // Inputs
-    private InstrumentEventDto _instrumentEventDto;
+    private InstrumentEventExDto _instrumentEventDto;
 
-    public InsertInstrumentEventStmt(InstrumentEventDto instrumentEventDto) : base(sql, nameof(InsertInstrumentEventStmt)) {
+    public InsertInstrumentEventStmt(InstrumentEventExDto instrumentEventDto) : base(sql, nameof(InsertInstrumentEventStmt)) {
         _instrumentEventDto = instrumentEventDto;
     }
 

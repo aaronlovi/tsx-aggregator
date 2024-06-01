@@ -14,7 +14,8 @@ public class Startup {
 
     public void ConfigureServices(IServiceCollection services) {
         services.AddGrpc();
-        services.Configure<GoogleCredentialsOptions>(_config.GetSection("GoogleCredentials"));
+        services.Configure<GoogleCredentialsOptions>(_config.GetSection(GoogleCredentialsOptions.GoogleCredentials));
+        services.Configure<HostedServicesOptions>(_config.GetSection(HostedServicesOptions.HostedServices));
 
         VerifyCriticalConfiguration();
     }

@@ -26,7 +26,7 @@ internal partial class RawCollector : BackgroundService {
         }
 
         // Fetch current raw data for the company from the raw database, if any
-        (Result res, IReadOnlyList<InstrumentReportDto> existingRawFinancials) = await _dbm.GetRawFinancialsByInstrumentId((long)instrumentDto.InstrumentId, ct);
+        (Result res, IReadOnlyList<CurrentInstrumentReportDto> existingRawFinancials) = await _dbm.GetRawFinancialsByInstrumentId(instrumentDto.InstrumentId, ct);
         if (!res.Success)
             _logger.LogWarning("ProcessFetchInstrumentData - Failed to fetch existing raw reports from the database - Error:{ErrMsg}", res.ErrMsg);
         else

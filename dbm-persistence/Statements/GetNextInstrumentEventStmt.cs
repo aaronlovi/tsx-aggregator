@@ -18,7 +18,7 @@ internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
         + " ORDER BY event_date"
         + " LIMIT 1";
 
-    public InstrumentEventDto? InstrumentEventDto { get; private set; }
+    public InstrumentEventExDto? InstrumentEventDto { get; private set; }
 
     public GetNextInstrumentEventStmt() : base(sql, nameof(GetNextInstrumentEventStmt)) { }
 
@@ -32,15 +32,16 @@ internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         InstrumentEventDto = new(
-            reader.GetInt64(0),     // InstrumentId
-            reader.GetDateTime(1),  // EventDate
-            reader.GetInt32(2),     // EventType
-            reader.GetBoolean(3),   // IsProcessed
-            reader.GetString(4),    // InstrumentSymbol
-            reader.GetString(5),    // InstrumentName
-            reader.GetString(6),    // Exchange
-            reader.GetDecimal(7),   // Price per share
-            reader.GetInt64(8));    // Num shares
+            new InstrumentEventDto(
+                reader.GetInt64(0),     // InstrumentId
+                reader.GetDateTime(1),  // EventDate
+                reader.GetInt32(2),     // EventType
+                reader.GetBoolean(3)),  // IsProcessed
+            reader.GetString(4),        // InstrumentSymbol
+            reader.GetString(5),        // InstrumentName
+            reader.GetString(6),        // Exchange
+            reader.GetDecimal(7),       // Price per share
+            reader.GetInt64(8));        // Num shares
         return false;
     }
 }

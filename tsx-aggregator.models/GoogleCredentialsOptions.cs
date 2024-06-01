@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using Microsoft.Extensions.Options;
 
@@ -21,9 +22,16 @@ public class GoogleCredentialsOptions {
         SpreadsheetName = string.Empty;
     }
 
+    [Required(ErrorMessage = "CredentialFilePath is required in the GoogleCredentials section of the configuration")]
     public string CredentialFilePath { get; set; }
+    
+    [Required(ErrorMessage = "GoogleApplicationName is required in the GoogleCredentials section of the configuration")]
     public string GoogleApplicationName { get; set; }
+    
+    [Required(ErrorMessage = "SpreadsheetId is required in the GoogleCredentials section of the configuration")]
     public string SpreadsheetId { get; set; }
+    
+    [Required(ErrorMessage = "SpreadsheetName is required in the GoogleCredentials section of the configuration")]
     public string SpreadsheetName { get; set; }
 }
 

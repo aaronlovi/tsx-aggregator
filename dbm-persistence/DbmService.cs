@@ -42,9 +42,7 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     #region Generator
 
-    public ValueTask<ulong> GetNextId64(CancellationToken ct) {
-        return GetIdRange64(1, ct);
-    }
+    public ValueTask<ulong> GetNextId64(CancellationToken ct) => GetIdRange64(1, ct);
 
     public async ValueTask<ulong> GetIdRange64(uint count, CancellationToken ct) {
         if (count == 0)
@@ -95,19 +93,19 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     #region Aggregated
 
-    public async ValueTask<(Result, InstrumentEventDto?)> GetNextInstrumentEvent(CancellationToken ct) {
+    public async ValueTask<(Result, InstrumentEventExDto?)> GetNextInstrumentEvent(CancellationToken ct) {
         var stmt = new GetNextInstrumentEventStmt();
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentEventDto);
     }
 
-    public async ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
+    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
         var stmt = new GetCurrentInstrumentReportsStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentReports);
     }
 
-    public async ValueTask<Result> MarkInstrumentEventAsProcessed(InstrumentEventDto dto, CancellationToken ct) {
+    public async ValueTask<Result> MarkInstrumentEventAsProcessed(InstrumentEventExDto dto, CancellationToken ct) {
         var stmt = new UpdateInstrumentEventStmt(dto);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
@@ -131,7 +129,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         var stmt = new GetInstrumentBySymbolAndExchangeStmt(companySymbol, instrumentSymbol, exchange);
         var res = await _exec.ExecuteWithRetry(stmt, ct);
         if (!res.Success || res.NumRows == 0) {
-            var instrumentId = await GetNextId64(ct);
+            var instrumentId = (long)await GetNextId64(ct);
             var instrumentDto = new InstrumentDto(instrumentId, exchange, companySymbol, companyName, instrumentSymbol, instrumentName, DateTime.UtcNow, null);
             var insertInstrumentStmt = new InsertInstrumentStmt(instrumentDto);
             res = await _exec.ExecuteWithRetry(insertInstrumentStmt, ct);
@@ -148,7 +146,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         var getInstrumentStmt = new GetInstrumentBySymbolAndExchangeStmt(companySymbol, instrumentSymbol, exchange);
         var res = await _exec.ExecuteWithRetry(getInstrumentStmt, ct);
         if (res.Success && res.NumRows > 0) {
-            var obsoleteInstrumentStmt = new ObsoleteInstrumentStmt((long)getInstrumentStmt.Results!.InstrumentId, DateTime.UtcNow);
+            var obsoleteInstrumentStmt = new ObsoleteInstrumentStmt(getInstrumentStmt.Results!.InstrumentId, DateTime.UtcNow);
             res = await _exec.ExecuteWithRetry(obsoleteInstrumentStmt, ct);
         }
 
@@ -166,7 +164,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
-    public async ValueTask<Result> InsertInstrumentEvent(InstrumentEventDto instrumentEventDto, CancellationToken ct) {
+    public async ValueTask<Result> InsertInstrumentEvent(InstrumentEventExDto instrumentEventDto, CancellationToken ct) {
         var stmt = new InsertInstrumentEventStmt(instrumentEventDto);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
@@ -191,7 +189,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
-    public async ValueTask<(Result, IReadOnlyList<InstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
+    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
         var stmt = new GetRawFinancialsByInstrumentIdStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentReports);

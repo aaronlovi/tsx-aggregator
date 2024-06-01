@@ -15,7 +15,7 @@ public class CompanyReportBuilder {
         _logger = logger;
     }
 
-    public CompanyReportBuilder AddRawReport(InstrumentReportDto rawReport) {
+    public CompanyReportBuilder AddRawReport(CurrentInstrumentReportDto rawReport) {
         ReportTypes rptType = (ReportTypes)rawReport.ReportType;
         if (!rptType.IsValid()) {
             _logger.LogWarning("CompanyReportBuilder - unexpected report type: {ReportType}. Instrument: {rpt}",

@@ -10,11 +10,11 @@ internal sealed class UpdateInstrumentEventStmt : NonQueryDbStmtBase {
         + " WHERE instrument_id = @instrument_id"
         + " AND event_type = @event_type";
 
-    private readonly InstrumentEventDto _instrumentEventDto;
+    private readonly InstrumentEventExDto _instrumentEventDto;
 
-    public UpdateInstrumentEventStmt(InstrumentEventDto instrumentEventDto) : base(sql, nameof(UpdateInstrumentEventStmt)) {
+    public UpdateInstrumentEventStmt(InstrumentEventExDto instrumentEventDto)
+        : base(sql, nameof(UpdateInstrumentEventStmt)) => 
         _instrumentEventDto = instrumentEventDto;
-    }
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new NpgsqlParameter[] {

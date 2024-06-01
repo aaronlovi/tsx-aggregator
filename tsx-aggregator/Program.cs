@@ -52,10 +52,16 @@ public class Program {
                         opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
                         opt.AllowAlternateSchemes = true;
                     })
-                    .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials));
-;
+                    .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
+                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices));
 
                 // TODO: Add support for DbmInMemory if the connection string is not specified
+
+                // Using the Options pattern, validate configuration instances that are mapped
+                // from configuration when the application starts.
+                services
+                    .AddValidatedOptions<GoogleCredentialsOptions>(context.Configuration, GoogleCredentialsOptions.GoogleCredentials)
+                    .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices);
 
                 services
                     .AddHttpClient()
@@ -70,21 +76,27 @@ public class Program {
                     .AddSingleton<IStocksDataRequestsProcessor, StocksDataRequestsProcessor>()
                     .AddSingleton<IQuoteService, QuoteService>()
                     .AddSingleton<ISearchService, SearchService>()
-                    .AddSingleton<IGoogleSheetsService, GoogleSheetsService>()
-                    .AddHostedService(p => p.GetRequiredService<Aggregator>())
-                    .AddHostedService(p => p.GetRequiredService<RawCollector>())
-                    .AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>())
-                    .AddHostedService(p => p.GetRequiredService<IQuoteService>())
-                    .AddHostedService(p => p.GetRequiredService<ISearchService>())
-                    .AddGrpc();
+                    .AddSingleton<IGoogleSheetsService, GoogleSheetsService>();
 
-                // Configures GoogleCredentialsOptions using the Options pattern
-                // Validates the GoogleCredentialsOptions instance when the application starts.
-                services
-                    .AddOptions<GoogleCredentialsOptions>()
-                    .Bind(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart();
+                var serviceProvider = services.BuildServiceProvider();
+                var hostedServicesOptions = serviceProvider.GetRequiredService<IOptions<HostedServicesOptions>>().Value;
+
+                if (hostedServicesOptions.RunAggregator ?? false)
+                    services.AddHostedService(p => p.GetRequiredService<Aggregator>());
+
+                if (hostedServicesOptions.RunRawCollector ?? false)
+                    services.AddHostedService(p => p.GetRequiredService<RawCollector>());
+
+                if (hostedServicesOptions.RunStocksDataRequestsProcessor ?? false)
+                    services.AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>());
+
+                if (hostedServicesOptions.RunQuoteService ?? false)
+                    services.AddHostedService(p => p.GetRequiredService<IQuoteService>());
+
+                if (hostedServicesOptions.RunSearchService ?? false)
+                    services.AddHostedService(p => p.GetRequiredService<ISearchService>());
+
+                services.AddGrpc();
             })
             .ConfigureLogging(builder => {
 

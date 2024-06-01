@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using tsx_aggregator.shared;
-using static tsx_aggregator.models.InstrumentKey;
 
 namespace tsx_aggregator.models;
 
@@ -9,14 +8,22 @@ public record InstrumentEventDto(
     long InstrumentId,
     DateTimeOffset EventDate,
     int EventType,
-    bool IsProcessed,
+    bool IsProcessed);
+
+public record InstrumentEventExDto(
+    InstrumentEventDto InstrumentEvent,
     string InstrumentSymbol,
     string InstrumentName,
     string Exchange,
     decimal PricePerShare,
-    long NumShares);
+    long NumShares) {
+    public long InstrumentId => InstrumentEvent.InstrumentId;
+    public DateTimeOffset EventDate => InstrumentEvent.EventDate;
+    public int EventType => InstrumentEvent.EventType;
+    public bool IsProcessed => InstrumentEvent.IsProcessed;
+}
 
-public record InstrumentReportDto(
+public record CurrentInstrumentReportDto(
     long InstrumentReportId,
     long InstrumentId,
     int ReportType,
@@ -45,7 +52,7 @@ public record ProcessedFullInstrumentReportDto(
 
 public record InstrumentDto : InstrumentKey {
     public InstrumentDto(
-        ulong instrumentId,
+        long instrumentId,
         string exchange,
         string companySymbol,
         string companyName,
@@ -62,7 +69,7 @@ public record InstrumentDto : InstrumentKey {
         ObsoletedDate = obsoletedDate;
     }
 
-    public ulong InstrumentId { get; init; }
+    public long InstrumentId { get; init; }
     public string CompanyName { get; init; }
     public string InstrumentName { get; init; }
     public DateTimeOffset CreatedDate { get; init; }
@@ -190,6 +197,24 @@ public record InstrumentKey(string CompanySymbol, string InstrumentSymbol, strin
         }
     }
 }
+
+public record InstrumentPriceDto(
+    long InstrumentId,
+    decimal PricePerShare,
+    long NumShares,
+    DateTimeOffset CreatedDate,
+    DateTimeOffset? ObsoletedDate);
+
+public record InstrumentReportDto(
+    long InstrumentReportId,
+    long InstrumentId,
+    int ReportType,
+    int ReportPeriodType,
+    string ReportJson,
+    DateOnly ReportDate,
+    DateTimeOffset CreatedDate,
+    DateTimeOffset? ObsoletedDate,
+    bool IsCurrent);
 
 public class StateFsmState {
     private DateTime? _nextFetchDirectoryTime;

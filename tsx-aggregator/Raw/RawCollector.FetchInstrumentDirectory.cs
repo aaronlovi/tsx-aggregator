@@ -26,7 +26,7 @@ internal partial class RawCollector : BackgroundService {
 
         IList<InstrumentDto> newInstrumentList = _registry.GetNewInstruments(directory);
         for (var i = 0; i < newInstrumentList.Count; i++)
-            newInstrumentList[i] = newInstrumentList[i] with { InstrumentId = await _dbm.GetNextId64(ct) };
+            newInstrumentList[i] = newInstrumentList[i] with { InstrumentId = (long)await _dbm.GetNextId64(ct) };
 
         IList<InstrumentDto> obsoletedInstrumentList = _registry.GetObsoletedInstruments(directory);
         foreach (var obsoletedInstrument in obsoletedInstrumentList)

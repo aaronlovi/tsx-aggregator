@@ -22,19 +22,19 @@ internal class RawFinancialDeltaTool {
     }
 
     public async Task<RawFinancialsDelta> TakeDelta(
-        ulong instrumentId,
-        IReadOnlyList<InstrumentReportDto> existingRawFinancials,
+        long instrumentId,
+        IReadOnlyList<CurrentInstrumentReportDto> existingRawFinancials,
         TsxCompanyData newRawCompanyData,
         CancellationToken ct) {
         var retVal = new RawFinancialsDelta(instrumentId, newRawCompanyData.CurNumShares, newRawCompanyData.PricePerShare);
 
-        var existingRawAnnualBalanceSheets = new List<InstrumentReportDto>();
-        var existingRawAnnualCashFlowReports = new List<InstrumentReportDto>();
-        var existingRawAnnualIncomeStatements = new List<InstrumentReportDto>();
-        var existingRawQuarterlyBalanceSheets = new List<InstrumentReportDto>();
-        var existingRawQuarterlyCashFlowReports = new List<InstrumentReportDto>();
-        var existingRawQuarterlyIncomeStatements = new List<InstrumentReportDto>();
-        foreach (InstrumentReportDto f in existingRawFinancials) {
+        var existingRawAnnualBalanceSheets = new List<CurrentInstrumentReportDto>();
+        var existingRawAnnualCashFlowReports = new List<CurrentInstrumentReportDto>();
+        var existingRawAnnualIncomeStatements = new List<CurrentInstrumentReportDto>();
+        var existingRawQuarterlyBalanceSheets = new List<CurrentInstrumentReportDto>();
+        var existingRawQuarterlyCashFlowReports = new List<CurrentInstrumentReportDto>();
+        var existingRawQuarterlyIncomeStatements = new List<CurrentInstrumentReportDto>();
+        foreach (CurrentInstrumentReportDto f in existingRawFinancials) {
             if (f.ReportType == (int)Constants.ReportTypes.BalanceSheet && f.ReportPeriodType == (int)Constants.ReportPeriodTypes.Annual)
                 existingRawAnnualBalanceSheets.Add(f);
             else if (f.ReportType == (int)Constants.ReportTypes.CashFlow && f.ReportPeriodType == (int)Constants.ReportPeriodTypes.Annual)
@@ -60,9 +60,9 @@ internal class RawFinancialDeltaTool {
     }
 
     private async Task TakeDeltaCore(
-        ulong instrumentId,
+        long instrumentId,
         IList<RawReportDataMap> newRawReportList,
-        IReadOnlyList<InstrumentReportDto> existingRawReportList,
+        IReadOnlyList<CurrentInstrumentReportDto> existingRawReportList,
         Constants.ReportTypes reportType,
         Constants.ReportPeriodTypes reportPeriod,
         RawFinancialsDelta rawFinancialsDelta,
@@ -81,7 +81,7 @@ internal class RawFinancialDeltaTool {
                 continue;
             }
 
-            List<InstrumentReportDto> existingReportDtoRows = reportPeriod == Constants.ReportPeriodTypes.Annual
+            List<CurrentInstrumentReportDto> existingReportDtoRows = reportPeriod == Constants.ReportPeriodTypes.Annual
                 ? existingRawReportList.Where(rpt => rpt.ReportDate.Year == newRawReport.ReportDate.Value.Year).ToList()
                 : existingRawReportList.Where(rpt => {
                     var existingReportQuarter = DateQuarter.FromDate(rpt.ReportDate.ToDateTimeUtc());
@@ -91,10 +91,10 @@ internal class RawFinancialDeltaTool {
 
             if (existingReportDtoRows.Count > 0) {
                 // Found a matching existing report. Check for field-by-field equivalence
-                InstrumentReportDto existingReportDto = existingReportDtoRows[0];
+                CurrentInstrumentReportDto existingReportDto = existingReportDtoRows[0];
                 using JsonDocument existingReportJsonObj = JsonDocument.Parse(existingReportDto.ReportJson);
                 if (!newRawReport.IsEqual(existingReportJsonObj)) {
-                    rawFinancialsDelta.InstrumentReportsToInsert.Add(new InstrumentReportDto(
+                    rawFinancialsDelta.InstrumentReportsToInsert.Add(new CurrentInstrumentReportDto(
                         InstrumentReportId: (long)await _dbm.GetNextId64(ct),
                         InstrumentId: (long)instrumentId,
                         ReportType: (int)reportType,
@@ -105,7 +105,7 @@ internal class RawFinancialDeltaTool {
                 }
             } else {
                 // No matching existing report rows. Just insert the new report we found
-                rawFinancialsDelta.InstrumentReportsToInsert.Add(new InstrumentReportDto(
+                rawFinancialsDelta.InstrumentReportsToInsert.Add(new CurrentInstrumentReportDto(
                     InstrumentReportId: (long)await _dbm.GetNextId64(ct),
                     InstrumentId: (long)instrumentId,
                     ReportType: (int)reportType,

@@ -77,5 +77,5 @@ internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
         });
     }
 
-    public ulong InstrumentId => _rawFinancialsDelta.InstrumentId;
+    public long InstrumentId => _rawFinancialsDelta.InstrumentId;
 }

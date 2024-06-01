@@ -56,4 +56,7 @@ public static class Utilities {
         TimeSpan difference = endTime.GetValueOrDefault(startTime) - startTime;
         return difference > TimeSpan.Zero ? difference : TimeSpan.FromMilliseconds(1);
     }
+
+    public static bool EqualsInvariant(this string str, string other)
+        => str.Equals(other, StringComparison.InvariantCulture);
 }

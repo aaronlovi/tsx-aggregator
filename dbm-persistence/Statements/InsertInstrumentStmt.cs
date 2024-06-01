@@ -11,13 +11,12 @@ internal class InsertInstrumentStmt : NonQueryDbStmtBase {
 
     private readonly InstrumentDto _instrumentDto;
 
-    public InsertInstrumentStmt(InstrumentDto instrumentDto) : base(sql, nameof(InsertInstrumentStmt)) {
-        _instrumentDto = instrumentDto;
-    }
+    public InsertInstrumentStmt(InstrumentDto instrumentDto)
+        : base(sql, nameof(InsertInstrumentStmt)) => _instrumentDto = instrumentDto;
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new NpgsqlParameter[] {
-            new NpgsqlParameter<long>("instrument_id", (long)_instrumentDto.InstrumentId),
+            new NpgsqlParameter<long>("instrument_id", _instrumentDto.InstrumentId),
             new NpgsqlParameter<string>("exchange", _instrumentDto.Exchange),
             new NpgsqlParameter<string>("company_symbol", _instrumentDto.CompanySymbol),
             new NpgsqlParameter<string>("company_name", _instrumentDto.CompanyName),

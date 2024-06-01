@@ -28,7 +28,7 @@ public class Aggregator : BackgroundService {
         _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
 
         while (!stoppingToken.IsCancellationRequested) {
-            (Result res, InstrumentEventDto? instrumentEvt) = await _dbm.GetNextInstrumentEvent(stoppingToken);
+            (Result res, InstrumentEventExDto? instrumentEvt) = await _dbm.GetNextInstrumentEvent(stoppingToken);
             if (res.Success && instrumentEvt is not null) {
                 _logger.LogInformation("Aggregator: Found instrument event {@InstrumentEvent}", instrumentEvt);
                 await ProcessInstrumentEvent(instrumentEvt, stoppingToken);
@@ -39,7 +39,7 @@ public class Aggregator : BackgroundService {
         }
     }
 
-    private async Task ProcessInstrumentEvent(InstrumentEventDto instrumentEvt, CancellationToken ct) {
+    private async Task ProcessInstrumentEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         _logger.LogInformation("Found instrument event: {InstrumentEvent}", instrumentEvt);
 
         CompanyEventTypes eventType = instrumentEvt.EventType.ToCompanyEventType();
@@ -60,16 +60,17 @@ public class Aggregator : BackgroundService {
         }
     }
 
-    private async Task ProcessNewListedCompanyEvent(InstrumentEventDto instrumentEvt, CancellationToken ct) {
+    private async Task ProcessNewListedCompanyEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         // Mark the event as processed. Nothing to do here for now.
-        InstrumentEventDto dto = instrumentEvt with { IsProcessed = true };
+        InstrumentEventDto instrumentEventDto = instrumentEvt.InstrumentEvent with { IsProcessed = true };
+        InstrumentEventExDto dto = instrumentEvt with { InstrumentEvent = instrumentEventDto };
         var res = await _dbm.MarkInstrumentEventAsProcessed(dto, ct);
         if (!res.Success)
             _logger.LogWarning("ProcessNewListedCompanyEvent - unexpected failed to mark instrument event as processed {Error}", res.ErrMsg);
     }
 
-    private async Task ProcessCompanyDataChangedEvent(InstrumentEventDto instrumentEvt, CancellationToken ct) {
-        (Result res, IReadOnlyList<InstrumentReportDto> rawReports) = await _dbm.GetCurrentInstrumentReports(instrumentEvt.InstrumentId, ct);
+    private async Task ProcessCompanyDataChangedEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
+        (Result res, IReadOnlyList<CurrentInstrumentReportDto> rawReports) = await _dbm.GetCurrentInstrumentReports(instrumentEvt.InstrumentId, ct);
         if (!res.Success || rawReports.Count == 0) {
             _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected no company data changed ({DbResult},{NumReports})",
                 res.Success, rawReports.Count);
@@ -83,7 +84,7 @@ public class Aggregator : BackgroundService {
             instrumentEvt.NumShares,
             _logger);
 
-        foreach (InstrumentReportDto rpt in rawReports)
+        foreach (CurrentInstrumentReportDto rpt in rawReports)
             companyReportBuilder.AddRawReport(rpt);
 
         CompanyReport companyReport = companyReportBuilder.Build();

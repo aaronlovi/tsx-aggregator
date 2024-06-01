@@ -16,14 +16,14 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     private readonly long _instrumentId;
 
     // Results
-    private readonly List<InstrumentReportDto> _instrumentReportDtoList; // Array of type InstrumentReportDto
+    private readonly List<CurrentInstrumentReportDto> _instrumentReportDtoList; // Array of type InstrumentReportDto
 
     public GetRawFinancialsByInstrumentIdStmt(long instrumentId) : base(sql, nameof(GetRawFinancialsByInstrumentIdStmt)) {
         _instrumentId = instrumentId;
         _instrumentReportDtoList = new();
     }
 
-    public IReadOnlyList<InstrumentReportDto> InstrumentReports => _instrumentReportDtoList;
+    public IReadOnlyList<CurrentInstrumentReportDto> InstrumentReports => _instrumentReportDtoList;
 
     protected override void ClearResults() {
         _instrumentReportDtoList.Clear();
@@ -35,8 +35,8 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         DateTimeOffset reportDate_ = reader.GetDateTime(5);
-        DateOnly reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
-        var i = new InstrumentReportDto(
+        var reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
+        var i = new CurrentInstrumentReportDto(
             reader.GetInt64(0),
             reader.GetInt64(1),
             reader.GetInt32(2),

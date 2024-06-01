@@ -21,7 +21,7 @@ internal class UpdateInstrumentListStmt : NonQueryBatchedDbStmtBase {
     {
         foreach (InstrumentDto newInstrument in newInstrumentList) {
             AddCommandToBatch(insertSql, new NpgsqlParameter[] {
-                new NpgsqlParameter<long>("instrument_id", (long)newInstrument.InstrumentId),
+                new NpgsqlParameter<long>("instrument_id", newInstrument.InstrumentId),
                 new NpgsqlParameter<string>("exchange", newInstrument.Exchange),
                 new NpgsqlParameter<string>("company_symbol", newInstrument.CompanySymbol),
                 new NpgsqlParameter<string>("company_name", newInstrument.CompanyName),
@@ -32,7 +32,7 @@ internal class UpdateInstrumentListStmt : NonQueryBatchedDbStmtBase {
             });
 
             AddCommandToBatch(InsertInstrumentEventStmt.sql, new NpgsqlParameter[] {
-                new NpgsqlParameter<long>("instrument_id", (long) newInstrument.InstrumentId),
+                new NpgsqlParameter<long>("instrument_id", newInstrument.InstrumentId),
                 new NpgsqlParameter<DateTime>("event_date", DateTime.UtcNow),
                 new NpgsqlParameter<int>("event_type", (int)CompanyEventTypes.NewListedCompany),
                 new NpgsqlParameter<bool>("is_processed", false)
@@ -42,11 +42,11 @@ internal class UpdateInstrumentListStmt : NonQueryBatchedDbStmtBase {
         foreach (InstrumentDto obsoletedInstrument in obsoletedInstrumentList) {
             AddCommandToBatch(obsoleteSql, new NpgsqlParameter[] {
                 new NpgsqlParameter<DateTime>("obsoleted_date", DateTime.UtcNow),
-                new NpgsqlParameter<long>("instrument_id", (long) obsoletedInstrument.InstrumentId)
+                new NpgsqlParameter<long>("instrument_id", obsoletedInstrument.InstrumentId)
             });
 
             AddCommandToBatch(InsertInstrumentEventStmt.sql, new NpgsqlParameter[] {
-                new NpgsqlParameter<long>("instrument_id", (long) obsoletedInstrument.InstrumentId),
+                new NpgsqlParameter<long>("instrument_id", obsoletedInstrument.InstrumentId),
                 new NpgsqlParameter<DateTime>("event_date", DateTime.UtcNow),
                 new NpgsqlParameter<int>("event_type", (int)CompanyEventTypes.ObsoletedListedCompany),
                 new NpgsqlParameter<bool>("is_processed", false)
