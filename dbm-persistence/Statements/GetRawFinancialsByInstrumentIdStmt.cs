@@ -15,6 +15,16 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     // Inputs
     private readonly long _instrumentId;
 
+    private static int _instrumentReportIdIndex = -1;
+    private static int _instrumentIdIndex = -1;
+    private static int _reportTypeIndex = -1;
+    private static int _reportPeriodTypeIndex = -1;
+    private static int _reportJsonIndex = -1;
+    private static int _reportDateIndex = -1;
+    private static int _createdDateIndex = -1;
+    private static int _obsoletedDateIndex = -1;
+    private static int _isCurrentIndex = -1;
+
     // Results
     private readonly List<CurrentInstrumentReportDto> _instrumentReportDtoList; // Array of type InstrumentReportDto
 
@@ -25,23 +35,35 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
 
     public IReadOnlyList<CurrentInstrumentReportDto> InstrumentReports => _instrumentReportDtoList;
 
-    protected override void ClearResults() {
-        _instrumentReportDtoList.Clear();
-    }
+    protected override void ClearResults() => _instrumentReportDtoList.Clear();
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return new NpgsqlParameter[] { new NpgsqlParameter<long>("instrument_id", _instrumentId) };
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
+        new NpgsqlParameter[] { new NpgsqlParameter<long>("instrument_id", _instrumentId) };
+
+    protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        if (_instrumentReportIdIndex != -1)
+            return;
+
+        _instrumentReportIdIndex = reader.GetOrdinal("instrument_report_id");
+        _instrumentIdIndex = reader.GetOrdinal("instrument_id");
+        _reportTypeIndex = reader.GetOrdinal("report_type");
+        _reportPeriodTypeIndex = reader.GetOrdinal("report_period_type");
+        _reportJsonIndex = reader.GetOrdinal("report_json");
+        _reportDateIndex = reader.GetOrdinal("report_date");
+        _createdDateIndex = reader.GetOrdinal("created_date");
+        _obsoletedDateIndex = reader.GetOrdinal("obsoleted_date");
+        _isCurrentIndex = reader.GetOrdinal("is_current");
     }
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
-        DateTimeOffset reportDate_ = reader.GetDateTime(5);
+        DateTimeOffset reportDate_ = reader.GetDateTime(_reportDateIndex);
         var reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
         var i = new CurrentInstrumentReportDto(
-            reader.GetInt64(0),
-            reader.GetInt64(1),
-            reader.GetInt32(2),
-            reader.GetInt32(3),
-            reader.GetString(4),
+            reader.GetInt64(_instrumentReportIdIndex),
+            reader.GetInt64(_instrumentIdIndex),
+            reader.GetInt32(_reportTypeIndex),
+            reader.GetInt32(_reportPeriodTypeIndex),
+            reader.GetString(_reportJsonIndex),
             reportDate);
         _instrumentReportDtoList.Add(i);
         return true;

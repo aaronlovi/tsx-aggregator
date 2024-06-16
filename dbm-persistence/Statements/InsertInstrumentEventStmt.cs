@@ -12,9 +12,9 @@ internal sealed class InsertInstrumentEventStmt : NonQueryDbStmtBase {
     // Inputs
     private InstrumentEventExDto _instrumentEventDto;
 
-    public InsertInstrumentEventStmt(InstrumentEventExDto instrumentEventDto) : base(sql, nameof(InsertInstrumentEventStmt)) {
+    public InsertInstrumentEventStmt(InstrumentEventExDto instrumentEventDto)
+        : base(sql, nameof(InsertInstrumentEventStmt)) =>
         _instrumentEventDto = instrumentEventDto;
-    }
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new NpgsqlParameter[] {

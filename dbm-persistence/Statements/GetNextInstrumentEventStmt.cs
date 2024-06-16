@@ -18,30 +18,52 @@ internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
         + " ORDER BY event_date"
         + " LIMIT 1";
 
+    private static int _instrumentIdIndex = -1;
+    private static int _eventDateIndex = -1;
+    private static int _eventTypeIndex = -1;
+    private static int _isProcessedIndex = -1;
+    private static int _instrumentSymbolIndex = -1;
+    private static int _instrumentNameIndex = -1;
+    private static int _exchangeIndex = -1;
+    private static int _pricePerShareIndex = -1;
+    private static int _numSharesIndex = -1;
+
     public InstrumentEventExDto? InstrumentEventDto { get; private set; }
 
     public GetNextInstrumentEventStmt() : base(sql, nameof(GetNextInstrumentEventStmt)) { }
 
-    protected override void ClearResults() {
-        InstrumentEventDto = null;
-    }
+    protected override void ClearResults() => InstrumentEventDto = null;
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return Array.Empty<NpgsqlParameter>();
     }
 
+    protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        if (_instrumentIdIndex == -1) {
+            _instrumentIdIndex = reader.GetOrdinal("instrument_id");
+            _eventDateIndex = reader.GetOrdinal("event_date");
+            _eventTypeIndex = reader.GetOrdinal("event_type");
+            _isProcessedIndex = reader.GetOrdinal("is_processed");
+            _instrumentSymbolIndex = reader.GetOrdinal("instrument_symbol");
+            _instrumentNameIndex = reader.GetOrdinal("instrument_name");
+            _exchangeIndex = reader.GetOrdinal("exchange");
+            _pricePerShareIndex = reader.GetOrdinal("price_per_share");
+            _numSharesIndex = reader.GetOrdinal("num_shares");
+        }
+    }
+
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         InstrumentEventDto = new(
             new InstrumentEventDto(
-                reader.GetInt64(0),     // InstrumentId
-                reader.GetDateTime(1),  // EventDate
-                reader.GetInt32(2),     // EventType
-                reader.GetBoolean(3)),  // IsProcessed
-            reader.GetString(4),        // InstrumentSymbol
-            reader.GetString(5),        // InstrumentName
-            reader.GetString(6),        // Exchange
-            reader.GetDecimal(7),       // Price per share
-            reader.GetInt64(8));        // Num shares
+                reader.GetInt64(_instrumentIdIndex),    // InstrumentId
+                reader.GetDateTime(_eventDateIndex),    // EventDate
+                reader.GetInt32(_eventTypeIndex),       // EventType
+                reader.GetBoolean(_isProcessedIndex)),  // IsProcessed
+            reader.GetString(_instrumentSymbolIndex),   // InstrumentSymbol
+            reader.GetString(_instrumentNameIndex),     // InstrumentName
+            reader.GetString(_exchangeIndex),           // Exchange
+            reader.GetDecimal(_pricePerShareIndex),     // Price per share
+            reader.GetInt64(_numSharesIndex));          // Num shares
         return false;
     }
 }
