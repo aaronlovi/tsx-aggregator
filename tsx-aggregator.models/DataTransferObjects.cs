@@ -51,6 +51,12 @@ public record ProcessedFullInstrumentReportDto(
     int NumAnnualCashFlowReports);
 
 public record InstrumentDto : InstrumentKey {
+    // List of company name exceptions that are not considered mutual funds despite naming conventions
+    private static readonly List<string> TsxMutualFundExceptionsList = new() {
+        "A&W Revenue Royalties Income"
+        // Add more exceptions here as needed
+    };
+
     public InstrumentDto(
         long instrumentId,
         string exchange,
@@ -75,25 +81,25 @@ public record InstrumentDto : InstrumentKey {
     public DateTimeOffset CreatedDate { get; init; }
     public DateTimeOffset? ObsoletedDate { get; init; }
 
-    public bool IsTsxPeferredShares {
+    public bool IsTsxPreferredShares {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            if (CompanySymbol.Contains(".PR.", StringComparison.Ordinal))
+            if (CompanySymbol.ContainsOrdinal(".PR."))
                 return true;
-            if (CompanySymbol.EndsWith(".PR", StringComparison.Ordinal))
+            if (CompanySymbol.EndsWithOrdinal(".PR"))
                 return true;
-            if (CompanySymbol.Contains(".PF."))
+            if (CompanySymbol.ContainsOrdinal(".PF."))
                 return true;
-            if (CompanySymbol.EndsWith(".PF", StringComparison.Ordinal))
+            if (CompanySymbol.EndsWithOrdinal(".PF"))
                 return true;
-            if (InstrumentSymbol.Contains(".PR."))
+            if (InstrumentSymbol.ContainsOrdinal(".PR."))
                 return true;
-            if (InstrumentSymbol.EndsWith(".PR", StringComparison.Ordinal))
+            if (InstrumentSymbol.EndsWithOrdinal(".PR"))
                 return true;
-            if (InstrumentSymbol.Contains(".PF."))
+            if (InstrumentSymbol.ContainsOrdinal(".PF."))
                 return true;
-            if (InstrumentSymbol.EndsWith(".PF", StringComparison.Ordinal))
+            if (InstrumentSymbol.EndsWithOrdinal(".PF"))
                 return true;
             return false;
         }
@@ -101,19 +107,19 @@ public record InstrumentDto : InstrumentKey {
 
     public bool IsTsxWarrant {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            if (CompanySymbol.Contains(".WT."))
+            if (CompanySymbol.ContainsOrdinal(".WT."))
                 return true;
-            if (CompanySymbol.EndsWith(".WT", StringComparison.Ordinal))
+            if (CompanySymbol.EndsWithOrdinal(".WT"))
                 return true;
-            if (InstrumentSymbol.Contains(".WT."))
+            if (InstrumentSymbol.ContainsOrdinal(".WT."))
                 return true;
-            if (InstrumentSymbol.EndsWith(".WT", StringComparison.Ordinal))
+            if (InstrumentSymbol.EndsWithOrdinal(".WT"))
                 return true;
-            if (InstrumentSymbol.Contains(".WS."))
+            if (InstrumentSymbol.ContainsOrdinal(".WS."))
                 return true;
-            if (InstrumentSymbol.EndsWith(".WS", StringComparison.Ordinal))
+            if (InstrumentSymbol.EndsWithOrdinal(".WS"))
                 return true;
             return false;
         }
@@ -121,15 +127,15 @@ public record InstrumentDto : InstrumentKey {
 
     public bool IsTsxCompanyBonds {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            if (CompanySymbol.Contains(".DB."))
+            if (CompanySymbol.ContainsOrdinal(".DB."))
                 return true;
-            if (CompanySymbol.EndsWith(".DB", StringComparison.Ordinal))
+            if (CompanySymbol.EndsWithOrdinal(".DB"))
                 return true;
-            if (InstrumentSymbol.Contains(".DB."))
+            if (InstrumentSymbol.ContainsOrdinal(".DB."))
                 return true;
-            if (InstrumentSymbol.EndsWith(".DB", StringComparison.Ordinal))
+            if (InstrumentSymbol.EndsWithOrdinal(".DB"))
                 return true;
             return false;
         }
@@ -137,11 +143,11 @@ public record InstrumentDto : InstrumentKey {
 
     public bool IsTsxETF {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            if (CompanyName.Contains(" ETF"))
+            if (CompanyName.ContainsOrdinal(" ETF"))
                 return true;
-            if (InstrumentName.Contains(" ETF"))
+            if (InstrumentName.ContainsOrdinal(" ETF"))
                 return true;
             return false;
         }
@@ -149,17 +155,24 @@ public record InstrumentDto : InstrumentKey {
 
     public bool IsTsxBmoMutualFund {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            return CompanyName.StartsWith("BMO", StringComparison.Ordinal) && CompanyName.EndsWith(" Fund", StringComparison.Ordinal);
+            return CompanyName.StartsWithOrdinal("BMO") && CompanyName.EndsWithOrdinal(" Fund");
         }
     }
 
     public bool IsTsxMutualFund {
         get {
-            if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
                 return false;
-            return CompanyName.EndsWith(" Fund", StringComparison.Ordinal);
+
+            // Check if CompanyName matches any exception
+            foreach (var exception in TsxMutualFundExceptionsList) {
+                if (CompanyName.StartsWithOrdinal(exception))
+                    return false;
+            }
+
+            return CompanyName.EndsWithOrdinal(" Fund");
         }
     }
 

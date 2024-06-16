@@ -63,4 +63,24 @@ public static class Extensions {
         ArgumentNullException.ThrowIfNull(dateOnly);
         return dateOnly.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
     }
+
+    public static bool StartsWithOrdinal(this string str, string value) {
+        ArgumentNullException.ThrowIfNull(str);
+        return str.StartsWith(value, StringComparison.Ordinal);
+    }
+
+    public static bool EndsWithOrdinal(this string str, string value) {
+        ArgumentNullException.ThrowIfNull(str);
+        return str.EndsWith(value, StringComparison.Ordinal);
+    }
+
+    public static bool ContainsOrdinal(this string str, string value) {
+        ArgumentNullException.ThrowIfNull(str);
+        return str.Contains(value, StringComparison.Ordinal);
+    }
+
+    public static bool EqualsOrdinal(this string str, string value) {
+        ArgumentNullException.ThrowIfNull(str);
+        return str.Equals(value, StringComparison.Ordinal);
+    }
 }

@@ -19,7 +19,7 @@ internal partial class RawCollector : BackgroundService {
     private readonly IServiceProvider _svp;
     private readonly Registry _registry;
     private readonly StateFsm _stateFsm;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private HttpClient _httpClient;
 
     public RawCollector(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<RawCollector>>();
@@ -27,7 +27,9 @@ internal partial class RawCollector : BackgroundService {
         _svp = svp;
         _registry = svp.GetRequiredService<Registry>();
         _stateFsm = new(DateTime.UtcNow, _registry);
-        _httpClientFactory = svp.GetRequiredService<IHttpClientFactory>();
+        
+        IHttpClientFactory httpClientFactory = svp.GetRequiredService<IHttpClientFactory>();
+        _httpClient = CreateFetchDirectoryHttpClient(httpClientFactory);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -37,15 +39,15 @@ internal partial class RawCollector : BackgroundService {
             await RestoreInstrumentDirectory(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested) {
-                _logger.LogInformation("Raw Worker running at: {time}", DateTimeOffset.Now);
-
                 var utcNow = DateTime.UtcNow;
+                _logger.LogInformation("Raw Worker running at: {time}", utcNow.ToLocalTime());
+
                 var nextTimeout = _stateFsm.NextTimeout;
                 var output = new StateFsmOutputs();
 
                 TimeSpan interval = Utilities.CalculateTimeDifference(utcNow, nextTimeout);
                 DateTime wakeupTime = utcNow.Add(interval);
-                _logger.LogInformation("Sleeping until {WakeupTime}", wakeupTime);
+                _logger.LogInformation("Sleeping until {WakeupTime}", wakeupTime.ToLocalTime());
 
                 await Task.Delay(interval, stoppingToken);
 

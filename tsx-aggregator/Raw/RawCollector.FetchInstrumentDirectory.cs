@@ -24,24 +24,63 @@ internal partial class RawCollector : BackgroundService {
         // Map from company symbol --> instrument symbol --> InstrumentDto
         Dictionary<string, InstrumentDtoByInstrumentNameMap> directory = await FetchInstrumentDirectory(ct);
 
+        UpdateRegistryResults instrumentUpdateResults = await UpdateRegistry(directory, ct);
+        var newInstruments = instrumentUpdateResults.NewInstruments;
+        var obsoletedInstruments = instrumentUpdateResults.ObsoletedInstruments;
+
+        _logger.LogInformation("ProcessFetchDirectory - new:{NumNewInstruments},obsolete:{NumObsoletedInstruments}",
+            newInstruments.Count, obsoletedInstruments.Count);
+
+        if (instrumentUpdateResults.IsEmpty) {
+            _logger.LogInformation("ProcessFetchDirectory - no new or obsoleted instruments");
+            return;
+        }
+
+        IReadOnlyList<InstrumentDto> newInstruments_ = (IReadOnlyList<InstrumentDto>)newInstruments;
+        IReadOnlyList<InstrumentDto> obsoletedInstruments_ = (IReadOnlyList<InstrumentDto>)obsoletedInstruments;
+        Result res = await _dbm.UpdateInstrumentList(newInstruments_, obsoletedInstruments_, ct);
+
+        if (!res.Success) {
+            _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}. Error: {Error}", res.Success, res.ErrMsg);
+            RestoreDbAndRegistryConsistency(instrumentUpdateResults);
+            return;
+        }
+
+        _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}", res.Success);
+    }
+
+    private async Task<UpdateRegistryResults> UpdateRegistry(
+        Dictionary<string, InstrumentDtoByInstrumentNameMap> directory,
+        CancellationToken ct) {
         IList<InstrumentDto> newInstrumentList = _registry.GetNewInstruments(directory);
-        for (var i = 0; i < newInstrumentList.Count; i++)
+        for (var i = 0; i < newInstrumentList.Count; i++) {
             newInstrumentList[i] = newInstrumentList[i] with { InstrumentId = (long)await _dbm.GetNextId64(ct) };
+            _registry.AddInstrument(newInstrumentList[i]);
+        }
 
         IList<InstrumentDto> obsoletedInstrumentList = _registry.GetObsoletedInstruments(directory);
         foreach (var obsoletedInstrument in obsoletedInstrumentList)
             _registry.RemoveInstrument(obsoletedInstrument);
 
-        _logger.LogInformation("ProcessFetchDirectory - new:{NumNewInstruments},obsolete:{NumObsoletedInstruments}",
-            newInstrumentList.Count, obsoletedInstrumentList.Count);
-        IReadOnlyList<InstrumentDto> newInstruments_ = (IReadOnlyList<InstrumentDto>)newInstrumentList;
-        IReadOnlyList<InstrumentDto> obsoletedInstruments_ = (IReadOnlyList<InstrumentDto>)obsoletedInstrumentList;
-        Result res = await _dbm.UpdateInstrumentList(newInstruments_, obsoletedInstruments_, ct);
+        return new UpdateRegistryResults(newInstrumentList, obsoletedInstrumentList);
+    }
 
-        if (res.Success)
-            _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}", res.Success);
-        else
-            _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}. Error: {Error}", res.Success, res.ErrMsg);
+    /// <summary>
+    /// Fixes the registry when it has gone out of sync with the database
+    /// Used if registry update succeeded, but database update failed
+    /// </summary>
+    private void RestoreDbAndRegistryConsistency(UpdateRegistryResults instrumentUpdateResults) {
+        // Database and registry are not consistent with each other now
+
+        // Add back in the obsoleted elements
+        foreach (var obsoletedInstrument in instrumentUpdateResults.ObsoletedInstruments)
+            _registry.AddInstrument(obsoletedInstrument);
+
+        // Remove the newly inserted elements
+        foreach (var newInstrument in instrumentUpdateResults.NewInstruments)
+            _registry.RemoveInstrument(newInstrument);
+
+        // Database and registry are back in consistent state
     }
 
     private async Task<Dictionary<string, InstrumentDtoByInstrumentNameMap>> FetchInstrumentDirectory(CancellationToken ct) {
@@ -51,14 +90,12 @@ internal partial class RawCollector : BackgroundService {
         };
 
         try {
-            HttpClient httpClient = CreateFetchDirectoryHttpClient();
-
             foreach (string curLetter in letters) {
                 using HttpRequestMessage request = CreateFetchDirectoryHttpRequest(curLetter);
 
                 _logger.LogInformation("FetchInstrumentDirectory - fetching letter:{Letter}", curLetter);
 
-                using HttpResponseMessage response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) {
                     _logger.LogWarning("FetchInstrumentDirectory - letter:{Letter}, HTTP request failed with status code: {StatusCode}",
                         curLetter, response.StatusCode);
@@ -121,8 +158,8 @@ internal partial class RawCollector : BackgroundService {
         return directory;
     }
 
-    private HttpClient CreateFetchDirectoryHttpClient() {
-        var httpClient = _httpClientFactory.CreateClient();
+    private static HttpClient CreateFetchDirectoryHttpClient(IHttpClientFactory httpClientFactory) {
+        var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("accept", "application/json, text/javascript, */*; q=0.01");
         httpClient.DefaultRequestHeaders.Add("accept-language", "en-US,en;q=0.9");
         httpClient.DefaultRequestHeaders.Add("sec-fetch-dest", "empty");
@@ -193,7 +230,7 @@ internal partial class RawCollector : BackgroundService {
     }
 
     private bool ShouldAddInstrument(InstrumentDto dto) {
-        if (dto.IsTsxPeferredShares) {
+        if (dto.IsTsxPreferredShares) {
             _logger.LogInformation("Instrument preferred shared, not adding: {Instrument}", dto);
             return false;
         }

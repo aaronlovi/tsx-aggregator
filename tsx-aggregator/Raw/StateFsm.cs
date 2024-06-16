@@ -65,6 +65,5 @@ internal class StateFsm {
     /// Gets a copy of the current state.
     /// Expected to be used for persisting current state to the database
     /// </summary>
-    /// <returns></returns>
-    public StateFsmState GetCopyOfState() => new StateFsmState(_state);
+    public StateFsmState GetCopyOfState() => new(_state);
 }
