@@ -21,7 +21,6 @@ public class Startup {
     }
 
     private void VerifyCriticalConfiguration() {
-        VerifyConfigurationItem("tsx-scraper", "ConnectionStrings");
         VerifyConfigurationItem("DatabaseSchema");
         VerifyConfigurationSection("GoogleCredentials");
     }

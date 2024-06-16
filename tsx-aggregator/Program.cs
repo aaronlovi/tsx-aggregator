@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using dbm_persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -55,8 +56,6 @@ public class Program {
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
                     .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices));
 
-                // TODO: Add support for DbmInMemory if the connection string is not specified
-
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
                 services
@@ -68,7 +67,6 @@ public class Program {
                     .AddSingleton<IValidateOptions<GoogleCredentialsOptions>, GoogleCredentialsOptionsValidator>()
                     .AddSingleton<PostgresExecutor>()
                     .AddSingleton<DbMigrations>()
-                    .AddSingleton<IDbmService, DbmService>()
                     .AddSingleton<Registry>()
                     .AddSingleton<Aggregator>()
                     .AddSingleton<RawCollector>()
@@ -77,6 +75,11 @@ public class Program {
                     .AddSingleton<IQuoteService, QuoteService>()
                     .AddSingleton<ISearchService, SearchService>()
                     .AddSingleton<IGoogleSheetsService, GoogleSheetsService>();
+
+                if (DoesConfigContainConnectionString(context.Configuration))
+                    services.AddSingleton<IDbmService, DbmService>();
+                else
+                    services.AddSingleton<IDbmService, DbmInMemory>();
 
                 var serviceProvider = services.BuildServiceProvider();
                 var hostedServicesOptions = serviceProvider.GetRequiredService<IOptions<HostedServicesOptions>>().Value;
@@ -114,4 +117,7 @@ public class Program {
             })
             .Build();
     }
+
+    private static bool DoesConfigContainConnectionString(IConfiguration configuration)
+        => configuration.GetConnectionString(IDbmService.TsxScraperConnStringName) is not null;
 }

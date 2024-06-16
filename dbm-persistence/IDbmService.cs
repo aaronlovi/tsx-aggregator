@@ -8,6 +8,8 @@ using tsx_aggregator.shared;
 namespace dbm_persistence;
 
 public interface IDbmService {
+    public const string TsxScraperConnStringName = "tsx-scraper";
+
     // id generator
     ValueTask<ulong> GetNextId64(CancellationToken ct);
     ValueTask<ulong> GetIdRange64(uint count, CancellationToken ct);
