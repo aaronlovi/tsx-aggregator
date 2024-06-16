@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
@@ -16,7 +17,11 @@ internal static class DbUtils {
     }
 }
 
-internal abstract class QueryDbStmtBase : IPostgresStatement {
+internal abstract class DbStmtBase {
+    protected abstract IReadOnlyCollection<NpgsqlParameter> GetBoundParameters();
+}
+
+internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
     private readonly string _sql;
     private readonly string _className;
 
@@ -45,17 +50,16 @@ internal abstract class QueryDbStmtBase : IPostgresStatement {
         }
         catch (Exception ex) {
             ClearResults();
-            string errMsg = $"{_className} failed - ${ex.Message}";
+            string errMsg = $"{_className} failed - {ex.Message}";
             return DbStmtResult.StatementFailure(errMsg);
         }
     }
 
     protected abstract void ClearResults();
-    protected abstract IReadOnlyCollection<NpgsqlParameter> GetBoundParameters();
     protected abstract bool ProcessCurrentRow(NpgsqlDataReader reader);
 }
 
-internal abstract class NonQueryDbStmtBase : IPostgresStatement {
+internal abstract class NonQueryDbStmtBase : DbStmtBase, IPostgresStatement {
     private readonly string _sql;
     private readonly string _className;
 
@@ -74,12 +78,10 @@ internal abstract class NonQueryDbStmtBase : IPostgresStatement {
             return DbStmtResult.StatementSuccess(numRows);
         }
         catch (Exception ex) {
-            string errMsg = $"{_className} failed - ${ex.Message}";
+            string errMsg = $"{_className} failed - {ex.Message}";
             return DbStmtResult.StatementFailure(errMsg);
         }
     }
-
-    protected abstract IReadOnlyCollection<NpgsqlParameter> GetBoundParameters();
 }
 
 internal abstract class NonQueryBatchedDbStmtBase : IPostgresStatement {
@@ -100,7 +102,7 @@ internal abstract class NonQueryBatchedDbStmtBase : IPostgresStatement {
             return DbStmtResult.StatementSuccess(numRows);
         }
         catch (Exception ex) {
-            string errMsg = $"{_className} failed - ${ex.Message}";
+            string errMsg = $"{_className} failed - {ex.Message}";
             return DbStmtResult.StatementFailure(errMsg);
         }
     }
