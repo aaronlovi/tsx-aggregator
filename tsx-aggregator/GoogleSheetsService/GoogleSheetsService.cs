@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using tsx_aggregator.models;
@@ -49,13 +53,17 @@ public class GoogleSheetsService : IGoogleSheetsService {
     private readonly GoogleCredentialsOptions _googleCredentials;
     private readonly ILogger _logger;
     private readonly SheetsService _sheetService;
+    private readonly HttpClient _httpClient;
     private bool disposedValue;
 
-    public GoogleSheetsService(
-        ILogger<GoogleSheetsService> logger,
-        IOptions<GoogleCredentialsOptions> googleCredentials) {
-        _logger = logger;
-        _googleCredentials = googleCredentials.Value;
+    private string WebMacroUrl => $"https://script.google.com/macros/s/{_googleCredentials.MacroName}/exec";
+
+    public GoogleSheetsService(IServiceProvider svp) {
+        _logger = svp.GetRequiredService<ILogger<GoogleSheetsService>>();
+        _googleCredentials = svp.GetRequiredService<IOptions<GoogleCredentialsOptions>>().Value;
+
+        IHttpClientFactory httpClientFactory = svp.GetRequiredService<IHttpClientFactory>();
+        _httpClient = httpClientFactory.CreateClient();
 
         // Create the Google credential object
         var credential = GoogleCredential
@@ -78,25 +86,42 @@ public class GoogleSheetsService : IGoogleSheetsService {
             .Execute();
     }
 
-    public Dictionary<string, decimal> ReadQuotes(
+    public async Task<Dictionary<string, decimal>> ReadQuotes(
         string instrumentSymbolColumn,
-        string quoteColumn) {
+        string quoteColumn,
+        string[] fallbackColumns,
+        CancellationToken ct) {
+
+        var columns = new List<string> { instrumentSymbolColumn, quoteColumn }.Concat(fallbackColumns);
+        var maxColumn = GoogleSheetsHelper.FindMaximumColumn(columns);
 
         var quotes = new Dictionary<string, decimal>();
 
         // Define a range that will get all rows with data in the spreadsheet
-        string range = $"{_googleCredentials.SpreadsheetName}!{instrumentSymbolColumn}1:{quoteColumn}";
+        string range = $"{_googleCredentials.SpreadsheetName}!{instrumentSymbolColumn}1:{maxColumn}";
 
         var request = _sheetService.Spreadsheets.Values.Get(_googleCredentials.SpreadsheetId, range);
-        ValueRange response = request.Execute();
+        ValueRange response = await request.ExecuteAsync(ct);
+
+        if (response.Values == null)
+            return quotes;
 
         foreach (IList<object> row in response.Values) {
-            if (row.Count != 2)
+            if (row.Count < 2)
                 continue;
             string instrumentSymbol = row[0]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(instrumentSymbol))
                 continue;
-            if (!decimal.TryParse(row[1].ToString(), out decimal perSharePrice))
+            bool found = false;
+            decimal perSharePrice = 0;
+            for (int i = 1; i < row.Count; i++) {
+                if (!decimal.TryParse(row[i].ToString(), out perSharePrice) || perSharePrice <= 0)
+                    continue;
+
+                found = true;
+                break;
+            }
+            if (!found)
                 continue;
             if (quotes.ContainsKey(instrumentSymbol))
                 continue;
@@ -111,6 +136,88 @@ public class GoogleSheetsService : IGoogleSheetsService {
 
     public void WriteUserEnteredValuesToRange(string column, List<IList<object>> values) =>
         WriteToRange(column, values, SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED);
+
+    /// <summary>
+    /// Fetches a Yahoo finance quote override into column "C" for any instrument
+    /// that does not have a valid price
+    /// </summary>
+    /// <remarks>May throw</remarks>
+    public async Task FetchQuoteOverrides(CancellationToken ct) {
+        // Define the range to read from, assuming "A" and "B" are in the same sheet as defined in
+        // _googleCredentials
+        string range = $"{_googleCredentials.SpreadsheetName}!A:B";
+
+        // Prepare the request
+        var request = _sheetService.Spreadsheets.Values.Get(_googleCredentials.SpreadsheetId, range);
+        ValueRange response = await request.ExecuteAsync(ct);
+
+        // Check if there are values returned
+        if (response.Values == null) {
+            _logger.LogWarning("FetchQuoteOverrides - No data found.");
+            return;
+        }
+
+        int rowIndex = 0; // Start from the first row
+
+        // Iterate through each row in the response
+        foreach (var row in response.Values) {
+            try {
+                ++rowIndex;
+
+                // Check if the row is not empty and has at least 2 columns (for "A" and "B")
+                if (row.Count < 2
+                    || string.IsNullOrWhiteSpace(row[0]?.ToString())
+                    || string.IsNullOrWhiteSpace(row[1]?.ToString())) {
+                    // If either "A" or "B" is blank, stop processing further
+                    break;
+                }
+
+                // Extract values from columns "A" and "B"
+                string instrumentSymbol = row[0].ToString()!;
+                string quote = row[1].ToString()!;
+
+                // If the price is a valid number, then do not fetch any override quotes
+                if (double.TryParse(quote, out _))
+                    continue;
+
+                _logger.LogInformation("FetchQuoteOverrides - Price is N/A for {InstrumentSymbol}. Fetching from Yahoo finance.",
+                    instrumentSymbol);
+
+                // Special instrument symbol processing for Yahoo quotes
+                instrumentSymbol = instrumentSymbol.Replace(".", "-");
+
+                string webAppUrl = $"{WebMacroUrl}?ticker={instrumentSymbol}.TO";
+                HttpResponseMessage res = await _httpClient.GetAsync(webAppUrl, ct);
+                if (!res.IsSuccessStatusCode) {
+                    _logger.LogWarning("FetchQuoteOverrides - Failed to fetch instrument price for {InstrumentSymbol} from Yahoo finance.",
+                        instrumentSymbol);
+                    continue;
+                }
+
+                string price = await res.Content.ReadAsStringAsync(ct);
+                if (!double.TryParse(price, out _)) {
+                    _logger.LogWarning("FetchQuoteOverrides - Failed to parse instrument price for {InstrumentSymbol} from Yahoo finance. Error: {Error}",
+                        instrumentSymbol, price);
+                    continue;
+                }
+
+                // Prepare the ValueRange object with the override price
+                var valueRange = new ValueRange {
+                    Values = new List<IList<object>> { new List<object> { price } }
+                };
+
+                // Calculate the cell to update in column C
+                string updateRange = $"{_googleCredentials.SpreadsheetName}!C{rowIndex}";
+
+                // Execute the update request
+                var updateRequest = _sheetService.Spreadsheets.Values.Update(valueRange, _googleCredentials.SpreadsheetId, updateRange);
+                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                await updateRequest.ExecuteAsync(ct);
+            } catch (Exception ex) {
+                _logger.LogError(ex, "FetchQuoteOverrides - Error processing row {RowIndex}", rowIndex);
+            }
+        }
+    }
 
     private void WriteToRange(
         string column,

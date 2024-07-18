@@ -19,7 +19,7 @@ internal partial class RawCollector : BackgroundService {
     private readonly IServiceProvider _svp;
     private readonly Registry _registry;
     private readonly StateFsm _stateFsm;
-    private HttpClient _httpClient;
+    private readonly HttpClient _httpClient;
 
     public RawCollector(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<RawCollector>>();

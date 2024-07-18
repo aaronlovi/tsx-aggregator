@@ -33,6 +33,12 @@ public class GoogleCredentialsOptions {
     
     [Required(ErrorMessage = "SpreadsheetName is required in the GoogleCredentials section of the configuration")]
     public string SpreadsheetName { get; set; }
+
+    /// <summary>
+    /// Represents the Google sheets macro id that is used to fetch quote overrides (from Yahoo).
+    /// </summary>
+    /// <remarks>Optional</remarks>
+    public string MacroName { get; set; }
 }
 
 /// <summary>

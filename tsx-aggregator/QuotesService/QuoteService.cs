@@ -96,11 +96,9 @@ public class QuoteService : BackgroundService, IQuoteService {
 
         try {
             // Read the old quotes, in case there is an outage and we cannot get the current quotes
-            Dictionary<string, decimal> oldPrices = _sheetsService.ReadQuotes("A", "B");
-            if (oldPrices.Count == 0) {
-                _logger.LogError("Failed to read old quotes, aborting");
-                return;
-            }
+            Dictionary<string, decimal> oldPrices = await _sheetsService.ReadQuotes("A", "B", new string[] { "C" }, ct);
+            if (oldPrices.Count == 0)
+                _logger.LogWarning("Failed to read old quotes");
 
             _logger.LogInformation("Found {NumPrices} old quotes", oldPrices.Count);
             _pricesByInstrumentSymbol = oldPrices;
@@ -128,8 +126,11 @@ public class QuoteService : BackgroundService, IQuoteService {
             _nextFetchQuotesTime = ti.CurTimeUtc + Constants.TwoHours;
             await _dbm.UpdateNextTimeToFetchQuotes(_nextFetchQuotesTime.Value, ct);
 
+            await _sheetsService.FetchQuoteOverrides(ct);
+
             // Get the new quotes
-            Dictionary<string, decimal> newPrices = _sheetsService.ReadQuotes("A", "B");
+            
+            Dictionary<string, decimal> newPrices = await _sheetsService.ReadQuotes("A", "B", new string[] { "C" }, ct);
 
             _logger.LogInformation("Found {NumPrices} new quotes", newPrices.Count);
             _pricesByInstrumentSymbol = newPrices;
