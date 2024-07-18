@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
@@ -171,6 +172,33 @@ public record InstrumentDto : InstrumentKey {
                 if (CompanyName.StartsWithOrdinal(exception))
                     return false;
             }
+
+            if (CompanyName.ContainsOrdinal("Income Fund"))
+                return true;
+
+            if (CompanyName.ContainsOrdinal("Bitcoin Fund"))
+                return true;
+
+            if (CompanyName.StartsWithOrdinal("CI Global"))
+                return true;
+
+            if (CompanyName.StartsWithOrdinal("CIBC") && CompanyName.EndsWithOrdinal("Fixed Income Pool"))
+                return true;
+
+            if (CompanyName.StartsWithOrdinal("Dividend"))
+                return true;
+
+            if (CompanyName.ContainsOrdinal("Split Corp."))
+                return true;
+
+            if (CompanyName.StartsWithOrdinal("Guardian Directed") && CompanyName.EndsWithOrdinal("Portfolio"))
+                return true;
+
+            if (CompanyName.ContainsOrdinal("Global Bond"))
+                return true;
+
+            if (CompanyName.EndsWithOrdinal("ActivETF"))
+                return true;
 
             return CompanyName.EndsWithOrdinal(" Fund");
         }
