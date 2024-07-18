@@ -54,13 +54,15 @@ public class Program {
                         opt.AllowAlternateSchemes = true;
                     })
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
-                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices));
+                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices))
+                    .Configure<FeatureFlagsOptions>(context.Configuration.GetSection(FeatureFlagsOptions.FeatureFlags));
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
                 services
                     .AddValidatedOptions<GoogleCredentialsOptions>(context.Configuration, GoogleCredentialsOptions.GoogleCredentials)
-                    .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices);
+                    .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices)
+                    .AddValidatedOptions<FeatureFlagsOptions>(context.Configuration, FeatureFlagsOptions.FeatureFlags);
 
                 services
                     .AddHttpClient()

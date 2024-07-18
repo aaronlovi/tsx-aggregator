@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
