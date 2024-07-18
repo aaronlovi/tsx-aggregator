@@ -143,6 +143,11 @@ public class GoogleSheetsService : IGoogleSheetsService {
     /// </summary>
     /// <remarks>May throw</remarks>
     public async Task FetchQuoteOverrides(CancellationToken ct) {
+        if (string.IsNullOrWhiteSpace(_googleCredentials.MacroName)) {
+            _logger.LogWarning("FetchQuoteOverrides - Macro name is not set. Skipping Yahoo finance fetch.");
+            return;
+        }
+
         // Define the range to read from, assuming "A" and "B" are in the same sheet as defined in
         // _googleCredentials
         string range = $"{_googleCredentials.SpreadsheetName}!A:B";
