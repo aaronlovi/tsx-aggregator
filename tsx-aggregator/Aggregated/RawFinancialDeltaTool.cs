@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using dbm_persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
 
@@ -18,7 +19,7 @@ internal class RawFinancialDeltaTool {
     private readonly IDbmService _dbm;
 
     internal RawFinancialDeltaTool(IServiceProvider svp) {
-        var featureFlags = svp.GetRequiredService<FeatureFlagsOptions>();
+        var featureFlags = svp.GetRequiredService<IOptions<FeatureFlagsOptions>>().Value;
         _checkForReportChanges = featureFlags.CheckExistingRawReportUpdates.GetValueOrDefault();
 
         _logger = svp.GetRequiredService<ILogger<RawFinancialDeltaTool>>();

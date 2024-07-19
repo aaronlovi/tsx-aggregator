@@ -137,11 +137,13 @@ public class RawFinancialDeltaToolTests {
 
     private void SetupDI(bool checkExistingRawReportUpdates = true) {
         var services = new ServiceCollection();
-        var featureFlagsOptions = new FeatureFlagsOptions { CheckExistingRawReportUpdates = checkExistingRawReportUpdates };
-        services.AddSingleton(featureFlagsOptions);
+        services.Configure<FeatureFlagsOptions>(options =>
+        {
+            options.CheckExistingRawReportUpdates = checkExistingRawReportUpdates;
+        });
         services.AddSingleton<ILogger<RawFinancialDeltaTool>>(new NullLogger<RawFinancialDeltaTool>());
         services.AddSingleton<ILogger<DbmInMemory>>(new NullLogger<DbmInMemory>());
-        services.AddSingleton<IDbmService, DbmInMemory>(); // Assuming DbmInMemory implements IDbmService
+        services.AddSingleton<IDbmService, DbmInMemory>();
         _svp = services.BuildServiceProvider();
     }
 
