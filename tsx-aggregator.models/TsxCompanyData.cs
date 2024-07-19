@@ -23,5 +23,4 @@ public class TsxCompanyData {
     public IList<RawReportDataMap> QuarterlyRawCashFlowReports { get; init; }
     public IList<RawReportDataMap> QuarterlyRawIncomeStatements { get; init; }
     public IList<RawReportDataMap> QuarterlyRawBalanceSheets { get; init; }
-
 }
