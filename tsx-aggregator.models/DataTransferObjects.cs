@@ -29,7 +29,8 @@ public record CurrentInstrumentReportDto(
     int ReportType,
     int ReportPeriodType,
     string ReportJson,
-    DateOnly ReportDate);
+    DateOnly ReportDate,
+    bool CheckManually);
 
 public record ProcessedInstrumentReportDto(
     long InstrumentId,
@@ -254,7 +255,8 @@ public record InstrumentReportDto(
     DateOnly ReportDate,
     DateTimeOffset CreatedDate,
     DateTimeOffset? ObsoletedDate,
-    bool IsCurrent);
+    bool IsCurrent,
+    bool CheckManually);
 
 public class StateFsmState {
     private DateTime? _nextFetchDirectoryTime;

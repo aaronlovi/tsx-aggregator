@@ -87,13 +87,17 @@ internal class DbmInMemoryData {
             if (!instrumentReport.IsCurrent)
                 continue;
 
+            if (instrumentReport.CheckManually)
+                continue;
+
             var currentReport = new CurrentInstrumentReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
-                instrumentReport.ReportDate);
+                instrumentReport.ReportDate,
+                instrumentReport.CheckManually);
             reports.Add(currentReport);
         }
 
@@ -142,13 +146,17 @@ internal class DbmInMemoryData {
             if (!instrumentReport.IsCurrent)
                 continue;
 
+            if (instrumentReport.CheckManually)
+                continue;
+
             var currentReport = new CurrentInstrumentReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
-                instrumentReport.ReportDate);
+                instrumentReport.ReportDate,
+                instrumentReport.CheckManually);
             retVal.Add(currentReport);
         }
 
@@ -179,7 +187,9 @@ internal class DbmInMemoryData {
 
                 foreach (InstrumentReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
-                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual || !ir.IsCurrent)
+                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
+                        || !ir.IsCurrent
+                        || ir.CheckManually)
                         continue;
 
                     // Instrument report is fixed
@@ -253,7 +263,9 @@ internal class DbmInMemoryData {
 
                 foreach (InstrumentReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
-                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual || !ir.IsCurrent)
+                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
+                        || !ir.IsCurrent
+                        || ir.CheckManually)
                         continue;
 
                     // Instrument report is fixed
@@ -360,6 +372,9 @@ internal class DbmInMemoryData {
             }
         }
 
+        var numReportsToInsert = 0;
+        var numReportsToCheckManually = 0;
+
         // Insert new instrument reports
         foreach (var newReport in instrumentReportsToInsert) {
             if (!_instrumentReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentReportDto>? instrumentReports))
@@ -375,11 +390,15 @@ internal class DbmInMemoryData {
                 newReport.ReportDate,
                 CreatedDate: utcNow,
                 ObsoletedDate: null,
-                IsCurrent: true));
+                IsCurrent: true,
+                CheckManually: newReport.CheckManually));
+
+            numReportsToInsert += newReport.CheckManually ? 0 : 1;
+            numReportsToCheckManually += newReport.CheckManually ? 1 : 0;
         }
 
         // Insert raw data changed event, if needed
-        if (instrumentReportsToInsert.Count > 0 || instrumentReportsToObsolete.Count > 0) {
+        if (numReportsToInsert > 0 || instrumentReportsToObsolete.Count > 0) {
             var instrumentEventDto = new InstrumentEventDto(
                 instrumentId,
                 utcNow,

@@ -17,6 +17,7 @@ internal sealed class GetProcessedStockDataByExchangeStmt : QueryDbStmtBase {
         + " AND ir.report_type = " + (int)Constants.ReportTypes.CashFlow
         + " AND ir.report_period_type = " + (int)Constants.ReportPeriodTypes.Annual
         + " AND ir.is_current = TRUE"
+        + " AND ir.check_manually = FALSE"
         + " GROUP BY i.instrument_id, i.company_symbol, i.company_name, i.instrument_symbol, i.instrument_name,"
         + " pir.report_json, i.created_date, pir.created_date";
 
@@ -43,15 +44,10 @@ internal sealed class GetProcessedStockDataByExchangeStmt : QueryDbStmtBase {
 
     public IReadOnlyList<ProcessedFullInstrumentReportDto> ProcessedInstrumentReports => _processedInstrumentReportDtoList;
 
-    protected override void ClearResults() {
-        _processedInstrumentReportDtoList.Clear();
-    }
+    protected override void ClearResults() => _processedInstrumentReportDtoList.Clear();
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return new List<NpgsqlParameter> {
-            new NpgsqlParameter<string>("exchange", _exchange)
-        };
-    }
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
+        new List<NpgsqlParameter> { new NpgsqlParameter<string>("exchange", _exchange) };
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         if (_instrumentIdIndex != -1)

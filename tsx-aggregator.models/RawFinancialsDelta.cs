@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 
 namespace tsx_aggregator.models;
+
 public class RawFinancialsDelta {
     private readonly List<CurrentInstrumentReportDto> _instrumentReportsToInsert;
     private readonly List<CurrentInstrumentReportDto> _instrumentReportsToObsolete;

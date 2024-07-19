@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -8,13 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Migrations\R__001__CreateTables.sql" />
-    <None Remove="Migrations\R__002__AddStockQuotesPriceFsmState.sql" />
+    <None Remove="Migrations\*.sql" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\R__002__AddStockQuotesPriceFsmState.sql" />
-    <EmbeddedResource Include="Migrations\R__001__CreateTables.sql" />
+    <EmbeddedResource Include="Migrations\*.sql" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +20,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Npgsql" Version="8.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="Migrations\R__003__AddCheckManuallyColumn.sql" />
   </ItemGroup>
 
   <ItemGroup>

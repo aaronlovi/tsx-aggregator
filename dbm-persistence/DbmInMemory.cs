@@ -172,8 +172,8 @@ public sealed class DbmInMemory : IDbmService {
     public ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
         lock (_data) {
             _data.UpdateInstrumentReports(rawFinancialsDelta);
+            return ValueTask.FromResult(Result.SUCCESS);
         }
-        return ValueTask.FromResult(Result.SUCCESS);
     }
 
     #endregion

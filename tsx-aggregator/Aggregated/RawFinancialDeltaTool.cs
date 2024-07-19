@@ -13,10 +13,14 @@ using tsx_aggregator.shared;
 namespace tsx_aggregator;
 
 internal class RawFinancialDeltaTool {
+    private readonly bool _checkForReportChanges;
     private readonly ILogger<RawFinancialDeltaTool> _logger;
     private readonly IDbmService _dbm;
 
     internal RawFinancialDeltaTool(IServiceProvider svp) {
+        var featureFlags = svp.GetRequiredService<FeatureFlagsOptions>();
+        _checkForReportChanges = featureFlags.CheckExistingRawReportUpdates.GetValueOrDefault();
+
         _logger = svp.GetRequiredService<ILogger<RawFinancialDeltaTool>>();
         _dbm = svp.GetRequiredService<IDbmService>();
     }
@@ -93,26 +97,54 @@ internal class RawFinancialDeltaTool {
                 // Found a matching existing report. Check for field-by-field equivalence
                 CurrentInstrumentReportDto existingReportDto = existingReportDtoRows[0];
                 using JsonDocument existingReportJsonObj = JsonDocument.Parse(existingReportDto.ReportJson);
-                if (!newRawReport.IsEqual(existingReportJsonObj)) {
-                    rawFinancialsDelta.InstrumentReportsToInsert.Add(new CurrentInstrumentReportDto(
-                        InstrumentReportId: (long)await _dbm.GetNextId64(ct),
-                        InstrumentId: (long)instrumentId,
-                        ReportType: (int)reportType,
-                        ReportPeriodType: (int)reportPeriod,
-                        ReportJson: newRawReport.AsJsonString(),
-                        ReportDate: newRawReport.ReportDate.Value)); ;
+
+                if (newRawReport.IsEqual(existingReportJsonObj))
+                    continue; // Nothing to do. The new report is the same as the existing one.
+
+                if (!_checkForReportChanges) {
+                    // Obsolete the old report and start using the new one
+                    await AddReportForInsertion(instrumentId, reportType, reportPeriod, rawFinancialsDelta, newRawReport, ct);
                     rawFinancialsDelta.InstrumentReportsToObsolete.Add(existingReportDto);
+                } else {
+                    // The new report is different from the existing one.
+                    // We need to evaluate the differences manually.
+                    // Do not obsolete the old report or start using this one yet.
+                    await AddReportForManualChecking(instrumentId, reportType, reportPeriod, rawFinancialsDelta, newRawReport, ct);
                 }
-            } else {
-                // No matching existing report rows. Just insert the new report we found
-                rawFinancialsDelta.InstrumentReportsToInsert.Add(new CurrentInstrumentReportDto(
-                    InstrumentReportId: (long)await _dbm.GetNextId64(ct),
-                    InstrumentId: (long)instrumentId,
-                    ReportType: (int)reportType,
-                    ReportPeriodType: (int)reportPeriod,
-                    ReportJson: newRawReport.AsJsonString(),
-                    ReportDate: newRawReport.ReportDate.Value));
+
+                continue;
             }
+
+            // No matching existing report rows. Just insert the new report we found
+            await AddReportForInsertion(instrumentId, reportType, reportPeriod, rawFinancialsDelta, newRawReport, ct);
         }
+    }
+
+    private Task AddReportForManualChecking(
+        long instrumentId,
+        Constants.ReportTypes reportType,
+        Constants.ReportPeriodTypes reportPeriod,
+        RawFinancialsDelta rawFinancialsDelta,
+        RawReportDataMap newRawReport,
+        CancellationToken ct)
+        => AddReportForInsertion(instrumentId, reportType, reportPeriod, rawFinancialsDelta, newRawReport, ct, checkManually: true);
+
+    private async Task AddReportForInsertion(
+        long instrumentId,
+        Constants.ReportTypes reportType,
+        Constants.ReportPeriodTypes reportPeriod,
+        RawFinancialsDelta rawFinancialsDelta,
+        RawReportDataMap newRawReport,
+        CancellationToken ct,
+        bool checkManually = false) {
+        rawFinancialsDelta.InstrumentReportsToInsert.Add(
+            new CurrentInstrumentReportDto(
+                InstrumentReportId: (long) await _dbm.GetNextId64(ct),
+                InstrumentId: instrumentId,
+                ReportType: (int)reportType,
+                ReportPeriodType: (int)reportPeriod,
+                ReportJson: newRawReport.AsJsonString(),
+                ReportDate: newRawReport.ReportDate!.Value,
+                CheckManually: checkManually));
     }
 }

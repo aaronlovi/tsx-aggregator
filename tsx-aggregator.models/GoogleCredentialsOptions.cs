@@ -20,6 +20,7 @@ public class GoogleCredentialsOptions {
         GoogleApplicationName = string.Empty;
         SpreadsheetId = string.Empty;
         SpreadsheetName = string.Empty;
+        MacroName = string.Empty;
     }
 
     [Required(ErrorMessage = "CredentialFilePath is required in the GoogleCredentials section of the configuration")]

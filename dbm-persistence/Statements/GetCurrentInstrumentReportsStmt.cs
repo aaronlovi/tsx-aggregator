@@ -9,7 +9,8 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
     private const string sql = "SELECT instrument_report_id, report_type, report_period_type, report_json, report_date"
         + " FROM instrument_reports"
         + " WHERE is_current = true"
-        + " AND instrument_id = @instrumentId";
+        + " AND instrument_id = @instrumentId"
+        + " AND check_manually = false";
 
     private readonly long _instrumentId;
     private readonly List<CurrentInstrumentReportDto> _instrumentReports;
@@ -29,9 +30,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
 
     public IReadOnlyList<CurrentInstrumentReportDto> InstrumentReports => _instrumentReports;
 
-    protected override void ClearResults() {
-        _instrumentReports.Clear();
-    }
+    protected override void ClearResults() => _instrumentReports.Clear();
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new List<NpgsqlParameter> {
@@ -60,7 +59,8 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
             reader.GetInt32(_reportTypeIndex),
             reader.GetInt32(_reportPeriodTypeIndex),
             reader.GetString(_reportJsonIndex),
-            reportDate);
+            reportDate,
+            CheckManually: false);
         _instrumentReports.Add(report);
 
         return true;

@@ -197,7 +197,14 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     public async ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
         var stmt = new UpdateInstrumentReportsStmt(rawFinancialsDelta);
-        return await _exec.ExecuteWithRetry(stmt, ct);
+        var res = await _exec.ExecuteWithRetry(stmt, ct);
+        if (res.Success) {
+            _logger.LogInformation("UpdateInstrumentReports success - Inserted: {NumInserted}, Obsoleted: {NumObsoleted}, To Check Manually: {NumToCheckManually}",
+                stmt.NumReportsToInsert, stmt.NumReportsToObsolete, stmt.NumReportsToCheckManually);
+        } else {
+            _logger.LogWarning("UpdateInstrumentReports failed with error {Error}", res.ErrMsg);
+        }
+        return res;
     }
 
     #endregion

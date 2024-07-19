@@ -1,7 +1,6 @@
-﻿using Npgsql;
-using System;
+﻿using System;
+using Npgsql;
 using tsx_aggregator.models;
-using tsx_aggregator.shared;
 using static tsx_aggregator.shared.Constants;
 
 namespace dbm_persistence;
@@ -9,9 +8,9 @@ namespace dbm_persistence;
 internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
     private const string InsertSql = "INSERT INTO instrument_reports"
         + " (instrument_report_id, instrument_id, report_type, report_period_type, report_json, report_date,"
-        + " created_date, obsoleted_date, is_current)"
+        + " created_date, obsoleted_date, is_current, check_manually)"
         + " VALUES (@instrument_report_id, @instrument_id, @report_type, @report_period_type, @report_json, @report_date,"
-        + " @created_date, @obsoleted_date, true)";
+        + " @created_date, @obsoleted_date, true, @check_manually)";
 
     private const string ObsoleteSql = "UPDATE instrument_reports"
         + " SET is_current = false, obsoleted_date = @obsoleted_date"
@@ -41,6 +40,9 @@ internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
             });
         }
 
+        NumReportsToInsert = 0;
+        NumReportsToCheckManually = 0;
+
         foreach (var newReport in _rawFinancialsDelta.InstrumentReportsToInsert) {
             AddCommandToBatch(InsertSql, new NpgsqlParameter[] {
                 new NpgsqlParameter<long>("instrument_report_id", newReport.InstrumentReportId),
@@ -51,13 +53,17 @@ internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
                 new NpgsqlParameter<DateTime>("report_date", newReport.ReportDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)),
                 new NpgsqlParameter<DateTime>("created_date", utcNow),
                 DbUtils.CreateNullableDateTimeParam("obsoleted_date", null),
-                new NpgsqlParameter<bool>("is_current", true)
+                new NpgsqlParameter<bool>("is_current", true),
+                new NpgsqlParameter<bool>("check_manually", newReport.CheckManually)
             });
+
+            NumReportsToInsert += newReport.CheckManually ? 0 : 1;
+            NumReportsToCheckManually += newReport.CheckManually ? 1 : 0;
         }
 
-        if (_rawFinancialsDelta.InstrumentReportsToInsert.Count > 0 || _rawFinancialsDelta.InstrumentReportsToObsolete.Count > 0) {
+        if (NumReportsToInsert > 0 || NumReportsToObsolete > 0) {
             AddCommandToBatch(InsertInstrumentEventStmt.sql, new NpgsqlParameter[] {
-                new NpgsqlParameter<long>("instrument_id", (long)InstrumentId),
+                new NpgsqlParameter<long>("instrument_id", InstrumentId),
                 new NpgsqlParameter<DateTime>("event_date", utcNow),
                 new NpgsqlParameter<int>("event_type", (int)CompanyEventTypes.RawDataChanged),
                 new NpgsqlParameter<bool>("is_processed", false)
@@ -65,11 +71,11 @@ internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
         }
 
         AddCommandToBatch(ObsoletePricesSql, new NpgsqlParameter[] {
-            new NpgsqlParameter<long>("instrument_id", (long)InstrumentId)
+            new NpgsqlParameter<long>("instrument_id", InstrumentId)
         });
 
         AddCommandToBatch(InsertPricesSql, new NpgsqlParameter[] {
-            new NpgsqlParameter<long>("instrument_id", (long)InstrumentId),
+            new NpgsqlParameter<long>("instrument_id", InstrumentId),
             new NpgsqlParameter<decimal>("price_per_share", _rawFinancialsDelta.PricePerShare),
             new NpgsqlParameter<long>("num_shares", (long)_rawFinancialsDelta.NumShares),
             new NpgsqlParameter<DateTime>("created_date", utcNow),
@@ -78,4 +84,10 @@ internal class UpdateInstrumentReportsStmt : NonQueryBatchedDbStmtBase {
     }
 
     public long InstrumentId => _rawFinancialsDelta.InstrumentId;
+
+    public int NumReportsToInsert { get; private set; }
+
+    public int NumReportsToCheckManually { get; private set; }
+
+    public int NumReportsToObsolete => _rawFinancialsDelta.InstrumentReportsToObsolete.Count;
 }
