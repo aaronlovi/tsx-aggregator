@@ -8,9 +8,13 @@ namespace tsx_aggregator;
 
 // This helper class is used by the main startup config. This allows to keep registered classes as 'internal'.
 public static class ReportingHostConfig {
-    public static void ConfigureServices(IServiceCollection _) {
-    }
+    public static void ConfigureServices(IServiceCollection _) { }
 
-    public static IEnumerable<GrpcServiceEndpointConventionBuilder> ConfigureEndpoints(IEndpointRouteBuilder endpoints) =>
-        new[] { endpoints.MapGrpcService<StockDataSvc>() };
+    /// <summary>
+    /// Used at application startup to configure gRPC endpoints.
+    /// In this case, incoming HTTP requests are routed to gRPC endpoints
+    /// in the <see cref="StockDataService"/> class.
+    /// </summary>
+    public static IEnumerable<GrpcServiceEndpointConventionBuilder> ConfigureEndpoints(IEndpointRouteBuilder endpoints)
+        => new[] { endpoints.MapGrpcService<StockDataSvc>() };
 }

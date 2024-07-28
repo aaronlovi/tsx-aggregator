@@ -10,8 +10,20 @@ namespace tsx_aggregator;
 public class Startup {
     private readonly IConfiguration _config;
 
+    /// <summary>
+    /// 1. Application Initialization
+    /// When the application starts, the Startup class is instantiated and configured.
+    /// </summary>
+    /// <param name="config"></param>
     public Startup(IConfiguration config) => _config = config;
 
+    /// <summary>
+    /// 2. Service Configuration
+    /// The ConfigureServices method is called by the runtime.
+    /// This method is used to add services to the DI container.
+    /// These services are then available throughout the application
+    /// </summary>
+    /// <param name="services"></param>
     public void ConfigureServices(IServiceCollection services) {
         services.AddGrpc();
         services.Configure<GoogleCredentialsOptions>(_config.GetSection(GoogleCredentialsOptions.GoogleCredentials));
@@ -21,8 +33,28 @@ public class Startup {
         VerifyCriticalConfiguration();
     }
 
+    /// <summary>
+    /// 3. Request Pipeline Configuration
+    /// The Configure method is called by the runtime to set up the request processing pipeline.
+    /// This method defines how the application will respond to HTTP requests.
+    /// </summary>
+    public static void Configure(IApplicationBuilder app) {
+        app.
+            UseRouting().
+            UseEndpoints(endpoints =>
+            {
+                // In this case, incoming HTTP requests are routed to gRPC endpoints,
+                // which are configured in ReportingHostConfig.ConfigureEndpoints
+                var builders = new List<GrpcServiceEndpointConventionBuilder>();
+                builders.AddRange(ReportingHostConfig.ConfigureEndpoints(endpoints));
+            });
+    }
+
+    #region PRIVATE HELPER METHODS
+
     private void VerifyCriticalConfiguration() {
         VerifyConfigurationItem("DatabaseSchema");
+
         VerifyConfigurationSection(GoogleCredentialsOptions.GoogleCredentials);
         VerifyConfigurationSection(HostedServicesOptions.HostedServices);
         VerifyConfigurationSection(FeatureFlagsOptions.FeatureFlags);
@@ -46,12 +78,5 @@ public class Startup {
             throw new Exception($"Missing '{section}' section in app configuration");
     }
 
-    public static void Configure(IApplicationBuilder app) {
-        app.UseRouting();
-
-        app.UseEndpoints(endpoints => {
-            var builders = new List<GrpcServiceEndpointConventionBuilder>();
-            builders.AddRange(ReportingHostConfig.ConfigureEndpoints(endpoints));
-        });
-    }
+    #endregion
 }

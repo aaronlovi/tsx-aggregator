@@ -42,8 +42,8 @@ public class Program {
 
     private static IHost BuildHost<TStartup>(string[] args) where TStartup : class {
 
-        return Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); })
             .ConfigureServices((context, services) => {
 
                 var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"] ?? DefaultPortStr, CultureInfo.InvariantCulture);
@@ -118,8 +118,29 @@ public class Program {
                     .AddSerilog(Log.Logger);
             })
             .Build();
+
+        var logger = host.Services.GetRequiredService<ILogger<Program>>();
+        LogConfig(host.Services.GetRequiredService<IConfiguration>(), logger);
+
+        return host;
     }
 
     private static bool DoesConfigContainConnectionString(IConfiguration configuration)
         => configuration.GetConnectionString(IDbmService.TsxScraperConnStringName) is not null;
+
+    private static void LogConfig(IConfiguration config, Microsoft.Extensions.Logging.ILogger logger) {
+        logger.LogInformation("==========BEGIN CRITICAL CONFIGURATION==========");
+        LogConfigSection(config, logger, GoogleCredentialsOptions.GoogleCredentials);
+        LogConfigSection(config, logger, HostedServicesOptions.HostedServices);
+        LogConfigSection(config, logger, FeatureFlagsOptions.FeatureFlags);
+        logger.LogInformation("==========END CRITICAL CONFIGURATION==========");
+    }
+
+    private static void LogConfigSection(
+        IConfiguration config,
+        Microsoft.Extensions.Logging.ILogger logger,
+        string section) {
+        foreach (var child in config.GetSection(section).GetChildren())
+            logger.LogInformation("[{Section}] {Key} = {Value}", section, child.Key, child.Value);
+    }
 }
