@@ -57,6 +57,8 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
     }
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentIdIndex != -1)
             return;
 

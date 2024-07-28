@@ -26,15 +26,17 @@ public interface IDbmService {
     ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct);
     ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct);
     ValueTask<Result> InsertInstrumentEvent(InstrumentEventExDto instrumentEventDto, CancellationToken ct);
-    ValueTask<(Result, StateFsmState?)> GetStateFsmState(CancellationToken ct);
-    ValueTask<Result> PersistStateFsmState(StateFsmState stateFsmState, CancellationToken ct);
+    ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct);
+    ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct);
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
 
     // Data Requests
-    
     ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);
     ValueTask<Result<ProcessedFullInstrumentReportDto>> GetProcessedStockDataByExchangeAndSymbol(string exchange, string instrumentSymbol, CancellationToken ct);
 
+    // Service State
+    ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct);
+    ValueTask<Result> PersistCommonServiceState(bool isPaused, string serviceName, CancellationToken ct);
 }

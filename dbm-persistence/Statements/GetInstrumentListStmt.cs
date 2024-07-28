@@ -37,6 +37,8 @@ internal sealed class GetInstrumentListStmt : QueryDbStmtBase {
     }
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentIdIndex != -1)
             return;
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using dbm_persistence;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,47 +14,83 @@ using tsx_aggregator.shared;
 
 namespace tsx_aggregator;
 
-internal partial class RawCollector : BackgroundService {
+internal partial class RawCollector : BackgroundService, INamedService {
+    private const string _serviceName = "RawCollector";
+
+    private long _reqId;
     private readonly ILogger _logger;
     private readonly IDbmService _dbm;
     private readonly IServiceProvider _svp;
     private readonly Registry _registry;
-    private readonly StateFsm _stateFsm;
+    private readonly RawCollectorFsm _stateFsm;
+    private readonly Channel<RawCollectorInputBase> _inputChannel;
     private readonly HttpClient _httpClient;
 
     public RawCollector(IServiceProvider svp) {
+        _reqId = 0;
         _logger = svp.GetRequiredService<ILogger<RawCollector>>();
         _dbm = svp.GetRequiredService<IDbmService>();
         _svp = svp;
         _registry = svp.GetRequiredService<Registry>();
-        _stateFsm = new(DateTime.UtcNow, _registry);
-        
+        _stateFsm = new(svp.GetRequiredService<ILogger<RawCollectorFsm>>(), DateTime.UtcNow, _registry);
+        _inputChannel = Channel.CreateUnbounded<RawCollectorInputBase>();
+
         IHttpClientFactory httpClientFactory = svp.GetRequiredService<IHttpClientFactory>();
         _httpClient = CreateFetchDirectoryHttpClient(httpClientFactory);
+
+        _logger.LogInformation("RawCollector - Created");
     }
+
+    public string ServiceName => _serviceName;
+
+    public bool PostRequest(RawCollectorInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
-
             await RestoreStateFsm(stoppingToken);
             await RestoreInstrumentDirectory(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested) {
                 var utcNow = DateTime.UtcNow;
-                _logger.LogInformation("Raw Worker running at: {time}", utcNow.ToLocalTime());
-
                 var nextTimeout = _stateFsm.NextTimeout;
-                var output = new StateFsmOutputs();
-
                 TimeSpan interval = Utilities.CalculateTimeDifference(utcNow, nextTimeout);
+
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                cts.CancelAfter(interval);
+                var combinedToken = cts.Token; // Cancels after either the timeout interval
+
                 DateTime wakeupTime = utcNow.Add(interval);
-                _logger.LogInformation("Sleeping until {WakeupTime}", wakeupTime.ToLocalTime());
+                _logger.LogInformation("RawCollector sleeping until {WakeupTime}", wakeupTime.ToLocalTime());
 
-                await Task.Delay(interval, stoppingToken);
+                try {
+                    // Get the one next input, or timeout trying
+                    RawCollectorInputBase input = await _inputChannel.Reader.ReadAsync(combinedToken);
+                    _logger.LogInformation("RawCollector - Got a message {Input}", input);
 
-                utcNow = DateTime.UtcNow;
-                _stateFsm.Update(utcNow, output);
-                await ProcessOutput(output.OutputList, stoppingToken);
+                    using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
+                    using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
+
+                    var output = new RawCollectorFsmOutputs();
+                    _stateFsm.Update(input, utcNow, output);
+                    await ProcessOutput(input, output.OutputList, stoppingToken);
+                } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
+                    _logger.LogWarning("RawCollector - Application stop in progress, stopping");
+                    break; // Process no more inputs
+                } catch (OperationCanceledException) {
+                    _logger.LogInformation("RawCollector - Interval elapsed, continuing");
+                    PostTimeoutRequest(DateTime.UtcNow);
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Fatal error in RawCollector, exiting");
+                    break; // Process no more inputs
+                }
+
+                // If the service is paused, then the next timeout could be in the past.
+                // In this case, do not repeatedly smash the service and/or the database.
+                // Log, and wait one minute.
+                if (_stateFsm.IsPaused) {
+                    _logger.LogInformation("RawCollector service is paused, waiting one minute");
+                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                }
             }
         }
         catch (OperationCanceledException) {
@@ -66,16 +103,28 @@ internal partial class RawCollector : BackgroundService {
 
     private async Task RestoreStateFsm(CancellationToken ct) {
         _logger.LogInformation("RestoreStateFsm");
-        (Result res, StateFsmState? stateFsmState) = await _dbm.GetStateFsmState(ct);
+
+        // Fetch specific service state
+        (Result res, ApplicationCommonState? stateFsmState) = await _dbm.GetApplicationCommonState(ct);
         if (!res.Success) {
             _logger.LogError("RestoreStateFsm fatal error - {Error}", res.ErrMsg);
             throw new InvalidOperationException("RestoreStateFsm fatal error - " + res.ErrMsg);
+        }
+
+        // Fetch common service state
+        (res, bool isPaused) = await _dbm.GetCommonServiceState(ServiceName, ct);
+        if (!res.Success) {
+            _logger.LogError("RestoreStateFsm fatal error getting common service state - {Error}", res.ErrMsg);
+            throw new InvalidOperationException("RestoreStateFsm fatal error getting common service state - " + res.ErrMsg);
         }
 
         if (stateFsmState is null) {
             _logger.LogWarning("RestoreStateFsm fatal error - could not restore state from database. New state created.");
             return;
         }
+
+        // Restore common service state
+        stateFsmState.IsPaused = isPaused;
 
         _logger.LogInformation("RestoreStateFsm - restored state from database");
         _stateFsm.SetState(stateFsmState);
@@ -99,12 +148,24 @@ internal partial class RawCollector : BackgroundService {
         _logger.LogInformation("RestoreInstrumentDirectory - restored {Count} instruments", instrumentList.Count);
     }
 
-    private async Task ProcessOutput(IList<StateFsmOutputItemBase> outputList, CancellationToken ct) {
+    private async Task ProcessOutput(
+        RawCollectorInputBase input,
+        IList<RawCollectorFsmOutputItemBase> outputList,
+        CancellationToken ct) {
         foreach (var outputItem in outputList) {
             switch (outputItem) {
-                case FetchDirectory: await ProcessFetchDirectory(ct); break;
-                case FetchInstrumentData fid: await ProcessFetchInstrumentData(fid, ct); break;
-                case PersistState: await ProcessPersistState(ct); break;
+                case FetchRawCollectorDirectoryOutput:
+                    await ProcessFetchDirectory(ct);
+                    break;
+                case FetchRawCollectorInstrumentDataOutput fid:
+                    await ProcessFetchInstrumentData(fid, ct);
+                    break;
+                case PersistRawCollectorFsmState:
+                    await ProcessPersistState(ct);
+                    break;
+                case PersistRawCollectorCommonServiceState:
+                    await ProcessPersistCommonServiceState(input, ct);
+                    break;
                 default: {
                     _logger.LogWarning("ProcessOutput - Unexpected output type encountered: {@Output}", outputItem);
                     break;
@@ -120,5 +181,30 @@ internal partial class RawCollector : BackgroundService {
             _logger.LogInformation("ProcessPersistState success");
         else
             _logger.LogInformation("ProcessPersistState failed with error: {ErrMsg}", res.ErrMsg);
+    }
+
+    private async Task ProcessPersistCommonServiceState(RawCollectorInputBase input, CancellationToken ct) {
+        _logger.LogInformation("ProcessPersistCommonServiceState begin");
+        Result res = await _dbm.PersistCommonServiceState(_stateFsm.IsPaused, ServiceName, ct);
+        if (res.Success) {
+            _logger.LogInformation("ProcessPersistCommonServiceState success");
+
+            // Indicate to any listeners that the pause/resume operation completed successfully
+            input.Completed.TrySetResult(null);
+        }
+        else {
+            _logger.LogInformation("ProcessPersistCommonServiceState failed with error: {ErrMsg}", res.ErrMsg);
+
+            // Indicate to any listeners that the pause/resume operation failed
+            input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
+        }
+    }
+
+    private long GetNextReqId() => Interlocked.Increment(ref _reqId);
+
+    private void PostTimeoutRequest(DateTime nowUtc) {
+        var reqId = GetNextReqId();
+        var timeoutInput = new RawCollectorTimeoutInput(reqId, null, nowUtc);
+        _ = PostRequest(timeoutInput);
     }
 }

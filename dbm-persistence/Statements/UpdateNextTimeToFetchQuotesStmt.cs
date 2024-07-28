@@ -9,10 +9,9 @@ internal sealed class UpdateNextTimeToFetchQuotesStmt : NonQueryDbStmtBase {
 
     private readonly DateTime _nextFetchStockQuoteTime;
 
-    public UpdateNextTimeToFetchQuotesStmt(DateTime nextFetchStockQuoteTime) 
-        : base(sql, nameof(UpdateNextTimeToFetchQuotesStmt)) {
+    public UpdateNextTimeToFetchQuotesStmt(DateTime nextFetchStockQuoteTime)
+        : base(sql, nameof(UpdateNextTimeToFetchQuotesStmt)) =>
         _nextFetchStockQuoteTime = nextFetchStockQuoteTime;
-    }
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
         return new NpgsqlParameter[] {

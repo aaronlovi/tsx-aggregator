@@ -258,30 +258,45 @@ public record InstrumentReportDto(
     bool IsCurrent,
     bool CheckManually);
 
-public class StateFsmState {
+public class ApplicationCommonState {
+    private bool _isPaused;
     private DateTime? _nextFetchDirectoryTime;
     private DateTime? _nextFetchInstrumentDataTime;
     private DateTime? _nextFetchQuotesTime;
     private InstrumentKey _prevInstrumentKey;
 
-    public StateFsmState() : this(null, null, null, InstrumentKey.Empty) { }
+    public ApplicationCommonState() : this(false, null, null, null, InstrumentKey.Empty) { }
 
-    public StateFsmState(
+    public ApplicationCommonState(
+        bool isPaused,
         DateTime? nextFetchDirectoryTime,
         DateTime? nextFetchInstrumentDataTime,
         DateTime? nextFetchQuotesTime,
         InstrumentKey prevInstrumentKey) {
+        _isPaused = isPaused;
         _nextFetchDirectoryTime = nextFetchDirectoryTime;
         _nextFetchInstrumentDataTime = nextFetchInstrumentDataTime;
         _nextFetchQuotesTime = nextFetchQuotesTime;
         _prevInstrumentKey = prevInstrumentKey;
     }
 
-    public StateFsmState(StateFsmState other)
-        : this(other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.NextFetchQuotesTime, other.PrevInstrumentKey) {
+    public ApplicationCommonState(ApplicationCommonState other)
+        : this(other._isPaused, other.NextFetchDirectoryTime, other.NextFetchInstrumentDataTime, other.NextFetchQuotesTime, other.PrevInstrumentKey) {
     }
 
     public bool IsDirty { get; private set; }
+
+    public bool IsPaused {
+        get => _isPaused;
+        set {
+            // For IsPaused, do not set IsDirty if the value is the same
+            if (_isPaused == value)
+                return;
+
+            _isPaused = value;
+            IsDirty = true;
+        }
+    }
 
     public DateTime? NextFetchDirectoryTime {
         get => _nextFetchDirectoryTime;

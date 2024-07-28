@@ -39,6 +39,8 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
     }
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentReportIdIndex != -1)
             return; // Column indices are already cached. Nothing to do.
 

@@ -12,9 +12,9 @@ internal sealed class UpdateStateFsmStateStmt : NonQueryDbStmtBase {
         + " prev_company_symbol = @prev_company_symbol,"
         + " prev_instrument_symbol = @prev_instrument_symbol";
 
-    private readonly StateFsmState _stateFsmState;
+    private readonly ApplicationCommonState _stateFsmState;
 
-    public UpdateStateFsmStateStmt(StateFsmState stateFsmState) 
+    public UpdateStateFsmStateStmt(ApplicationCommonState stateFsmState) 
         : base(sql, nameof(UpdateStateFsmStateStmt)) {
         _stateFsmState = new(stateFsmState);
     }

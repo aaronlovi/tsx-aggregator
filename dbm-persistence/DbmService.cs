@@ -169,8 +169,8 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
-    public async ValueTask<(Result, StateFsmState?)> GetStateFsmState(CancellationToken ct) {
-        var stmt = new GetStateFsmStateStmt();
+    public async ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct) {
+        var stmt = new GetApplicationCommonStateStmt();
         var res = await _exec.ExecuteWithRetry(stmt, ct);
         if (!res.Success)
             return (res, null);
@@ -179,7 +179,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         return (res, stmt.Results);
     }
 
-    public async ValueTask<Result> PersistStateFsmState(StateFsmState stateFsmState, CancellationToken ct) {
+    public async ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct) {
         var stmt = new UpdateStateFsmStateStmt(stateFsmState);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
@@ -221,6 +221,28 @@ public sealed class DbmService : IDisposable, IDbmService {
         var stmt = new GetProcessedStockDataByExchangeAndInstrumentSymbolStmt(exchange, instrumentSymbol);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return new Result<ProcessedFullInstrumentReportDto>(res.Success, res.ErrMsg, stmt.ProcessedInstrumentReport);
+    }
+
+    #endregion
+
+    #region Service State
+
+    public async ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct) {
+        var stmt = new GetCommonServiceStateStmt(serviceName);
+        DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
+        return (res, stmt.IsPaused);
+    }
+
+    public async ValueTask<Result> PersistCommonServiceState(bool isPaused, string serviceName, CancellationToken ct) {
+        var stmt = new UpdateCommonServiceStateStmt(isPaused, serviceName);
+        var res = await _exec.ExecuteWithRetry(stmt, ct);
+        if (res.Success) {
+            _logger.LogInformation("PersistCommonServiceState success - SVC: {ServiceName}, PAUSED: {IsPaused}",
+                serviceName, isPaused);
+        } else {
+            _logger.LogWarning("PersistCommonServiceState failed with error {Error}", res.ErrMsg);
+        }
+        return res;
     }
 
     #endregion

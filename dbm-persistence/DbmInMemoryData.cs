@@ -11,7 +11,8 @@ internal class DbmInMemoryData {
     private readonly Dictionary<long, List<InstrumentPriceDto>> _instrumentPricesByInstrumentId;
     private readonly Dictionary<long, List<InstrumentReportDto>> _instrumentReportsByInstrumentId;
     private readonly Dictionary<long, List<ProcessedInstrumentReportDto>> _processedInstrumentReportsByInstrumentId;
-    private StateFsmState? _stateFsmState;
+    private readonly Dictionary<string, bool> _serviceIsPausedByName;
+    private ApplicationCommonState? _stateFsmState;
 
     public DbmInMemoryData() {
         _instrumentEventsByInstrumentId = new();
@@ -19,6 +20,7 @@ internal class DbmInMemoryData {
         _instrumentPricesByInstrumentId = new();
         _instrumentReportsByInstrumentId = new();
         _processedInstrumentReportsByInstrumentId = new();
+        _serviceIsPausedByName = new();
     }
 
     public InstrumentEventExDto? GetNextInstrumentEvent() {
@@ -134,7 +136,7 @@ internal class DbmInMemoryData {
         return results;
     }
 
-    public StateFsmState? GetStateFsmState() => _stateFsmState == null ? null : new StateFsmState(_stateFsmState);
+    public ApplicationCommonState? GetApplicationCommonState() => _stateFsmState == null ? null : new ApplicationCommonState(_stateFsmState);
 
     public IReadOnlyList<CurrentInstrumentReportDto> GetRawFinancialsByInstrumentId(long instrumentId) {
         var retVal = new List<CurrentInstrumentReportDto>();
@@ -281,6 +283,12 @@ internal class DbmInMemoryData {
         return retVal;
     }
 
+    public bool GetCommonServiceState(string serviceName) {
+        if (!_serviceIsPausedByName.TryGetValue(serviceName, out bool isPaused))
+            return false; // Not paused by default
+        return isPaused;
+    }
+
     public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType) {
         if (!_instrumentEventsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentEventDto>? instrumentEvents))
             return;
@@ -341,7 +349,7 @@ internal class DbmInMemoryData {
         instrumentEvents.Add(dto);
     }
 
-    public void SetStateFsmState(StateFsmState stateFsmState) => _stateFsmState = new StateFsmState(stateFsmState);
+    public void SetStateFsmState(ApplicationCommonState stateFsmState) => _stateFsmState = new ApplicationCommonState(stateFsmState);
 
     public void UpdateNextTimeToFetchQuote(DateTime nextTimeToFetchQuotes) {
         if (_stateFsmState == null)
@@ -460,4 +468,7 @@ internal class DbmInMemoryData {
             instrumentEvents[i] = instrumentEvents[i] with { IsProcessed = isProcessed };
         }
     }
+
+    internal void SetCommonServiceState(bool isPaused, string serviceName) =>
+        _serviceIsPausedByName[serviceName] = isPaused;
 }

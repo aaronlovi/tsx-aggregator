@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace tsx_aggregator.Services;
-
-public abstract class QuoteServiceInputBase : IDisposable {
+namespace tsx_aggregator.Raw;
+public abstract class RawCollectorInputBase : IDisposable {
     private bool _isDisposed;
 
-    public QuoteServiceInputBase(long reqId, CancellationTokenSource? cancellationTokenSource) {
+    public RawCollectorInputBase(long reqId, CancellationTokenSource? cancellationTokenSource) {
         ReqId = reqId;
         Completed = new();
         CancellationTokenSource = cancellationTokenSource;
@@ -41,7 +39,7 @@ public abstract class QuoteServiceInputBase : IDisposable {
     }
 
     // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-    // ~QuoteServiceInputBase()
+    // ~RawCollectorInputBase()
     // {
     //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
     //     Dispose(disposing: false);
@@ -54,19 +52,18 @@ public abstract class QuoteServiceInputBase : IDisposable {
     }
 }
 
-public sealed class QuoteServiceTimeoutInput : QuoteServiceInputBase {
-    public QuoteServiceTimeoutInput(long reqId, CancellationTokenSource? cancellationTokenSource, DateTime curTimeUtc)
-        : base(reqId, cancellationTokenSource) => 
+public sealed class RawCollectorTimeoutInput : RawCollectorInputBase {
+    public RawCollectorTimeoutInput(long reqId, CancellationTokenSource? cts, DateTime curTimeUtc)
+        : base(reqId, cts) =>
         CurTimeUtc = curTimeUtc;
 
     public DateTime CurTimeUtc { get; init; }
 }
 
-public sealed class QuoteServiceFillPricesForSymbolsInput : QuoteServiceInputBase
-{
-    public QuoteServiceFillPricesForSymbolsInput(long reqId, CancellationTokenSource? cancellationTokenSource, IReadOnlyList<string> symbols)
-        : base(reqId, cancellationTokenSource) =>
-        Symbols = symbols;
+public sealed class RawCollectorPauseServiceInput : RawCollectorInputBase {
+    public RawCollectorPauseServiceInput(long reqId, bool pauseNotResume, CancellationTokenSource? cts)
+        : base(reqId, cts)
+        => PauseNotResume = pauseNotResume;
 
-    public IReadOnlyList<string> Symbols { get; init; }
+    public bool PauseNotResume { get; init; }
 }

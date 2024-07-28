@@ -6,12 +6,12 @@ using tsx_aggregator.shared;
 
 namespace dbm_persistence;
 
-internal sealed class GetStateFsmStateStmt : QueryDbStmtBase {
+internal sealed class GetApplicationCommonStateStmt : QueryDbStmtBase {
     private const string sql = "SELECT next_fetch_directory_time, next_fetch_instrument_data_time, prev_company_symbol, prev_instrument_symbol,"
         + " next_fetch_stock_quote_time"
         + " FROM state_fsm_state";
 
-    private StateFsmState _stateFsmState;
+    private ApplicationCommonState _rawCollectorState;
 
     private static int _nextFetchDirectoryTimeIndex = -1;
     private static int _nextFetchInstrumentDataTimeIndex = -1;
@@ -19,18 +19,18 @@ internal sealed class GetStateFsmStateStmt : QueryDbStmtBase {
     private static int _prevInstrumentSymbolIndex = -1;
     private static int _nextFetchStockQuoteTimeIndex = -1;
 
-    public GetStateFsmStateStmt() : base(sql, nameof(GetStateFsmStateStmt)) =>
-        _stateFsmState = new(null, null, null, InstrumentKey.Empty);
+    public GetApplicationCommonStateStmt() : base(sql, nameof(GetApplicationCommonStateStmt)) => _rawCollectorState = new();
 
-    public StateFsmState Results => _stateFsmState;
+    public ApplicationCommonState Results => _rawCollectorState;
 
-    protected override void ClearResults() => 
-        _stateFsmState = new(null, null, null, InstrumentKey.Empty);
+    protected override void ClearResults() => _rawCollectorState = new();
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
         Array.Empty<NpgsqlParameter>();
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_nextFetchDirectoryTimeIndex != -1)
             return;
 
@@ -42,13 +42,13 @@ internal sealed class GetStateFsmStateStmt : QueryDbStmtBase {
     }
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
-        _stateFsmState.NextFetchDirectoryTime = reader.GetDateTime(_nextFetchDirectoryTimeIndex);
-        _stateFsmState.NextFetchInstrumentDataTime = reader.GetDateTime(_nextFetchInstrumentDataTimeIndex);
-        _stateFsmState.PrevInstrumentKey = new InstrumentKey(
+        _rawCollectorState.NextFetchDirectoryTime = reader.GetDateTime(_nextFetchDirectoryTimeIndex);
+        _rawCollectorState.NextFetchInstrumentDataTime = reader.GetDateTime(_nextFetchInstrumentDataTimeIndex);
+        _rawCollectorState.PrevInstrumentKey = new InstrumentKey(
             reader.GetString(_prevCompanySymbolIndex),
             reader.GetString(_prevInstrumentSymbolIndex),
             Constants.TsxExchange);
-        _stateFsmState.NextFetchQuotesTime = reader.GetDateTime(_nextFetchStockQuoteTimeIndex);
+        _rawCollectorState.NextFetchQuotesTime = reader.GetDateTime(_nextFetchStockQuoteTimeIndex);
         return false; // Since we only expect one row, we return false to stop processing further rows.
     }
 }

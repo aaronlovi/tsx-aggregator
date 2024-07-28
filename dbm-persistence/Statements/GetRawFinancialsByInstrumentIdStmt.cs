@@ -43,6 +43,8 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
         new NpgsqlParameter[] { new NpgsqlParameter<long>("instrument_id", _instrumentId) };
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentReportIdIndex != -1)
             return;
 

@@ -50,6 +50,8 @@ internal sealed class GetProcessedStockDataByExchangeStmt : QueryDbStmtBase {
         new List<NpgsqlParameter> { new NpgsqlParameter<string>("exchange", _exchange) };
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentIdIndex != -1)
             return;
 

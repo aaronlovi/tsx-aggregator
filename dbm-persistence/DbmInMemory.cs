@@ -140,15 +140,15 @@ public sealed class DbmInMemory : IDbmService {
         return ValueTask.FromResult(Result.SUCCESS);
     }
 
-    public ValueTask<(Result, StateFsmState?)> GetStateFsmState(CancellationToken ct) {
+    public ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct) {
         lock (_data) {
-            StateFsmState? stateFsmState = _data.GetStateFsmState();
+            ApplicationCommonState? stateFsmState = _data.GetApplicationCommonState();
             Result res = stateFsmState == null ? Result.SetFailure("No state found") : Result.SUCCESS;
-            return ValueTask.FromResult<(Result, StateFsmState?)>((res, stateFsmState));
+            return ValueTask.FromResult<(Result, ApplicationCommonState?)>((res, stateFsmState));
         }
     }
 
-    public ValueTask<Result> PersistStateFsmState(StateFsmState stateFsmState, CancellationToken ct) {
+    public ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct) {
         lock (_data) {
             _data.SetStateFsmState(stateFsmState);
         }
@@ -192,6 +192,24 @@ public sealed class DbmInMemory : IDbmService {
             ProcessedFullInstrumentReportDto? processedInstrumentReport = _data.GetProcessedStockDataByExchangeAndSymbol(exchange, instrumentSymbol);
         }
         return ValueTask.FromResult(new Result<ProcessedFullInstrumentReportDto>(true, string.Empty, null));
+    }
+
+    #endregion
+
+    #region Service State
+
+    public ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct) {
+        lock (_data) {
+            bool isPaused = _data.GetCommonServiceState(serviceName);
+            return ValueTask.FromResult((Result.SUCCESS, isPaused));
+        }
+    }
+
+    public ValueTask<Result> PersistCommonServiceState(bool isPaused, string serviceName, CancellationToken ct) {
+        lock (_data) {
+            _data.SetCommonServiceState(isPaused, serviceName);
+        }
+        return ValueTask.FromResult(Result.SUCCESS);
     }
 
     #endregion

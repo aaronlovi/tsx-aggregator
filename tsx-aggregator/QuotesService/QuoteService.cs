@@ -52,7 +52,7 @@ public class QuoteService : BackgroundService, IQuoteService {
 
         _logger.LogInformation("QuoteService - Directory initialized");
 
-        (Result res, StateFsmState? state) = await _dbm.GetStateFsmState(stoppingToken);
+        (Result res, ApplicationCommonState? state) = await _dbm.GetApplicationCommonState(stoppingToken);
         if (!res.Success || state is null) {
             _logger.LogError("QuoteService - Failed to get state: {ErrMsg}, aborting", res.ErrMsg);
             return;

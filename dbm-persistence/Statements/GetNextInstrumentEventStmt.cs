@@ -39,6 +39,8 @@ internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
     }
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
+        base.BeforeRowProcessing(reader);
+
         if (_instrumentIdIndex == -1) {
             _instrumentIdIndex = reader.GetOrdinal("instrument_id");
             _eventDateIndex = reader.GetOrdinal("event_date");

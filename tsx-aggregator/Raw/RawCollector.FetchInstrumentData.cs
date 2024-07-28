@@ -15,7 +15,7 @@ internal partial class RawCollector : BackgroundService {
     /// Fetches raw data for a single instrument
     /// Updates or inserts raw data for the instrument in the database
     /// </summary>
-    private async Task ProcessFetchInstrumentData(FetchInstrumentData outputItem, CancellationToken ct) {
+    private async Task ProcessFetchInstrumentData(FetchRawCollectorInstrumentDataOutput outputItem, CancellationToken ct) {
         _logger.LogInformation("ProcessFetchInstrumentData(company:{Company},instrument:{Instrument})",
             outputItem.CompanySymbol, outputItem.InstrumentSymbol);
         var insrumentKey = new InstrumentKey(outputItem.CompanySymbol, outputItem.InstrumentSymbol, outputItem.Exchange);
