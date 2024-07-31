@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace tsx_aggregator;
+namespace tsx_aggregator.Raw;
 
 internal abstract class RawCollectorFsmOutputItemBase { }
 

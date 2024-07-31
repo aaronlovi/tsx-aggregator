@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using tsx_aggregator.models;
+using tsx_aggregator.Raw;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator;

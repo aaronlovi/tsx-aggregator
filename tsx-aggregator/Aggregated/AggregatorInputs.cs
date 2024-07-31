@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace tsx_aggregator;
 
-public abstract class RawCollectorInputBase : IDisposable {
+public abstract class AggregatorInputBase : IDisposable {
     private bool _isDisposed;
 
-    public RawCollectorInputBase(long reqId, CancellationTokenSource? cancellationTokenSource) {
+    public AggregatorInputBase(long reqId, CancellationTokenSource? cancellationTokenSource) {
         ReqId = reqId;
         Completed = new();
         CancellationTokenSource = cancellationTokenSource;
@@ -40,7 +40,7 @@ public abstract class RawCollectorInputBase : IDisposable {
     }
 
     // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-    // ~RawCollectorInputBase()
+    // ~AggregatorInputBase()
     // {
     //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
     //     Dispose(disposing: false);
@@ -53,16 +53,16 @@ public abstract class RawCollectorInputBase : IDisposable {
     }
 }
 
-public sealed class RawCollectorTimeoutInput : RawCollectorInputBase {
-    public RawCollectorTimeoutInput(long reqId, CancellationTokenSource? cts, DateTime curTimeUtc)
+public sealed class AggregatorTimeoutInput : AggregatorInputBase {
+    public AggregatorTimeoutInput(long reqId, CancellationTokenSource? cts, DateTime curTimeUtc)
         : base(reqId, cts) =>
         CurTimeUtc = curTimeUtc;
 
     public DateTime CurTimeUtc { get; init; }
 }
 
-public sealed class RawCollectorPauseServiceInput : RawCollectorInputBase {
-    public RawCollectorPauseServiceInput(long reqId, bool pauseNotResume, CancellationTokenSource? cts)
+public sealed class AggregatorPauseServiceInput : AggregatorInputBase {
+    public AggregatorPauseServiceInput(long reqId, bool pauseNotResume, CancellationTokenSource? cts)
         : base(reqId, cts)
         => PauseNotResume = pauseNotResume;
 
