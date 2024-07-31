@@ -35,7 +35,7 @@ public class Aggregator : BackgroundService, INamedService {
         _svp = svp;
         _dbm = svp.GetRequiredService<IDbmService>();
         _inputChannel = Channel.CreateUnbounded<AggregatorInputBase>();
-        _stateFsm = new(svp.GetRequiredService<ILogger<AggregatorFsm>>(), DateTime.UtcNow);
+        _stateFsm = new(svp.GetRequiredService<ILogger<AggregatorFsm>>());
 
         _logger.LogInformation("Aggregator - Created");
     }
@@ -66,7 +66,7 @@ public class Aggregator : BackgroundService, INamedService {
                     using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
 
                     var output = new AggregatorFsmOutputs();
-                    _stateFsm.Update(input, utcNow, output);
+                    _stateFsm.Update(input, output);
                     await ProcessOutput(input, output.OutputList, thisRequestCts.Token);
                 } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
                     _logger.LogWarning("Aggregator - Application stop in progress, stopping");

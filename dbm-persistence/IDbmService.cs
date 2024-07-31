@@ -21,11 +21,8 @@ public interface IDbmService {
     ValueTask<Result> InsertProcessedCompanyReport(ProcessedInstrumentReportDto dto, CancellationToken ct);
 
     // Raw
-    ValueTask<Result> InsertInstrumentIfNotExists(string companySymbol, string companyName, string instrumentSymbol, string instrumentName, string exchange, CancellationToken ct);
-    ValueTask<Result> ObsoleteInstrument(string companySymbol, string instrumentSymbol, string exchange, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct);
     ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct);
-    ValueTask<Result> InsertInstrumentEvent(InstrumentEventExDto instrumentEventDto, CancellationToken ct);
     ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct);
     ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct);
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);

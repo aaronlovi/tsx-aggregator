@@ -2,6 +2,7 @@
 using Npgsql;
 
 namespace dbm_persistence;
+
 internal sealed class UpdateCommonServiceStateStmt : NonQueryDbStmtBase {
     private const string sql = "UPDATE service_state"
         + " SET is_paused = @is_paused"

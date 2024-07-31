@@ -34,9 +34,7 @@ internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
 
     protected override void ClearResults() => InstrumentEventDto = null;
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return Array.Empty<NpgsqlParameter>();
-    }
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() => Array.Empty<NpgsqlParameter>();
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);

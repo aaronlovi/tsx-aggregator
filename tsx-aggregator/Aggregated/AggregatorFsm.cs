@@ -1,21 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using tsx_aggregator.models;
-using tsx_aggregator.Raw;
 
 namespace tsx_aggregator.Aggregated;
 
 internal class AggregatorFsm {
-    private DateTime _curTime;
-    private ApplicationCommonState _state;
+    private readonly ApplicationCommonState _state;
     private readonly ILogger _logger;
 
-    public AggregatorFsm(ILogger logger, DateTime curTime) {
-        _curTime = curTime;
+    public AggregatorFsm(ILogger logger) {
         _state = new();
         _logger = logger;
     }
@@ -25,8 +18,7 @@ internal class AggregatorFsm {
         set => _state.IsPaused = value;
     }
 
-    public void Update(AggregatorInputBase input, DateTime utcNow, AggregatorFsmOutputs output) {
-        _curTime = utcNow;
+    public void Update(AggregatorInputBase input, AggregatorFsmOutputs output) {
         output.OutputList.Clear();
 
         switch (input) {

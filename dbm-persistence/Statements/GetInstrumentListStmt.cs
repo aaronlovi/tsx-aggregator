@@ -22,19 +22,13 @@ internal sealed class GetInstrumentListStmt : QueryDbStmtBase {
     private static int _instrumentNameIndex = -1;
     private static int _createdDateIndex = -1;
 
-    public GetInstrumentListStmt() : base(sql, nameof(GetInstrumentListStmt)) {
-        _instrumentDtoList = new();
-    }
+    public GetInstrumentListStmt() : base(sql, nameof(GetInstrumentListStmt)) => _instrumentDtoList = new();
 
     public IReadOnlyList<InstrumentDto> Instruments => _instrumentDtoList;
 
-    protected override void ClearResults() {
-        _instrumentDtoList.Clear();
-    }
+    protected override void ClearResults() => _instrumentDtoList.Clear();
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return Array.Empty<NpgsqlParameter>();
-    }
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() => Array.Empty<NpgsqlParameter>();
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);

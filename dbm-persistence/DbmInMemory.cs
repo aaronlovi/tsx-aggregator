@@ -41,20 +41,6 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
-    private ulong GetNextId64() => GetIdRange64(1);
-
-    private ulong GetIdRange64(uint count) {
-        if (count == 0)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be 0");
-
-        // Always in memory
-        lock (_lock) {
-            var result = _lastUsed + 1;
-            _lastUsed += count;
-            return result;
-        }
-    }
-
     #endregion
 
     #region AGGREGATED
@@ -93,32 +79,6 @@ public sealed class DbmInMemory : IDbmService {
 
     #region RAW
 
-    public ValueTask<Result> InsertInstrumentIfNotExists(string companySymbol, string companyName, string instrumentSymbol, string instrumentName, string exchange, CancellationToken ct) {
-        lock (_data) {
-            InstrumentDto? instrument = _data.GetInstrumentBySymbolAndExchange(companySymbol, instrumentSymbol, exchange);
-
-            if (instrument is not null)
-                return ValueTask.FromResult(Result.SetFailure($"Instrument[{companySymbol},{companyName},{instrumentSymbol}] already exists"));
-
-            long instrumentId = (long)GetNextId64();
-            var instrumentDto = new InstrumentDto(instrumentId, exchange, companySymbol, companyName, instrumentSymbol, instrumentName, DateTime.UtcNow, null);
-            _data.InsertInstrument(instrumentDto);
-        }
-
-        return ValueTask.FromResult(Result.SUCCESS);
-    }
-
-    public ValueTask<Result> ObsoleteInstrument(string companySymbol, string instrumentSymbol, string exchange, CancellationToken ct) {
-        lock (_data) {
-            InstrumentDto? instrument = _data.GetInstrumentBySymbolAndExchange(companySymbol, instrumentSymbol, exchange);
-
-            if (instrument is not null)
-                _data.ObsoleteInstrument(instrument.InstrumentId, DateTimeOffset.UtcNow);
-        }
-
-        return ValueTask.FromResult(Result.SUCCESS);
-    }
-
     public ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct) {
         lock (_data) {
             IReadOnlyList<InstrumentDto> instrumentList = _data.GetInstrumentList();
@@ -129,13 +89,6 @@ public sealed class DbmInMemory : IDbmService {
     public ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
         lock (_data) {
             _data.UpdateInstrumentList(newInstrumentList, obsoletedInstrumentList);
-        }
-        return ValueTask.FromResult(Result.SUCCESS);
-    }
-
-    public ValueTask<Result> InsertInstrumentEvent(InstrumentEventExDto instrumentEventDto, CancellationToken ct) {
-        lock (_data) {
-            _data.InsertInstrumentEvent(instrumentEventDto.InstrumentEvent);
         }
         return ValueTask.FromResult(Result.SUCCESS);
     }

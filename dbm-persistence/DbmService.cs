@@ -119,40 +119,6 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     #region Raw
 
-    public async ValueTask<Result> InsertInstrumentIfNotExists(
-        string companySymbol,
-        string companyName,
-        string instrumentSymbol,
-        string instrumentName,
-        string exchange,
-        CancellationToken ct) {
-        var stmt = new GetInstrumentBySymbolAndExchangeStmt(companySymbol, instrumentSymbol, exchange);
-        var res = await _exec.ExecuteWithRetry(stmt, ct);
-        if (!res.Success || res.NumRows == 0) {
-            var instrumentId = (long)await GetNextId64(ct);
-            var instrumentDto = new InstrumentDto(instrumentId, exchange, companySymbol, companyName, instrumentSymbol, instrumentName, DateTime.UtcNow, null);
-            var insertInstrumentStmt = new InsertInstrumentStmt(instrumentDto);
-            res = await _exec.ExecuteWithRetry(insertInstrumentStmt, ct);
-        }
-
-        return res;
-    }
-
-    public async ValueTask<Result> ObsoleteInstrument(
-        string companySymbol,
-        string instrumentSymbol,
-        string exchange,
-        CancellationToken ct) {
-        var getInstrumentStmt = new GetInstrumentBySymbolAndExchangeStmt(companySymbol, instrumentSymbol, exchange);
-        var res = await _exec.ExecuteWithRetry(getInstrumentStmt, ct);
-        if (res.Success && res.NumRows > 0) {
-            var obsoleteInstrumentStmt = new ObsoleteInstrumentStmt(getInstrumentStmt.Results!.InstrumentId, DateTime.UtcNow);
-            res = await _exec.ExecuteWithRetry(obsoleteInstrumentStmt, ct);
-        }
-
-        return res;
-    }
-
     public async ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct) {
         var stmt = new GetInstrumentListStmt();
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
@@ -161,11 +127,6 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     public async ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
         var stmt = new UpdateInstrumentListStmt(newInstrumentList, obsoletedInstrumentList);
-        return await _exec.ExecuteWithRetry(stmt, ct);
-    }
-
-    public async ValueTask<Result> InsertInstrumentEvent(InstrumentEventExDto instrumentEventDto, CancellationToken ct) {
-        var stmt = new InsertInstrumentEventStmt(instrumentEventDto);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
