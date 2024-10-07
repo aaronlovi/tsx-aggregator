@@ -169,7 +169,7 @@ public class Aggregator : BackgroundService, INamedService {
     }
 
     private async Task ProcessCompanyDataChangedEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
-        (Result res, IReadOnlyList<CurrentInstrumentReportDto> rawReports) = await _dbm.GetCurrentInstrumentReports(instrumentEvt.InstrumentId, ct);
+        (Result res, IReadOnlyList<CurrentInstrumentRawDataReportDto> rawReports) = await _dbm.GetCurrentInstrumentReports(instrumentEvt.InstrumentId, ct);
         if (!res.Success || rawReports.Count == 0) {
             _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected no company data changed ({DbResult},{NumReports})",
                 res.Success, rawReports.Count);
@@ -183,7 +183,7 @@ public class Aggregator : BackgroundService, INamedService {
             instrumentEvt.NumShares,
             _logger);
 
-        foreach (CurrentInstrumentReportDto rpt in rawReports)
+        foreach (CurrentInstrumentRawDataReportDto rpt in rawReports)
             companyReportBuilder.AddRawReport(rpt);
 
         CompanyReport companyReport = companyReportBuilder.Build();

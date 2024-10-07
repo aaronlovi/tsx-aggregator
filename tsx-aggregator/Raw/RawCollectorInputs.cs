@@ -68,3 +68,11 @@ public sealed class RawCollectorPauseServiceInput : RawCollectorInputBase {
 
     public bool PauseNotResume { get; init; }
 }
+
+public sealed class RawCollectorIgnoreRawReportInput : RawCollectorInputBase {
+    public RawCollectorIgnoreRawReportInput(long reqId, ulong instrumentReportId, CancellationTokenSource? cts)
+        : base(reqId, cts)
+        => InstrumentReportId = instrumentReportId;
+
+    public ulong InstrumentReportId { get; init; }
+}

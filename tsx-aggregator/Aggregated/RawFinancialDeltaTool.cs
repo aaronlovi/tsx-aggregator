@@ -28,18 +28,18 @@ internal class RawFinancialDeltaTool {
 
     public async Task<RawFinancialsDelta> TakeDelta(
         long instrumentId,
-        IReadOnlyList<CurrentInstrumentReportDto> existingRawFinancials,
+        IReadOnlyList<CurrentInstrumentRawDataReportDto> existingRawFinancials,
         TsxCompanyData newRawCompanyData,
         CancellationToken ct) {
         var retVal = new RawFinancialsDelta(instrumentId, newRawCompanyData.CurNumShares, newRawCompanyData.PricePerShare);
 
-        var existingRawAnnualBalanceSheets = new List<CurrentInstrumentReportDto>();
-        var existingRawAnnualCashFlowReports = new List<CurrentInstrumentReportDto>();
-        var existingRawAnnualIncomeStatements = new List<CurrentInstrumentReportDto>();
-        var existingRawQuarterlyBalanceSheets = new List<CurrentInstrumentReportDto>();
-        var existingRawQuarterlyCashFlowReports = new List<CurrentInstrumentReportDto>();
-        var existingRawQuarterlyIncomeStatements = new List<CurrentInstrumentReportDto>();
-        foreach (CurrentInstrumentReportDto f in existingRawFinancials) {
+        var existingRawAnnualBalanceSheets = new List<CurrentInstrumentRawDataReportDto>();
+        var existingRawAnnualCashFlowReports = new List<CurrentInstrumentRawDataReportDto>();
+        var existingRawAnnualIncomeStatements = new List<CurrentInstrumentRawDataReportDto>();
+        var existingRawQuarterlyBalanceSheets = new List<CurrentInstrumentRawDataReportDto>();
+        var existingRawQuarterlyCashFlowReports = new List<CurrentInstrumentRawDataReportDto>();
+        var existingRawQuarterlyIncomeStatements = new List<CurrentInstrumentRawDataReportDto>();
+        foreach (CurrentInstrumentRawDataReportDto f in existingRawFinancials) {
             if (f.ReportType == (int)Constants.ReportTypes.BalanceSheet && f.ReportPeriodType == (int)Constants.ReportPeriodTypes.Annual)
                 existingRawAnnualBalanceSheets.Add(f);
             else if (f.ReportType == (int)Constants.ReportTypes.CashFlow && f.ReportPeriodType == (int)Constants.ReportPeriodTypes.Annual)
@@ -67,7 +67,7 @@ internal class RawFinancialDeltaTool {
     private async Task TakeDeltaCore(
         long instrumentId,
         IList<RawReportDataMap> newRawReportList,
-        IReadOnlyList<CurrentInstrumentReportDto> existingRawReportList,
+        IReadOnlyList<CurrentInstrumentRawDataReportDto> existingRawReportList,
         Constants.ReportTypes reportType,
         Constants.ReportPeriodTypes reportPeriod,
         RawFinancialsDelta rawFinancialsDelta,
@@ -86,7 +86,7 @@ internal class RawFinancialDeltaTool {
                 continue;
             }
 
-            List<CurrentInstrumentReportDto> existingReportDtoRows = reportPeriod == Constants.ReportPeriodTypes.Annual
+            List<CurrentInstrumentRawDataReportDto> existingReportDtoRows = reportPeriod == Constants.ReportPeriodTypes.Annual
                 ? existingRawReportList.Where(rpt => rpt.ReportDate.Year == newRawReport.ReportDate.Value.Year).ToList()
                 : existingRawReportList.Where(rpt => {
                     var existingReportQuarter = DateQuarter.FromDate(rpt.ReportDate.ToDateTimeUtc());
@@ -96,7 +96,7 @@ internal class RawFinancialDeltaTool {
 
             if (existingReportDtoRows.Count > 0) {
                 // Found a matching existing report. Check for field-by-field equivalence
-                CurrentInstrumentReportDto existingReportDto = existingReportDtoRows[0];
+                CurrentInstrumentRawDataReportDto existingReportDto = existingReportDtoRows[0];
                 using JsonDocument existingReportJsonObj = JsonDocument.Parse(existingReportDto.ReportJson);
 
                 if (newRawReport.IsEqual(existingReportJsonObj))
@@ -139,13 +139,14 @@ internal class RawFinancialDeltaTool {
         CancellationToken ct,
         bool checkManually = false) {
         rawFinancialsDelta.InstrumentReportsToInsert.Add(
-            new CurrentInstrumentReportDto(
+            new CurrentInstrumentRawDataReportDto(
                 InstrumentReportId: (long) await _dbm.GetNextId64(ct),
                 InstrumentId: instrumentId,
                 ReportType: (int)reportType,
                 ReportPeriodType: (int)reportPeriod,
                 ReportJson: newRawReport.AsJsonString(),
                 ReportDate: newRawReport.ReportDate!.Value,
-                CheckManually: checkManually));
+                CheckManually: checkManually,
+                IgnoreReport: false));
     }
 }

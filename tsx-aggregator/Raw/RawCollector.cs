@@ -70,6 +70,8 @@ internal partial class RawCollector : BackgroundService, INamedService {
                     using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
                     using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
 
+                    await PreprocessInputs(input, thisRequestCts.Token);
+
                     var output = new RawCollectorFsmOutputs();
                     _stateFsm.Update(input, utcNow, output);
                     await ProcessOutput(input, output.OutputList, stoppingToken);
@@ -146,6 +148,24 @@ internal partial class RawCollector : BackgroundService, INamedService {
 
         _registry.InitializeDirectory(instrumentList);
         _logger.LogInformation("RestoreInstrumentDirectory - restored {Count} instruments", instrumentList.Count);
+    }
+
+    private Task PreprocessInputs(RawCollectorInputBase inputs, CancellationToken ct) {
+        if (inputs is RawCollectorIgnoreRawReportInput ignoreRawReportInput)
+            return ProcessIgnoreRawReport(ignoreRawReportInput, ct);
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ProcessIgnoreRawReport(RawCollectorIgnoreRawReportInput inputs, CancellationToken ct) {
+        var instrumentReportId = inputs.InstrumentReportId;
+        var res = await _dbm.IgnoreRawUpdatedDataReport(instrumentReportId, ct);
+        if (res.Success)
+            _logger.LogInformation("PreprocessInputs - IgnoreRawUpdatedDataReport success");
+        else
+            _logger.LogWarning("PreprocessInputs - IgnoreRawUpdatedDataReport failed with error: {ErrMsg}", res.ErrMsg);
+
+        inputs.Completed.TrySetResult(res);
     }
 
     private async Task ProcessOutput(

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace tsx_aggregator.shared;
 
@@ -55,6 +56,15 @@ public static class Utilities {
     public static TimeSpan CalculateTimeDifference(DateTime startTime, DateTime? endTime) {
         TimeSpan difference = endTime.GetValueOrDefault(startTime) - startTime;
         return difference > TimeSpan.Zero ? difference : TimeSpan.FromMilliseconds(1);
+    }
+
+    /// <summary>
+    /// Creates a task that completes when the provided CancellationToken is cancelled.
+    /// </summary>
+    public static Task CreateCancellationTask(CancellationToken ct) {
+        var tcs = new TaskCompletionSource<bool>();
+        ct.Register(() => tcs.SetResult(true));
+        return tcs.Task;
     }
 
     public static bool EqualsInvariant(this string str, string other)

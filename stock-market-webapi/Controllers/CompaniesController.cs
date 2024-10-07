@@ -13,9 +13,7 @@ public class CompaniesController : Controller {
 
     private readonly StockDataServiceClient _client;
 
-    public CompaniesController(StockDataServiceClient client) {
-        _client = client;
-    }
+    public CompaniesController(StockDataServiceClient client) => _client = client;
 
     [HttpGet("companies")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -108,5 +106,28 @@ public class CompaniesController : Controller {
             searchResult.Add(new CompanySearchResult(res.Exchange, res.CompanyName, res.InstrumentSymbol));
 
         return Ok(searchResult);
+    }
+
+    [HttpPost("companies/ignore_raw_report/{instrumentReportId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IgnoreRawReport(ulong instrumentReportId) {
+        try {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var request = new IgnoreRawDataReportRequest() { InstrumentReportId = instrumentReportId };
+            StockDataServiceReply reply = await _client.IgnoreRawDataReportAsync(request);
+            if (!reply.Success)
+                return UnprocessableEntity(new { error = reply.ErrorMessage });
+
+            return Ok();
+        } catch (Exception) {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { error = "An unexpected error occurred." });
+        }
     }
 }

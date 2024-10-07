@@ -14,31 +14,35 @@ public static class TestDataFactory {
     public static readonly DateTime Year2021Utc = new(2021, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
     public static readonly DateOnly Year2021AsDate = DateOnly.FromDateTime(Year2021Utc);
     public const bool DefaultCheckManually = false;
+    public const bool DefaultIgnoreReport = false;
 
-    public static CurrentInstrumentReportDto CreateCurrentInstrumentReportDto(
+    public static CurrentInstrumentRawDataReportDto CreateCurrentInstrumentReportDto(
         long? instrumentReportId = null,
         long? instrumentId = null,
         int? reportType = null,
         int? reportPeriodType = null,
         string reportJson = "{}",
         DateOnly? reportDate = null,
-        bool? checkManually = null) {
+        bool? checkManually = null,
+        bool? ignoreReport = null) {
 
         // Providing default values if null is passed for nullable parameters
-        var defaultInstrumentReportId = instrumentReportId ?? DefaultInstrumentReportId;
-        var defaultInstrumentId = instrumentId ?? DefaultInstrumentId;
-        var defaultReportType = reportType ?? DefaultReportType;
-        var defaultReportPeriodType = reportPeriodType ?? DefaultReportPeriodType;
-        var defaultReportDate = reportDate ?? Year2020AsDate;
-        var defaultCheckManually = checkManually ?? DefaultCheckManually;
+        var instrumentReportId_ = instrumentReportId ?? DefaultInstrumentReportId;
+        var instrumentId_ = instrumentId ?? DefaultInstrumentId;
+        var reportType_ = reportType ?? DefaultReportType;
+        var reportPeriodType_ = reportPeriodType ?? DefaultReportPeriodType;
+        var reportDate_ = reportDate ?? Year2020AsDate;
+        var checkManually_ = checkManually ?? DefaultCheckManually;
+        var ignoreReport_ = ignoreReport ?? DefaultIgnoreReport;
 
-        return new CurrentInstrumentReportDto(
-            defaultInstrumentReportId,
-            defaultInstrumentId,
-            defaultReportType,
-            defaultReportPeriodType,
+        return new CurrentInstrumentRawDataReportDto(
+            instrumentReportId_,
+            instrumentId_,
+            reportType_,
+            reportPeriodType_,
             reportJson,
-            defaultReportDate,
-            defaultCheckManually);
+            reportDate_,
+            checkManually_,
+            ignoreReport_);
     }
 }

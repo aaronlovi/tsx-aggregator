@@ -8,8 +8,8 @@ namespace dbm_persistence;
 internal class DbmInMemoryData {
     private readonly Dictionary<long, List<InstrumentEventDto>> _instrumentEventsByInstrumentId;
     private readonly Dictionary<long, InstrumentDto> _instrumentsByInstrumentId;
-    private readonly Dictionary<long, List<InstrumentPriceDto>> _instrumentPricesByInstrumentId;
-    private readonly Dictionary<long, List<InstrumentReportDto>> _instrumentReportsByInstrumentId;
+    private readonly Dictionary<long, List<InstrumentPriceDto>> _pricesByInstrumentId;
+    private readonly Dictionary<long, List<InstrumentRawDataReportDto>> _rawDataReportsByInstrumentId;
     private readonly Dictionary<long, List<ProcessedInstrumentReportDto>> _processedInstrumentReportsByInstrumentId;
     private readonly Dictionary<string, bool> _serviceIsPausedByName;
     private ApplicationCommonState? _stateFsmState;
@@ -17,8 +17,8 @@ internal class DbmInMemoryData {
     public DbmInMemoryData() {
         _instrumentEventsByInstrumentId = new();
         _instrumentsByInstrumentId = new();
-        _instrumentPricesByInstrumentId = new();
-        _instrumentReportsByInstrumentId = new();
+        _pricesByInstrumentId = new();
+        _rawDataReportsByInstrumentId = new();
         _processedInstrumentReportsByInstrumentId = new();
         _serviceIsPausedByName = new();
     }
@@ -51,7 +51,7 @@ internal class DbmInMemoryData {
 
                 // Instrument is fixed
 
-                if (!_instrumentPricesByInstrumentId.TryGetValue(instrumentId, out List<InstrumentPriceDto>? instrumentPrices))
+                if (!_pricesByInstrumentId.TryGetValue(instrumentId, out List<InstrumentPriceDto>? instrumentPrices))
                     continue;
 
                 foreach (InstrumentPriceDto instrumentPrice in instrumentPrices) {
@@ -79,27 +79,28 @@ internal class DbmInMemoryData {
         return bestPotentialEvent;
     }
 
-    public List<CurrentInstrumentReportDto> GetCurrentInstrumentReports(long instrumentId) {
-        var reports = new List<CurrentInstrumentReportDto>();
+    public List<CurrentInstrumentRawDataReportDto> GetCurrentInstrumentReports(long instrumentId) {
+        var reports = new List<CurrentInstrumentRawDataReportDto>();
 
-        if (!_instrumentReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentReportDto>? instrumentReports))
+        if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
             return reports;
 
-        foreach (InstrumentReportDto instrumentReport in instrumentReports) {
+        foreach (InstrumentRawDataReportDto instrumentReport in instrumentReports) {
             if (!instrumentReport.IsCurrent)
                 continue;
 
             if (instrumentReport.CheckManually)
                 continue;
 
-            var currentReport = new CurrentInstrumentReportDto(
+            var currentReport = new CurrentInstrumentRawDataReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
                 instrumentReport.ReportDate,
-                instrumentReport.CheckManually);
+                instrumentReport.CheckManually,
+                instrumentReport.IgnoreReport);
             reports.Add(currentReport);
         }
 
@@ -138,27 +139,28 @@ internal class DbmInMemoryData {
 
     public ApplicationCommonState? GetApplicationCommonState() => _stateFsmState == null ? null : new ApplicationCommonState(_stateFsmState);
 
-    public IReadOnlyList<CurrentInstrumentReportDto> GetRawFinancialsByInstrumentId(long instrumentId) {
-        var retVal = new List<CurrentInstrumentReportDto>();
+    public IReadOnlyList<CurrentInstrumentRawDataReportDto> GetRawFinancialsByInstrumentId(long instrumentId) {
+        var retVal = new List<CurrentInstrumentRawDataReportDto>();
 
-        if (!_instrumentReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentReportDto>? instrumentReports))
+        if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
             return retVal;
 
-        foreach (InstrumentReportDto instrumentReport in instrumentReports) {
+        foreach (InstrumentRawDataReportDto instrumentReport in instrumentReports) {
             if (!instrumentReport.IsCurrent)
                 continue;
 
             if (instrumentReport.CheckManually)
                 continue;
 
-            var currentReport = new CurrentInstrumentReportDto(
+            var currentReport = new CurrentInstrumentRawDataReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
                 instrumentReport.ReportDate,
-                instrumentReport.CheckManually);
+                instrumentReport.CheckManually,
+                instrumentReport.IgnoreReport);
             retVal.Add(currentReport);
         }
 
@@ -178,7 +180,7 @@ internal class DbmInMemoryData {
             if (!_processedInstrumentReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<ProcessedInstrumentReportDto>? processedInstrumentReports))
                 continue;
 
-            if (!_instrumentReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentReportDto>? instrumentReports))
+            if (!_rawDataReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
                 continue;
 
             foreach (ProcessedInstrumentReportDto pir in processedInstrumentReports) {
@@ -187,7 +189,7 @@ internal class DbmInMemoryData {
 
                 // Processed instrument report is fixed
 
-                foreach (InstrumentReportDto ir in instrumentReports) {
+                foreach (InstrumentRawDataReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
                         || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
                         || !ir.IsCurrent
@@ -241,7 +243,7 @@ internal class DbmInMemoryData {
             if (!_processedInstrumentReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<ProcessedInstrumentReportDto>? processedInstrumentReports))
                 continue;
 
-            if (!_instrumentReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentReportDto>? instrumentReports))
+            if (!_rawDataReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
                 continue;
 
             foreach (ProcessedInstrumentReportDto pir in processedInstrumentReports) {
@@ -263,7 +265,7 @@ internal class DbmInMemoryData {
                     ReportObsoletedDate: null,
                     NumAnnualCashFlowReports: 0); // Don't know yet
 
-                foreach (InstrumentReportDto ir in instrumentReports) {
+                foreach (InstrumentRawDataReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
                         || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
                         || !ir.IsCurrent
@@ -349,6 +351,18 @@ internal class DbmInMemoryData {
         instrumentEvents.Add(dto);
     }
 
+    public void IgnoreRawUpdatedDataReport(ulong instrumentReportId) {
+        if (!_rawDataReportsByInstrumentId.TryGetValue((long)instrumentReportId, out List<InstrumentRawDataReportDto>? rawDataReports))
+            return;
+
+        for (int i = 0; i < rawDataReports.Count; i++) {
+            if (rawDataReports[i].InstrumentReportId != (long)instrumentReportId)
+                continue;
+
+            rawDataReports[i] = rawDataReports[i] with { IgnoreReport = true };
+        }
+    }
+
     public void SetStateFsmState(ApplicationCommonState stateFsmState) => _stateFsmState = new ApplicationCommonState(stateFsmState);
 
     public void UpdateNextTimeToFetchQuote(DateTime nextTimeToFetchQuotes) {
@@ -364,12 +378,12 @@ internal class DbmInMemoryData {
         decimal newPricePerShare = rawFinancialsDelta.PricePerShare;
         ulong newNumShares = rawFinancialsDelta.NumShares;
 
-        IList<CurrentInstrumentReportDto> instrumentReportsToObsolete = rawFinancialsDelta.InstrumentReportsToObsolete;
-        IList<CurrentInstrumentReportDto> instrumentReportsToInsert = rawFinancialsDelta.InstrumentReportsToInsert;
+        IList<CurrentInstrumentRawDataReportDto> instrumentReportsToObsolete = rawFinancialsDelta.InstrumentReportsToObsolete;
+        IList<CurrentInstrumentRawDataReportDto> instrumentReportsToInsert = rawFinancialsDelta.InstrumentReportsToInsert;
 
         // Obsolete old instrument reports
         foreach (var obsoletedReport in instrumentReportsToObsolete) {
-            if (!_instrumentReportsByInstrumentId.TryGetValue(obsoletedReport.InstrumentReportId, out List<InstrumentReportDto>? instrumentReports))
+            if (!_rawDataReportsByInstrumentId.TryGetValue(obsoletedReport.InstrumentReportId, out List<InstrumentRawDataReportDto>? instrumentReports))
                 continue;
 
             for (int i = 0; i < instrumentReports.Count; i++) {
@@ -385,11 +399,11 @@ internal class DbmInMemoryData {
 
         // Insert new instrument reports
         foreach (var newReport in instrumentReportsToInsert) {
-            if (!_instrumentReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentReportDto>? instrumentReports))
-                instrumentReports = _instrumentReportsByInstrumentId[instrumentId] = new();
+            if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
+                instrumentReports = _rawDataReportsByInstrumentId[instrumentId] = new();
 
             long newInstrumentReportId = newReport.InstrumentReportId;
-            instrumentReports.Add(new InstrumentReportDto(
+            instrumentReports.Add(new InstrumentRawDataReportDto(
                 newInstrumentReportId,
                 instrumentId,
                 newReport.ReportType,
@@ -399,7 +413,8 @@ internal class DbmInMemoryData {
                 CreatedDate: utcNow,
                 ObsoletedDate: null,
                 IsCurrent: true,
-                CheckManually: newReport.CheckManually));
+                CheckManually: newReport.CheckManually,
+                IgnoreReport: newReport.IgnoreReport));
 
             numReportsToInsert += newReport.CheckManually ? 0 : 1;
             numReportsToCheckManually += newReport.CheckManually ? 1 : 0;
@@ -420,7 +435,7 @@ internal class DbmInMemoryData {
 
     private void AddNewInstrumentPrice(long instrumentId, decimal newPricePerShare, ulong newNumShares, DateTime utcNow) {
         // Obsolete old instrument prices
-        if (_instrumentPricesByInstrumentId.TryGetValue(instrumentId, out List<InstrumentPriceDto>? instrumentPrices)) {
+        if (_pricesByInstrumentId.TryGetValue(instrumentId, out List<InstrumentPriceDto>? instrumentPrices)) {
             for (int i = 0; i < instrumentPrices.Count; i++) {
                 instrumentPrices[i] = instrumentPrices[i] with { ObsoletedDate = utcNow };
             }
@@ -428,7 +443,7 @@ internal class DbmInMemoryData {
 
         // Insert new instrument prices
         if (instrumentPrices == null) {
-            instrumentPrices = _instrumentPricesByInstrumentId[instrumentId] = new();
+            instrumentPrices = _pricesByInstrumentId[instrumentId] = new();
             instrumentPrices.Add(new InstrumentPriceDto(
                 instrumentId,
                 newPricePerShare,

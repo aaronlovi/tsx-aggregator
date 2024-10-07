@@ -23,14 +23,25 @@ public record InstrumentEventExDto(
     public bool IsProcessed => InstrumentEvent.IsProcessed;
 }
 
-public record CurrentInstrumentReportDto(
+/// <summary>
+/// "Raw" data report with information directly from the scraper.
+/// </summary>
+/// <param name="CheckManually">True if the report has data which is potentially an override of an existing report</param>
+/// <param name="IgnoreReport">
+/// True if the report was checked manually, but it was found that the updated data was bad,
+/// and this report should be ignored.
+/// False for normal reports where 'CheckManually' is also false.
+/// False for reports that still need to be checked manually.
+/// </param>
+public record CurrentInstrumentRawDataReportDto(
     long InstrumentReportId,
     long InstrumentId,
     int ReportType,
     int ReportPeriodType,
     string ReportJson,
     DateOnly ReportDate,
-    bool CheckManually);
+    bool CheckManually,
+    bool IgnoreReport);
 
 public record ProcessedInstrumentReportDto(
     long InstrumentId,
@@ -246,7 +257,7 @@ public record InstrumentPriceDto(
     DateTimeOffset CreatedDate,
     DateTimeOffset? ObsoletedDate);
 
-public record InstrumentReportDto(
+public record InstrumentRawDataReportDto(
     long InstrumentReportId,
     long InstrumentId,
     int ReportType,
@@ -256,7 +267,8 @@ public record InstrumentReportDto(
     DateTimeOffset CreatedDate,
     DateTimeOffset? ObsoletedDate,
     bool IsCurrent,
-    bool CheckManually);
+    bool CheckManually,
+    bool IgnoreReport);
 
 public class ApplicationCommonState {
     private bool _isPaused;

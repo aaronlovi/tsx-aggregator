@@ -9,6 +9,9 @@ service StockDataService {
     rpc GetStocksData(GetStocksDataRequest) returns (GetStocksDataReply);
     rpc GetStocksDetail(GetStocksDetailRequest) returns (GetStocksDetailReply);
     rpc GetStockSearchResults(GetStockSearchResultsRequest) returns (GetStockSearchResultsReply);
+
+    // Raw data report to be ignored must be one that has the 'check manually' flag set to true
+    rpc IgnoreRawDataReport(IgnoreRawDataReportRequest) returns (StockDataServiceReply);
 }
 
 message GetStocksDataRequest {
@@ -68,4 +71,13 @@ message GetStockSearchResultsReplyItem {
     string exchange = 1;
     string instrument_symbol = 2;
     string company_name = 3;
+}
+
+message IgnoreRawDataReportRequest {
+    uint64 instrument_report_id = 1;
+}
+
+message StockDataServiceReply {
+    bool success = 1;
+    string error_message = 2;
 }

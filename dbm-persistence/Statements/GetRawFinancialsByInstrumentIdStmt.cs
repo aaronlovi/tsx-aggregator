@@ -28,14 +28,14 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     private static int _checkManuallyIndex = -1;
 
     // Results
-    private readonly List<CurrentInstrumentReportDto> _instrumentReportDtoList; // Array of type InstrumentReportDto
+    private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReportDtoList; // Array of type InstrumentRawDataReportDto
 
     public GetRawFinancialsByInstrumentIdStmt(long instrumentId) : base(sql, nameof(GetRawFinancialsByInstrumentIdStmt)) {
         _instrumentId = instrumentId;
         _instrumentReportDtoList = new();
     }
 
-    public IReadOnlyList<CurrentInstrumentReportDto> InstrumentReports => _instrumentReportDtoList;
+    public IReadOnlyList<CurrentInstrumentRawDataReportDto> InstrumentReports => _instrumentReportDtoList;
 
     protected override void ClearResults() => _instrumentReportDtoList.Clear();
 
@@ -63,14 +63,15 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         DateTimeOffset reportDate_ = reader.GetDateTime(_reportDateIndex);
         var reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
-        var i = new CurrentInstrumentReportDto(
+        var i = new CurrentInstrumentRawDataReportDto(
             reader.GetInt64(_instrumentReportIdIndex),
             reader.GetInt64(_instrumentIdIndex),
             reader.GetInt32(_reportTypeIndex),
             reader.GetInt32(_reportPeriodTypeIndex),
             reader.GetString(_reportJsonIndex),
             reportDate,
-            reader.GetBoolean(_checkManuallyIndex));
+            reader.GetBoolean(_checkManuallyIndex),
+            IgnoreReport: false);
         _instrumentReportDtoList.Add(i);
         return true;
     }

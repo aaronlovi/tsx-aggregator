@@ -27,7 +27,8 @@ internal partial class RawCollector : BackgroundService {
         }
 
         // Fetch current raw data for the company from the raw database, if any
-        (Result res, IReadOnlyList<CurrentInstrumentReportDto> existingRawFinancials) = await _dbm.GetRawFinancialsByInstrumentId(instrumentDto.InstrumentId, ct);
+        (Result res, IReadOnlyList<CurrentInstrumentRawDataReportDto> existingRawFinancials)
+            = await _dbm.GetRawFinancialsByInstrumentId(instrumentDto.InstrumentId, ct);
         if (!res.Success)
             _logger.LogWarning("ProcessFetchInstrumentData - Failed to fetch existing raw reports from the database - Error:{ErrMsg}", res.ErrMsg);
         else
@@ -53,7 +54,7 @@ internal partial class RawCollector : BackgroundService {
 
         _logger.LogInformation("ProcessFetchInstrumentData - Updating instrument reports. # shares {CurNumShares}, price per share: ${PricePerShare}",
             newRawCompanyData.CurNumShares, newRawCompanyData.PricePerShare);
-        Result updateInstrumentRes = await _dbm.UpdateInstrumentReports(delta, ct);
+        Result updateInstrumentRes = await _dbm.UpdateRawInstrumentReports(delta, ct);
 
         if (updateInstrumentRes.Success) {
             _logger.LogInformation("ProcessFetchInstrumentData - Updated instrument reports success");

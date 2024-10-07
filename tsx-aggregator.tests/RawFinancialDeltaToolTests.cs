@@ -26,7 +26,7 @@ public class RawFinancialDeltaToolTests {
         var rawFinancialDeltaTool = new RawFinancialDeltaTool(ServiceProvider);
 
         long instrumentId = 1;
-        var existingRawFinancials = new List<CurrentInstrumentReportDto>(); // Populate with test data as needed
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto>(); // Populate with test data as needed
         var newRawCompanyData = new TsxCompanyData(); // Populate with test data as needed
         var cancellationToken = CancellationToken.None;
 
@@ -51,7 +51,7 @@ public class RawFinancialDeltaToolTests {
         var initialRawFinancial = CreateCurrentInstrumentReportDto(
             instrumentReportId: instrumentReportId,
             reportJson: "{\"DATA_POINT\": 1}");
-        var existingRawFinancials = new List<CurrentInstrumentReportDto>() {
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto>() {
             initialRawFinancial,
             initialRawFinancial with {
                 InstrumentReportId = ++instrumentReportId,
@@ -98,7 +98,7 @@ public class RawFinancialDeltaToolTests {
         var initialRawFinancial = CreateCurrentInstrumentReportDto(
             instrumentReportId: instrumentReportId,
             reportJson: "{\"DATA_POINT\": 1}");
-        var existingRawFinancials = new List<CurrentInstrumentReportDto>() {
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto>() {
             initialRawFinancial,
             initialRawFinancial with {
                 InstrumentReportId = ++instrumentReportId,
@@ -147,7 +147,7 @@ public class RawFinancialDeltaToolTests {
         _svp = services.BuildServiceProvider();
     }
 
-    private static CurrentInstrumentReportDto CreateCurrentInstrumentReportDto(
+    private static CurrentInstrumentRawDataReportDto CreateCurrentInstrumentReportDto(
         long? instrumentReportId = null,
         long? instrumentId = null,
         int? reportType = null,

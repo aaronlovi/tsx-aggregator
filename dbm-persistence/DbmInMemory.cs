@@ -52,10 +52,10 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
-    public ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
+    public ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
         lock (_data) {
-            List<CurrentInstrumentReportDto> reports = _data.GetCurrentInstrumentReports(instrumentId);
-            return ValueTask.FromResult<(Result, IReadOnlyList<CurrentInstrumentReportDto>)>((Result.SUCCESS, reports));
+            List<CurrentInstrumentRawDataReportDto> reports = _data.GetCurrentInstrumentReports(instrumentId);
+            return ValueTask.FromResult<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)>((Result.SUCCESS, reports));
         }
     }
 
@@ -115,19 +115,32 @@ public sealed class DbmInMemory : IDbmService {
         return ValueTask.FromResult(Result.SUCCESS);
     }
 
-    public ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
+    public ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
         lock (_data) {
-            IReadOnlyList<CurrentInstrumentReportDto> rawFinancialsList = _data.GetRawFinancialsByInstrumentId(instrumentId);
+            IReadOnlyList<CurrentInstrumentRawDataReportDto> rawFinancialsList = _data.GetRawFinancialsByInstrumentId(instrumentId);
             return ValueTask.FromResult((Result.SUCCESS, rawFinancialsList));
         }
     }
 
-    public ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
+    public ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
         lock (_data) {
             _data.UpdateInstrumentReports(rawFinancialsDelta);
             return ValueTask.FromResult(Result.SUCCESS);
         }
     }
+
+    public ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct)
+        => throw new NotImplementedException();
+
+    public ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct) {
+        lock (_data) {
+            _data.IgnoreRawUpdatedDataReport(instrumentReportId);
+            return ValueTask.FromResult(Result.SUCCESS);
+        }
+    }
+
+    public ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct)
+        => throw new NotImplementedException();
 
     #endregion
 

@@ -16,7 +16,7 @@ public interface IDbmService {
 
     // Aggregated
     ValueTask<(Result, InstrumentEventExDto?)> GetNextInstrumentEvent(CancellationToken ct);
-    ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct);
+    ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct);
     ValueTask<Result> MarkInstrumentEventAsProcessed(InstrumentEventExDto dto, CancellationToken ct);
     ValueTask<Result> InsertProcessedCompanyReport(ProcessedInstrumentReportDto dto, CancellationToken ct);
 
@@ -26,8 +26,27 @@ public interface IDbmService {
     ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct);
     ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct);
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
-    ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
-    ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
+    ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
+    ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
+    
+    /// <summary>
+    /// Get the list of instruments that have updated data report.
+    /// These have 'check_manually' set to true, and also 'ignore' set to false.
+    /// </summary>
+    ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct);
+
+    /// <summary>
+    /// Operation to ignore an updated data report.
+    /// This may be necessary if the incoming data is bad, missing a lot of values, etc.
+    /// </summary>
+    ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct);
+
+    /// <summary>
+    /// Insert or update a current instrument report.
+    /// For example, when updating the 'ignore' flag.
+    /// Written as 'upsert' rather than 'update' just in case there is no such record (for example, missed in replication).
+    /// </summary>
+    ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct);
 
     // Data Requests
     ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);

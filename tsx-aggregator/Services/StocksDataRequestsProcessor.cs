@@ -37,9 +37,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
         _logger.LogInformation("StocksDataRequestsProcessor - Created");
     }
 
-    public bool PostRequest(StocksDataRequestsInputBase inp) {
-        return _inputChannel.Writer.TryWrite(inp);
-    }
+    public bool PostRequest(StocksDataRequestsInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget

@@ -18,12 +18,14 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
     private readonly IStocksDataRequestsProcessor _requestProcessor;
     private readonly IQuoteService _quotesService;
     private readonly ISearchService _searchService;
+    private readonly RawCollector _rawCollector;
 
     public StockDataSvc(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<StockDataSvc>>();
         _requestProcessor = svp.GetRequiredService<IStocksDataRequestsProcessor>();
         _quotesService = svp.GetRequiredService<IQuoteService>();
         _searchService = svp.GetRequiredService<ISearchService>();
+        _rawCollector = svp.GetRequiredService<RawCollector>();
     }
 
     public override async Task<GetStocksDataReply> GetStocksData(GetStocksDataRequest request, ServerCallContext context) {
@@ -218,5 +220,64 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
 
         // Local helper methods
         static GetStockSearchResultsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+    }
+
+    public override async Task<StockDataServiceReply> IgnoreRawDataReport(IgnoreRawDataReportRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
+            [LogUtils.ReqIdContext] = reqId,
+            [LogUtils.InstrumentReportIdContext] = request.InstrumentReportId
+        });
+
+        try {
+            _logger.LogInformation("IgnoreRawDataReport");
+
+            if (context is null) {
+                _logger.LogWarning("IgnoreRawDataReport - Null context");
+                return Failure("No context supplied");
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            Task cancellationTask = Utilities.CreateCancellationTask(cts.Token);
+
+            var inputs = new RawCollectorIgnoreRawReportInput(reqId, request.InstrumentReportId, cts);
+            _rawCollector.PostRequest(inputs);
+
+            await Task.WhenAny(inputs.Completed.Task, cancellationTask);
+
+            if (!inputs.Completed.Task.IsCompleted) {
+                // The task was cancelled
+                _logger.LogWarning("IgnoreRawDataReport - Canceled");
+                return Failure("IgnoreRawDataReport - Canceled");
+            }
+
+            // The task completed in the Raw Collector service
+            return HandleRawCollectorResponse(inputs);
+
+        } catch (OperationCanceledException oex) {
+            _logger.LogWarning(oex, "IgnoreRawDataReport - Canceled");
+            return Failure("IgnoreRawDataReport - Canceled");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "IgnoreRawDataReport - General Fault");
+            return Failure("IgnoreRawDataReport ran into a general error");
+        }
+
+        // Local helper methods
+
+        static StockDataServiceReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+
+        StockDataServiceReply HandleRawCollectorResponse(RawCollectorIgnoreRawReportInput inputs) {
+            if (inputs.Completed.Task.Result is not Result res) {
+                _logger.LogWarning("IgnoreRawDataReport - Unexpected response from Raw Collector");
+                return Failure("IgnoreRawDataReport - Unexpected response from Raw Collector");
+            }
+            
+            if (res.Success)
+                _logger.LogInformation("IgnoreRawDataReport - Success");
+            else
+                _logger.LogWarning("IgnoreRawDataReport - Failed: {ErrMsg}", res.ErrMsg);
+
+            return new() { Success = res.Success, ErrorMessage = res.ErrMsg };
+        }
     }
 }

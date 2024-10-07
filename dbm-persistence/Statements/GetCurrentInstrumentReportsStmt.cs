@@ -13,7 +13,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
         + " AND check_manually = false";
 
     private readonly long _instrumentId;
-    private readonly List<CurrentInstrumentReportDto> _instrumentReports;
+    private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReports;
 
     private static int _instrumentReportIdIndex = -1;
     private static int _reportTypeIndex = -1;
@@ -28,7 +28,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
         _instrumentReports = new();
     }
 
-    public IReadOnlyList<CurrentInstrumentReportDto> InstrumentReports => _instrumentReports;
+    public IReadOnlyList<CurrentInstrumentRawDataReportDto> InstrumentReports => _instrumentReports;
 
     protected override void ClearResults() => _instrumentReports.Clear();
 
@@ -55,14 +55,15 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
         DateTimeOffset reportDate_ = reader.GetDateTime(_reportDateIndex);
         var reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
 
-        var report = new CurrentInstrumentReportDto(
+        var report = new CurrentInstrumentRawDataReportDto(
             reader.GetInt64(_instrumentReportIdIndex),
             _instrumentId,
             reader.GetInt32(_reportTypeIndex),
             reader.GetInt32(_reportPeriodTypeIndex),
             reader.GetString(_reportJsonIndex),
             reportDate,
-            CheckManually: false);
+            CheckManually: false,
+            IgnoreReport: false);
         _instrumentReports.Add(report);
 
         return true;

@@ -99,7 +99,7 @@ public sealed class DbmService : IDisposable, IDbmService {
         return (res, stmt.InstrumentEventDto);
     }
 
-    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
+    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct) {
         var stmt = new GetCurrentInstrumentReportsStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentReports);
@@ -150,13 +150,13 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
-    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
+    public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
         var stmt = new GetRawFinancialsByInstrumentIdStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentReports);
     }
 
-    public async ValueTask<Result> UpdateInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
+    public async ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct) {
         var stmt = new UpdateInstrumentReportsStmt(rawFinancialsDelta);
         var res = await _exec.ExecuteWithRetry(stmt, ct);
         if (res.Success) {
@@ -167,6 +167,22 @@ public sealed class DbmService : IDisposable, IDbmService {
         }
         return res;
     }
+
+    public ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct)
+        => throw new NotImplementedException();
+
+    public async ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct) {
+        var stmt = new IgnoreUpdatedRawDataReportStmt(instrumentReportId);
+        var res = await _exec.ExecuteWithRetry(stmt, ct);
+        if (res.Success)
+            _logger.LogInformation("IgnoreUpdatedRawDataReport success - ID: {InstrumentReportId}", instrumentReportId);
+        else
+            _logger.LogWarning("IgnoreUpdatedRawDataReport failed with error {Error}", res.ErrMsg);
+        return res;
+    }
+
+    public ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct)
+        => throw new NotImplementedException();
 
     #endregion
 
