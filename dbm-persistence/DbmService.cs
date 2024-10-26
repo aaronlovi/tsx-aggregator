@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -219,6 +220,45 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     public ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct)
         => throw new NotImplementedException();
+
+    public async ValueTask<(Result res, bool existsMatching)> ExistsMatchingRawReport(
+        CurrentInstrumentRawDataReportDto rawReportDto, CancellationToken ct) {
+        var getInstrumentReportsStmt = new GetInstrumentReportsStmt(rawReportDto.InstrumentId);
+
+        var res = await _exec.ExecuteWithRetry(getInstrumentReportsStmt, ct);
+        if (!res.Success) {
+            _logger.LogWarning("ExistsMatchingRawReport failed while getting raw instrument reports with error {Error}", res.ErrMsg);
+            return Failure("Failed getting raw instrument reports: " + res.ErrMsg);
+        }
+
+        var newReportData = RawReportDataMap.FromJsonString(rawReportDto.ReportJson);
+
+        foreach (var existingReport in getInstrumentReportsStmt.InstrumentReports) {
+            if (existingReport.ObsoletedDate is not null)
+                continue;
+            if (existingReport.ReportType != rawReportDto.ReportType)
+                continue;
+            if (existingReport.ReportPeriodType != rawReportDto.ReportPeriodType)
+                continue;
+            if (existingReport.ReportDate != rawReportDto.ReportDate)
+                continue;
+
+            using JsonDocument existingReportData = JsonDocument.Parse(existingReport.ReportJson);
+
+            if (newReportData.IsEqual(existingReportData))
+                return FoundMatch();
+        }
+
+        return FoundNoMatch();
+
+        // Local helper methods
+
+        (Result res, bool existsMatching) Failure(string errMsg) => (new Result(false, errMsg), false);
+
+        (Result res, bool existsMatching) FoundMatch() => (Result.SUCCESS, true);
+        
+        (Result res, bool existsMatching) FoundNoMatch() => (Result.SUCCESS, false);
+    }
 
     #endregion
 

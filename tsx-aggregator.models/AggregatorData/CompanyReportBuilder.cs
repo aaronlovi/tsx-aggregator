@@ -30,14 +30,7 @@ public class CompanyReportBuilder {
             return this;
         }
 
-        using JsonDocument doc = JsonDocument.Parse(rawReport.ReportJson);
-        JsonElement root = doc.RootElement;
-        var reportData = new RawReportDataMap();
-        foreach (JsonProperty prop in root.EnumerateObject()) {
-            if (prop.Value.ValueKind != JsonValueKind.Number)
-                continue;
-            reportData[prop.Name] = prop.Value.GetDecimal();
-        }
+        var reportData = RawReportDataMap.FromJsonString(rawReport.ReportJson);
 
         switch (rptType) {
             case ReportTypes.CashFlow:

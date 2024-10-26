@@ -54,6 +54,9 @@ internal partial class RawCollector : BackgroundService {
 
         _logger.LogInformation("ProcessFetchInstrumentData - Updating instrument reports. # shares {CurNumShares}, price per share: ${PricePerShare}",
             newRawCompanyData.CurNumShares, newRawCompanyData.PricePerShare);
+
+        await DropDuplicateCheckManuallyReports(delta, ct);
+
         Result updateInstrumentRes = await _dbm.UpdateRawInstrumentReports(delta, ct);
 
         if (updateInstrumentRes.Success) {
@@ -61,6 +64,30 @@ internal partial class RawCollector : BackgroundService {
         }
         else {
             _logger.LogWarning("ProcessFetchInstrumentData - Updated instrument reports failed with error {Error}", updateInstrumentRes.ErrMsg);
+        }
+    }
+
+    private async Task DropDuplicateCheckManuallyReports(RawFinancialsDelta delta, CancellationToken ct) {
+        for (int i = delta.InstrumentReportsToInsert.Count - 1; i >= 0; --i) {
+            CurrentInstrumentRawDataReportDto rawReportDto = delta.InstrumentReportsToInsert[i];
+            if (!rawReportDto.CheckManually)
+                continue;
+
+            // The new report is marked as 'check manually', so we need to check if the same report already exists in the database.
+            (Result existsMatchingRes, bool existsMatching) = await _dbm.ExistsMatchingRawReport(rawReportDto, ct);
+            
+            if (!existsMatchingRes.Success) {
+                // Database failure, log and continue
+                _logger.LogWarning("ProcessFetchInstrumentData - Failed to check if a matching report exists in the database - Error:{ErrMsg}",
+                    existsMatchingRes.ErrMsg);
+                continue;
+            }
+
+            if (existsMatching) {
+                // A matching report already exists in the database, drop the new report
+                _logger.LogWarning("ProcessFetchInstrumentData - A matching report already exists in the database, dropping a new report");
+                delta.InstrumentReportsToInsert.RemoveAt(i);
+            }
         }
     }
 

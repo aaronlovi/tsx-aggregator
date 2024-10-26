@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
 using static tsx_aggregator.shared.Constants;
@@ -378,6 +379,31 @@ internal class DbmInMemoryData {
             PageSize: pageSize,
             TotalInstruments: totalItems,
             InstrumentsWithUpdates: instrumentsWithUpdatedRawData);
+    }
+
+    public bool ExistsMatchingRawReport(CurrentInstrumentRawDataReportDto rawReportDto) {
+        if (!_rawDataReportsByInstrumentId.TryGetValue(rawReportDto.InstrumentId, out List<InstrumentRawDataReportDto>? existingReports))
+            return false;
+
+        var newReportData = RawReportDataMap.FromJsonString(rawReportDto.ReportJson);
+
+        foreach (InstrumentRawDataReportDto existingReport in existingReports) {
+            if (existingReport.ObsoletedDate is not null)
+                continue;
+            if (existingReport.ReportType != rawReportDto.ReportType)
+                continue;
+            if (existingReport.ReportPeriodType != rawReportDto.ReportPeriodType)
+                continue;
+            if (existingReport.ReportDate != rawReportDto.ReportDate)
+                continue;
+
+            using JsonDocument existingReportData = JsonDocument.Parse(existingReport.ReportJson);
+            
+            if (newReportData.IsEqual(existingReportData))
+                return true;
+        }
+
+        return false;
     }
 
     public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType) {

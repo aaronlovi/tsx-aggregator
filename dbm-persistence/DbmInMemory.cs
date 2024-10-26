@@ -143,6 +143,13 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
+    public ValueTask<(Result res, bool existsMatching)> ExistsMatchingRawReport(CurrentInstrumentRawDataReportDto dto, CancellationToken ct) {
+        lock (_data) {
+            bool foundMatch = _data.ExistsMatchingRawReport(dto);
+            return ValueTask.FromResult((Result.SUCCESS, foundMatch));
+        }
+    }
+
     public ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct)
         => throw new NotImplementedException();
 

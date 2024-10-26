@@ -46,5 +46,16 @@ public class RawReportDataMap : NormalizedStringKeysHashMap<decimal> {
             map.Add("REPORTDATE", ReportDate.Value.ToString("yyyy-MM-dd") + "T00:00:00Z");
         return JsonSerializer.Serialize(map);
     }
-}
 
+    public static RawReportDataMap FromJsonString(string json) {
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+        var reportData = new RawReportDataMap();
+        foreach (JsonProperty prop in root.EnumerateObject()) {
+            if (prop.Value.ValueKind != JsonValueKind.Number)
+                continue;
+            reportData[prop.Name] = prop.Value.GetDecimal();
+        }
+        return reportData;
+    }
+}

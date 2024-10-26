@@ -63,7 +63,7 @@ internal sealed class GetInstrumentReportsStmt : QueryDbStmtBase {
         var reportDate = new DateOnly(reportDate_.Year, reportDate_.Month, reportDate_.Day);
 
         DateTimeOffset createdDate = reader.GetDateTime(_createdDateIndex);
-        DateTimeOffset obsoletedDate = reader.GetDateTime(_obsoletedDateIndex);
+        DateTimeOffset? obsoletedDate = reader.GetFieldValue<DateTime?>(_obsoletedDateIndex);
 
         var report = new InstrumentRawDataReportDto(
             reader.GetInt64(_instrumentReportIdIndex),

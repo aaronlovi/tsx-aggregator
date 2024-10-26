@@ -50,6 +50,8 @@ public interface IDbmService {
     /// </summary>
     ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct);
 
+    ValueTask<(Result res, bool existsMatching)> ExistsMatchingRawReport(CurrentInstrumentRawDataReportDto rawReportDto, CancellationToken ct);
+
     // Data Requests
     ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);
     ValueTask<Result<ProcessedFullInstrumentReportDto>> GetProcessedStockDataByExchangeAndSymbol(string exchange, string instrumentSymbol, CancellationToken ct);
