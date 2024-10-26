@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Google.Protobuf.WellKnownTypes;
+using tsx_aggregator.Services;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
@@ -43,11 +45,80 @@ public record CurrentInstrumentRawDataReportDto(
     bool CheckManually,
     bool IgnoreReport);
 
+/// <summary>
+/// Represents a paginated response containing instruments with updated raw data reports.
+/// </summary>
+public record PagedInstrumentsWithRawDataReportUpdatesDto(
+    int PageNumber,
+    int PageSize,
+    int TotalInstruments,
+    IList<InstrumentWithUpdatedRawDataDto> InstrumentsWithUpdates) {
+    public static PagedInstrumentsWithRawDataReportUpdatesDto WithPageNumberAndSizeOnly(int pageNumber, int pageSize)
+        => new(pageNumber, pageSize, 0, Array.Empty<InstrumentWithUpdatedRawDataDto>());
+
+    public bool IsValid => PageNumber > 0 && PageSize > 0 && TotalInstruments > 0 && InstrumentsWithUpdates.Count > 0;
+
+    public GetStocksWithUpdatedRawDataReportsReply ToGetStocksWithUpdatedRawDataReportsReply() {
+        var retVal = new GetStocksWithUpdatedRawDataReportsReply() {
+            Success = true,
+            TotalItems = TotalInstruments,
+            PageNumber = PageNumber,
+            PageSize = PageSize,
+        };
+        foreach (var instrumentDto in InstrumentsWithUpdates) {
+            var instrument = new InstrumentWithUpdatedRawData {
+                InstrumentId = (ulong)instrumentDto.InstrumentId,
+                Exchange = instrumentDto.Exchange,
+                CompanySymbol = instrumentDto.CompanySymbol,
+                InstrumentSymbol = instrumentDto.InstrumentSymbol,
+                CompanyName = instrumentDto.CompanyName,
+                InstrumentName = instrumentDto.InstrumentName,
+                ReportType = (uint)instrumentDto.ReportType,
+                ReportPeriodType = (uint)instrumentDto.ReportPeriodType,
+                ReportDate = instrumentDto.ReportDate.ToTimestamp(),
+            };
+
+            foreach (var instrumentRawDataItemDto in instrumentDto.RawReportAndUpdates) {
+                instrument.RawReportAndUpdates.Add(new InstrumentWithUpdatedRawDataItem {
+                    InstrumentReportId = (ulong)instrumentRawDataItemDto.InstrumentReportId,
+                    CreatedDate = Timestamp.FromDateTimeOffset(instrumentRawDataItemDto.CreatedDate),
+                    IsCurrent = instrumentRawDataItemDto.IsCurrent,
+                    CheckManually = instrumentRawDataItemDto.CheckManually,
+                    ReportJson = instrumentRawDataItemDto.SerializedReport,
+                });
+            }
+
+            retVal.InstrumentRawReportsWithUpdates.Add(instrument);
+        }
+
+        return retVal;
+    }
+}
+
+public record InstrumentWithUpdatedRawDataDto(
+    long InstrumentId,
+    string Exchange,
+    string CompanySymbol,
+    string InstrumentSymbol,
+    string CompanyName,
+    string InstrumentName,
+    int ReportType,
+    int ReportPeriodType,
+    DateOnly ReportDate,
+    IList<InstrumentWithUpdatedRawDataItemDto> RawReportAndUpdates);
+
+public record InstrumentWithUpdatedRawDataItemDto(
+    long InstrumentReportId,
+    DateTimeOffset CreatedDate,
+    bool IsCurrent,
+    bool CheckManually,
+    string SerializedReport);
+
 public record ProcessedInstrumentReportDto(
     long InstrumentId,
     string SerializedReport,
-    DateTimeOffset CreatedDate,
-    DateTimeOffset? ObsoletedDate);
+    DateTimeOffset ReportCreatedDate,
+    DateTimeOffset? ReportObsoletedDate);
 
 public record ProcessedFullInstrumentReportDto(
     long InstrumentId,
@@ -269,6 +340,8 @@ public record InstrumentRawDataReportDto(
     bool IsCurrent,
     bool CheckManually,
     bool IgnoreReport);
+
+public record RawInstrumentReportsToKeepAndIgnoreDto(long InstrumentId, long ReportIdToKeep, IReadOnlyList<long> ReportIdsToIgnore);
 
 public class ApplicationCommonState {
     private bool _isPaused;

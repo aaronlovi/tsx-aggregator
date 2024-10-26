@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Google.Protobuf.WellKnownTypes;
 using static tsx_aggregator.shared.Constants;
 
 namespace tsx_aggregator.shared;
@@ -82,5 +84,15 @@ public static class Extensions {
     public static bool EqualsOrdinal(this string str, string value) {
         ArgumentNullException.ThrowIfNull(str);
         return str.Equals(value, StringComparison.Ordinal);
+    }
+
+    public static Timestamp ToTimestamp(this DateOnly dateOnly) {
+        ArgumentNullException.ThrowIfNull(dateOnly);
+        return Timestamp.FromDateTime(dateOnly.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+    }
+
+    public static DateOnly ToDateOnly(this Timestamp ts) {
+        ArgumentNullException.ThrowIfNull(ts);
+        return DateOnly.FromDateTime(ts.ToDateTime());
     }
 }

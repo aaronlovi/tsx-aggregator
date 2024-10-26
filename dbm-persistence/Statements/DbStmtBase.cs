@@ -79,6 +79,8 @@ internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
                     break;
             }
 
+            AfterLastRowProcessing();
+
             return DbStmtResult.StatementSuccess(numRows);
         }
         catch (Exception ex) {
@@ -115,6 +117,8 @@ internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
     /// contains implementation.
     /// </remarks>
     protected virtual void BeforeRowProcessing(NpgsqlDataReader reader) { }
+
+    protected virtual void AfterLastRowProcessing() { }
 
     /// <summary>
     /// Processes the current row in the query result set.

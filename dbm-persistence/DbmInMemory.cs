@@ -129,13 +129,17 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
-    public ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct)
-        => throw new NotImplementedException();
-
-    public ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct) {
+    public ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(string exchange, int pageNumber, int pageSize, CancellationToken ct) {
         lock (_data) {
-            _data.IgnoreRawUpdatedDataReport(instrumentReportId);
-            return ValueTask.FromResult(Result.SUCCESS);
+            PagedInstrumentsWithRawDataReportUpdatesDto rawInstrumentReports = _data.GetRawInstrumentsWithUpdatedDataReports(exchange, pageNumber, pageSize);
+            return ValueTask.FromResult(new Result<PagedInstrumentsWithRawDataReportUpdatesDto>(true, string.Empty, rawInstrumentReports));
+        }
+    }
+
+    public ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct) {
+        lock (_data) {
+            var res = _data.IgnoreRawUpdatedDataReport(dto);
+            return ValueTask.FromResult(res);
         }
     }
 

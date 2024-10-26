@@ -10,7 +10,7 @@ internal class Registry {
     private readonly List<InstrumentDto> _instruments; // Sorted by company symbol then instrument symbol
 
 	public Registry() {
-		_instruments = new List<InstrumentDto>();
+		_instruments = new();
         DirectoryInitialized = new TaskCompletionSource();
 	}
 
@@ -30,6 +30,7 @@ internal class Registry {
         lock (_instruments) {
             foreach (var instrument in directory)
                 _instruments.Add(instrument);
+
             _instruments.Sort(InstrumentKey.CompareBySymbols);
             
             // Notify subscribers that the list of instruments has been initialized

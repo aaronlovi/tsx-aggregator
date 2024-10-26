@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,9 +71,29 @@ public sealed class RawCollectorPauseServiceInput : RawCollectorInputBase {
 }
 
 public sealed class RawCollectorIgnoreRawReportInput : RawCollectorInputBase {
-    public RawCollectorIgnoreRawReportInput(long reqId, ulong instrumentReportId, CancellationTokenSource? cts)
-        : base(reqId, cts)
-        => InstrumentReportId = instrumentReportId;
+    public RawCollectorIgnoreRawReportInput(
+        long reqId, ulong instrumentId, ulong instrumentReportIdToKeep, IList<ulong> instrumentReportIdsToIgnore, CancellationTokenSource? cts)
+        : base(reqId, cts) { 
+        InstrumentId = instrumentId;
+        InstrumentReportIdToKeep = instrumentReportIdToKeep;
+        InstrumentReportIdsToIgnore = new List<ulong>(instrumentReportIdsToIgnore);
+    }
 
-    public ulong InstrumentReportId { get; init; }
+    public ulong InstrumentId { get; init; }
+    public ulong InstrumentReportIdToKeep { get; init; }
+    public IReadOnlyList<ulong> InstrumentReportIdsToIgnore { get; init; }
+}
+
+public sealed class RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput : RawCollectorInputBase {
+    public RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput(
+        long reqId, string exchange, int pageNumber, int pageSize, CancellationTokenSource? cts)
+        : base(reqId, cts) {
+        Exchange = exchange;
+        PageNumber = pageNumber;
+        PageSize = pageSize;
+    }
+
+    public string Exchange { get; init; }
+    public int PageNumber { get; init; }
+    public int PageSize { get; init; }
 }

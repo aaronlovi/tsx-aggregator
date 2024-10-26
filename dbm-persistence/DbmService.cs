@@ -168,16 +168,52 @@ public sealed class DbmService : IDisposable, IDbmService {
         return res;
     }
 
-    public ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct)
-        => throw new NotImplementedException();
-
-    public async ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct) {
-        var stmt = new IgnoreUpdatedRawDataReportStmt(instrumentReportId);
+    public async ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(
+        string exchange, int pageNumber, int pageSize, CancellationToken ct) {
+        var stmt = new GetRawInstrumentsWithUpdatedDataReportsStmt(exchange, pageNumber, pageSize);
         var res = await _exec.ExecuteWithRetry(stmt, ct);
-        if (res.Success)
-            _logger.LogInformation("IgnoreUpdatedRawDataReport success - ID: {InstrumentReportId}", instrumentReportId);
-        else
-            _logger.LogWarning("IgnoreUpdatedRawDataReport failed with error {Error}", res.ErrMsg);
+        if (res.Success) {
+            _logger.LogInformation("GetRawInstrumentsWithUpdatedDataReports success - Page: {PageNumber}, Size: {PageSize}, Total: {Total}",
+                pageNumber, pageSize, stmt.PagedInstrumentsWithRawDataReportUpdates.TotalInstruments);
+        }
+        else {
+            _logger.LogWarning("GetRawInstrumentsWithUpdatedDataReports failed with error {Error}", res.ErrMsg);
+        }
+        return new Result<PagedInstrumentsWithRawDataReportUpdatesDto>(
+            res.Success, res.ErrMsg, stmt.PagedInstrumentsWithRawDataReportUpdates);
+    }
+
+    public async ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct) {
+        var getInstrumentReportsStmt = new GetInstrumentReportsStmt(dto.InstrumentId);
+        var res = await _exec.ExecuteWithRetry(getInstrumentReportsStmt, ct);
+        if (!res.Success) {
+            _logger.LogWarning("IgnoreRawUpdatedDataReport failed while getting raw instrument reports with error {Error}", res.ErrMsg);
+            return res;
+        }
+
+        var consistencyMap = new RawReportConsistencyMap();
+        RawReportConsistencyMapKey? mainKey = consistencyMap.BuildMap(dto, getInstrumentReportsStmt.InstrumentReports);
+
+        if (mainKey is null) {
+            _logger.LogWarning("IgnoreRawUpdatedDataReport failed - report to keep not found");
+            return Result.SetFailure("Report to keep not found");
+        }
+
+        Result result = consistencyMap.EnsureRequestIsConsistent(dto, mainKey);
+        if (!result.Success) {
+            _logger.LogWarning("IgnoreRawUpdatedDataReport failed - consistency check failed with error {Error}", result.ErrMsg);
+            return DbStmtResult.StatementFailure(result.ErrMsg);
+        }
+
+        // If we got here, then the request is valid, so ignore the reports
+        var stmt = new IgnoreRawDataReportStmt(dto.InstrumentId, dto.ReportIdToKeep, dto.ReportIdsToIgnore);
+        res = await _exec.ExecuteWithRetry(stmt, ct);
+        if (res.Success) {
+            _logger.LogInformation("IgnoreRawUpdatedDataReport - ignore statement success");
+        } else {
+            _logger.LogWarning("IgnoreRawUpdatedDataReport - ignore statement failed with error {Error}", res.ErrMsg);
+        }
+
         return res;
     }
 

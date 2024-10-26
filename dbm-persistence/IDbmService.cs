@@ -30,16 +30,18 @@ public interface IDbmService {
     ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
     
     /// <summary>
-    /// Get the list of instruments that have updated data report.
-    /// These have 'check_manually' set to true, and also 'ignore' set to false.
+    /// Get the list of instruments that have updated data reports.
+    /// These either have:
+    /// - 'check_manually' set to true, and also 'ignore' set to false.
+    /// - obsoleted date set to false (i.e., the original report)
     /// </summary>
-    ValueTask<Result<IReadOnlyList<InstrumentDto>>> GetRawInstrumentsWithUpdatedDataReports(CancellationToken ct);
+    ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
 
     /// <summary>
-    /// Operation to ignore an updated data report.
+    /// Operation to ignore updated raw data reports.
     /// This may be necessary if the incoming data is bad, missing a lot of values, etc.
     /// </summary>
-    ValueTask<Result> IgnoreRawUpdatedDataReport(ulong instrumentReportId, CancellationToken ct);
+    ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct);
 
     /// <summary>
     /// Insert or update a current instrument report.

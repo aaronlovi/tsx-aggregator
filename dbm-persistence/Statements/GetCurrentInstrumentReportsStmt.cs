@@ -32,11 +32,8 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
 
     protected override void ClearResults() => _instrumentReports.Clear();
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return new List<NpgsqlParameter> {
-            new NpgsqlParameter<long>("instrumentId", _instrumentId)
-        };
-    }
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters()
+        => new List<NpgsqlParameter> { new NpgsqlParameter<long>("instrumentId", _instrumentId) };
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);

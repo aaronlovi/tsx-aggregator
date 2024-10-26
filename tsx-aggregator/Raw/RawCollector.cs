@@ -154,16 +154,37 @@ internal partial class RawCollector : BackgroundService, INamedService {
         if (inputs is RawCollectorIgnoreRawReportInput ignoreRawReportInput)
             return ProcessIgnoreRawReport(ignoreRawReportInput, ct);
 
+        if (inputs is RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput getUpdatedReportsInput)
+            return ProcessGetStocksWithUpdatedRawDataReportsRequest(getUpdatedReportsInput, ct);
+
         return Task.CompletedTask;
     }
 
     private async Task ProcessIgnoreRawReport(RawCollectorIgnoreRawReportInput inputs, CancellationToken ct) {
-        var instrumentReportId = inputs.InstrumentReportId;
-        var res = await _dbm.IgnoreRawUpdatedDataReport(instrumentReportId, ct);
+        var instrumentReportIdsToIgnore = new List<long>();
+        foreach (var id in inputs.InstrumentReportIdsToIgnore)
+            instrumentReportIdsToIgnore.Add((long)id);
+        var dto = new RawInstrumentReportsToKeepAndIgnoreDto(
+            (long)inputs.InstrumentId,
+            (long)inputs.InstrumentReportIdToKeep,
+            instrumentReportIdsToIgnore);
+
+        var res = await _dbm.IgnoreRawUpdatedDataReport(dto, ct);
+
         if (res.Success)
             _logger.LogInformation("PreprocessInputs - IgnoreRawUpdatedDataReport success");
         else
             _logger.LogWarning("PreprocessInputs - IgnoreRawUpdatedDataReport failed with error: {ErrMsg}", res.ErrMsg);
+
+        inputs.Completed.TrySetResult(res);
+    }
+
+    private async Task ProcessGetStocksWithUpdatedRawDataReportsRequest(RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput inputs, CancellationToken ct) {
+        Result<PagedInstrumentsWithRawDataReportUpdatesDto> res = await _dbm.GetRawInstrumentsWithUpdatedDataReports(inputs.Exchange, inputs.PageNumber, inputs.PageSize, ct);
+        if (res.Success)
+            _logger.LogInformation("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports success");
+        else
+            _logger.LogWarning("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports failed with error: {ErrMsg}", res.ErrMsg);
 
         inputs.Completed.TrySetResult(res);
     }

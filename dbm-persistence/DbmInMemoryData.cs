@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
+using static tsx_aggregator.shared.Constants;
 
 namespace dbm_persistence;
 
@@ -184,14 +185,14 @@ internal class DbmInMemoryData {
                 continue;
 
             foreach (ProcessedInstrumentReportDto pir in processedInstrumentReports) {
-                if (pir.ObsoletedDate is not null)
+                if (pir.ReportObsoletedDate is not null)
                     continue;
 
                 // Processed instrument report is fixed
 
                 foreach (InstrumentRawDataReportDto ir in instrumentReports) {
-                    if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
-                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
+                    if (ir.ReportType != (int)ReportTypes.CashFlow
+                        || ir.ReportPeriodType != (int)ReportPeriodTypes.Annual
                         || !ir.IsCurrent
                         || ir.CheckManually)
                         continue;
@@ -207,7 +208,7 @@ internal class DbmInMemoryData {
                         SerializedReport: pir.SerializedReport,
                         InstrumentCreatedDate: instrument.CreatedDate,
                         InstrumentObsoletedDate: null,
-                        ReportCreatedDate: pir.CreatedDate,
+                        ReportCreatedDate: pir.ReportCreatedDate,
                         ReportObsoletedDate: null,
                         NumAnnualCashFlowReports: 0); // Don't know yet
                     retVal.Add(processedFullInstrumentReport);
@@ -247,7 +248,7 @@ internal class DbmInMemoryData {
                 continue;
 
             foreach (ProcessedInstrumentReportDto pir in processedInstrumentReports) {
-                if (pir.ObsoletedDate is not null)
+                if (pir.ReportObsoletedDate is not null)
                     continue;
 
                 // Processed instrument report is fixed
@@ -261,13 +262,13 @@ internal class DbmInMemoryData {
                     SerializedReport: pir.SerializedReport,
                     InstrumentCreatedDate: instrument.CreatedDate,
                     InstrumentObsoletedDate: null,
-                    ReportCreatedDate: pir.CreatedDate,
+                    ReportCreatedDate: pir.ReportCreatedDate,
                     ReportObsoletedDate: null,
                     NumAnnualCashFlowReports: 0); // Don't know yet
 
                 foreach (InstrumentRawDataReportDto ir in instrumentReports) {
-                    if (ir.ReportType != (int)Constants.ReportTypes.CashFlow
-                        || ir.ReportPeriodType != (int)Constants.ReportPeriodTypes.Annual
+                    if (ir.ReportType != (int)ReportTypes.CashFlow
+                        || ir.ReportPeriodType != (int)ReportPeriodTypes.Annual
                         || !ir.IsCurrent
                         || ir.CheckManually)
                         continue;
@@ -291,6 +292,94 @@ internal class DbmInMemoryData {
         return isPaused;
     }
 
+    public PagedInstrumentsWithRawDataReportUpdatesDto GetRawInstrumentsWithUpdatedDataReports(
+        string exchange, int pageNumber, int pageSize) {
+
+        int totalItems = 0;
+        var instrumentsWithUpdatedRawData = new List<InstrumentWithUpdatedRawDataDto>();
+        int numToSkip = (pageNumber - 1) * pageSize;
+        int numSkipped = 0;
+
+        foreach (var entry in _rawDataReportsByInstrumentId) {
+            long instrumentId = entry.Key;
+
+            if (!_instrumentsByInstrumentId.TryGetValue(instrumentId, out InstrumentDto? instrument))
+                continue;
+            if (!instrument.Exchange.EqualsOrdinal(exchange))
+                continue;
+
+            // Instrument is fixed at this point
+
+            List<InstrumentRawDataReportDto> rawDataReports = entry.Value;
+            var rawDataReportsMap = new Dictionary<(DateOnly, ReportPeriodTypes), List<InstrumentRawDataReportDto>>();
+            
+            foreach (InstrumentRawDataReportDto rawDataReport in rawDataReports) {
+                if (rawDataReport.ObsoletedDate is not null)
+                    continue;
+                if (rawDataReport.IgnoreReport)
+                    continue;
+
+                var key = (rawDataReport.ReportDate, (ReportPeriodTypes)rawDataReport.ReportPeriodType);
+                if (!rawDataReportsMap.TryGetValue(key, out List<InstrumentRawDataReportDto>? reports))
+                    rawDataReportsMap[key] = reports = new();
+                reports.Add(rawDataReport);
+            }
+
+            foreach (var entry2 in rawDataReportsMap) {
+                DateOnly reportDate = entry2.Key.Item1;
+                ReportPeriodTypes reportPeriodType = entry2.Key.Item2;
+                List<InstrumentRawDataReportDto> reports = entry2.Value;
+                
+                // Raw instrument data report does not have an update, skip
+                if (reports.Count < 2)
+                    continue;
+
+                ++totalItems;
+
+                // Skip until we reach the page we want
+                if (numSkipped < numToSkip) {
+                    ++numSkipped;
+                    continue;
+                }
+
+                // Skip if we have reached the end of the page
+                if (instrumentsWithUpdatedRawData.Count >= pageSize)
+                    continue;
+
+                // Instrument has updated data reports, and we are on the page we want
+
+                var rawReportAndUpdates = new List<InstrumentWithUpdatedRawDataItemDto>();
+
+                foreach (InstrumentRawDataReportDto report in reports) {
+                    rawReportAndUpdates.Add(new InstrumentWithUpdatedRawDataItemDto(
+                        InstrumentReportId: report.InstrumentReportId,
+                        CreatedDate: report.CreatedDate,
+                        IsCurrent: report.IsCurrent,
+                        CheckManually: report.CheckManually,
+                        SerializedReport: report.ReportJson));
+                }
+
+                instrumentsWithUpdatedRawData.Add(new InstrumentWithUpdatedRawDataDto(
+                    InstrumentId: instrumentId,
+                    Exchange: instrument.Exchange,
+                    CompanySymbol: instrument.CompanySymbol,
+                    CompanyName: instrument.CompanyName,
+                    InstrumentSymbol: instrument.InstrumentSymbol,
+                    InstrumentName: instrument.InstrumentName,
+                    ReportType: reports[0].ReportType,
+                    ReportPeriodType: reports[0].ReportPeriodType,
+                    ReportDate: reportDate,
+                    RawReportAndUpdates: rawReportAndUpdates));
+            }
+        }
+
+        return new PagedInstrumentsWithRawDataReportUpdatesDto(
+            PageNumber: pageNumber,
+            PageSize: pageSize,
+            TotalInstruments: totalItems,
+            InstrumentsWithUpdates: instrumentsWithUpdatedRawData);
+    }
+
     public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType) {
         if (!_instrumentEventsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentEventDto>? instrumentEvents))
             return;
@@ -305,7 +394,7 @@ internal class DbmInMemoryData {
     public void InsertProcessedCompanyReport(ProcessedInstrumentReportDto dto) {
         ObsoleteOldProcessedInstrumentReports(dto);
         InsertProcessedInstrumentReport(dto);
-        UpdateInstrumentEvents(dto.InstrumentId, true, (int)Constants.CompanyEventTypes.RawDataChanged);
+        UpdateInstrumentEvents(dto.InstrumentId, true, (int)CompanyEventTypes.RawDataChanged);
     }
 
     public bool InsertInstrument(InstrumentDto dto) {
@@ -330,7 +419,7 @@ internal class DbmInMemoryData {
         foreach (InstrumentDto newInstrument in newInstrumentList) {
             var res = InsertInstrument(newInstrument);
             if (res) {
-                var newInstrumentEvent = new InstrumentEventDto(newInstrument.InstrumentId, DateTime.UtcNow, (int)Constants.CompanyEventTypes.NewListedCompany, false);
+                var newInstrumentEvent = new InstrumentEventDto(newInstrument.InstrumentId, DateTime.UtcNow, (int)CompanyEventTypes.NewListedCompany, false);
                 InsertInstrumentEvent(newInstrumentEvent);
             }
         }
@@ -338,7 +427,7 @@ internal class DbmInMemoryData {
         foreach (InstrumentDto instrumentDto in obsoletedInstrumentList) {
             var res = ObsoleteInstrument(instrumentDto.InstrumentId, DateTime.UtcNow);
             if (res) {
-                var obsoletedInstrumentEvent = new InstrumentEventDto(instrumentDto.InstrumentId, DateTime.UtcNow, (int)Constants.CompanyEventTypes.ObsoletedListedCompany, false);
+                var obsoletedInstrumentEvent = new InstrumentEventDto(instrumentDto.InstrumentId, DateTime.UtcNow, (int)CompanyEventTypes.ObsoletedListedCompany, false);
                 InsertInstrumentEvent(obsoletedInstrumentEvent);
             }
         }
@@ -351,15 +440,43 @@ internal class DbmInMemoryData {
         instrumentEvents.Add(dto);
     }
 
-    public void IgnoreRawUpdatedDataReport(ulong instrumentReportId) {
-        if (!_rawDataReportsByInstrumentId.TryGetValue((long)instrumentReportId, out List<InstrumentRawDataReportDto>? rawDataReports))
-            return;
+    public Result IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto) {
+        if (!_rawDataReportsByInstrumentId.TryGetValue(dto.InstrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
+            return Result.SetFailure("Instrument not found");
 
-        for (int i = 0; i < rawDataReports.Count; i++) {
-            if (rawDataReports[i].InstrumentReportId != (long)instrumentReportId)
-                continue;
+        var consistencyMap = new RawReportConsistencyMap();
+        RawReportConsistencyMapKey? mainKey = consistencyMap.BuildMap(dto, instrumentReports);
 
-            rawDataReports[i] = rawDataReports[i] with { IgnoreReport = true };
+        if (mainKey is null)
+            return Result.SetFailure("Report to keep not found");
+
+        Result res = consistencyMap.EnsureRequestIsConsistent(dto, mainKey);
+        if (!res.Success)
+            return res;
+
+        // If we got here, then the request is valid, so ignore the reports
+
+        MarkReportsAsIgnored();
+
+        return res;
+
+        // Local helper methods
+
+        void MarkReportsAsIgnored() {
+            DateTimeOffset obsoleteTime = DateTimeOffset.UtcNow;
+            var instrumentReportIdsToIgnore = new HashSet<long>(dto.ReportIdsToIgnore);
+            for (int i = 0; i < instrumentReports.Count; ++i) {
+                InstrumentRawDataReportDto rawDataReport = instrumentReports[i];
+                if (!instrumentReportIdsToIgnore.Contains(rawDataReport.InstrumentReportId))
+                    continue;
+
+                instrumentReports[i] = rawDataReport with {
+                    IgnoreReport = true,
+                    IsCurrent = false,
+                    CheckManually = false,
+                    ObsoletedDate = obsoleteTime
+                };
+            }
         }
     }
 
@@ -425,7 +542,7 @@ internal class DbmInMemoryData {
             var instrumentEventDto = new InstrumentEventDto(
                 instrumentId,
                 utcNow,
-                EventType: (int)Constants.CompanyEventTypes.RawDataChanged,
+                EventType: (int)CompanyEventTypes.RawDataChanged,
                 IsProcessed: false);
             InsertInstrumentEvent(instrumentEventDto);
         }
@@ -458,10 +575,10 @@ internal class DbmInMemoryData {
             return; // Nothing to obsolete
 
         for (int i = 0; i < instrumentReports.Count; i++) {
-            if (instrumentReports[i].ObsoletedDate is not null)
+            if (instrumentReports[i].ReportObsoletedDate is not null)
                 continue;
 
-            instrumentReports[i] = instrumentReports[i] with { ObsoletedDate = dto.ObsoletedDate ?? DateTime.UtcNow };
+            instrumentReports[i] = instrumentReports[i] with { ReportObsoletedDate = dto.ReportObsoletedDate ?? DateTime.UtcNow };
         }
     }
 

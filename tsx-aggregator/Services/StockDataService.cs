@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using tsx_aggregator.models;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator.Services;
@@ -222,11 +224,63 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
         static GetStockSearchResultsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
     }
 
+    public override async Task<GetStocksWithUpdatedRawDataReportsReply> GetStocksWithUpdatedRawDataReports(GetStocksWithUpdatedRawDataReportsRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
+            [LogUtils.ReqIdContext] = reqId,
+            [LogUtils.ExchangeContext] = request.Exchange,
+        });
+
+        try {
+            _logger.LogInformation("GetStocksWithUpdatedRawDataReports({PageNumber},{PageSize})",
+                request.PageNumber, request.PageSize);
+
+            if (context is null) {
+                _logger.LogWarning("GetStocksWithUpdatedRawDataReports - Null context");
+                return Failure("No context supplied");
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var req = new RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput(
+                reqId, request.Exchange, request.PageNumber, request.PageSize, cts);
+            if (!_rawCollector.PostRequest(req)) {
+                _logger.LogWarning("GetStocksWithUpdatedRawDataReports - Failed to post request to request processor, aborting");
+                return Failure("Failed to post request");
+            }
+
+            var res_ = await req.Completed.Task;
+            if (res_ is not Result<PagedInstrumentsWithRawDataReportUpdatesDto> res) {
+                _logger.LogWarning("GetStocksWithUpdatedRawDataReports - Received invalid response");
+                return Failure("Got an invalid repsonse");
+            }
+
+            if (!res.Success) {
+                _logger.LogWarning("GetStocksWithUpdatedRawDataReports - Failed to get data from Raw Collector");
+                return Failure("Failed to get data from Raw Collector");
+            }
+
+            GetStocksWithUpdatedRawDataReportsReply reply = res.Data!.ToGetStocksWithUpdatedRawDataReportsReply();
+
+            _logger.LogInformation("GetStocksWithUpdatedRawDataReports - complete - {@Reply}", reply);
+            return reply;
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("GetStocksWithUpdatedRawDataReports canceled");
+            return Failure("GetStocksWithUpdatedRawDataReports - Canceled");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "GetStocksWithUpdatedRawDataReports - General Fault");
+            return Failure("GetStocksWithUpdatedRawDataReports ran into a general error");
+        }
+
+        // Local helper methods
+
+        static GetStocksWithUpdatedRawDataReportsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+    }
+
     public override async Task<StockDataServiceReply> IgnoreRawDataReport(IgnoreRawDataReportRequest request, ServerCallContext context) {
         long reqId = Interlocked.Increment(ref _reqId);
         using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
             [LogUtils.ReqIdContext] = reqId,
-            [LogUtils.InstrumentReportIdContext] = request.InstrumentReportId
+            [LogUtils.InstrumentIdContext] = request.InstrumentId
         });
 
         try {
@@ -240,7 +294,8 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
             using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
             Task cancellationTask = Utilities.CreateCancellationTask(cts.Token);
 
-            var inputs = new RawCollectorIgnoreRawReportInput(reqId, request.InstrumentReportId, cts);
+            var inputs = new RawCollectorIgnoreRawReportInput(
+                reqId, request.InstrumentId, request.InstrumentReportIdToKeep, request.InstrumentReportIdsToIgnore, cts);
             _rawCollector.PostRequest(inputs);
 
             await Task.WhenAny(inputs.Completed.Task, cancellationTask);
@@ -271,7 +326,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 _logger.LogWarning("IgnoreRawDataReport - Unexpected response from Raw Collector");
                 return Failure("IgnoreRawDataReport - Unexpected response from Raw Collector");
             }
-            
+
             if (res.Success)
                 _logger.LogInformation("IgnoreRawDataReport - Success");
             else

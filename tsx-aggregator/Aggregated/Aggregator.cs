@@ -12,6 +12,7 @@ using tsx_aggregator.Aggregated;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
 using static tsx_aggregator.shared.Constants;
+using Registry = tsx_aggregator.Raw.Registry;
 
 namespace tsx_aggregator;
 
