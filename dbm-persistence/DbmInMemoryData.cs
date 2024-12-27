@@ -357,6 +357,7 @@ internal class DbmInMemoryData {
                         CreatedDate: report.CreatedDate,
                         IsCurrent: report.IsCurrent,
                         CheckManually: report.CheckManually,
+                        IgnoreReport: report.IgnoreReport,
                         SerializedReport: report.ReportJson));
                 }
 
@@ -489,19 +490,13 @@ internal class DbmInMemoryData {
         // Local helper methods
 
         void MarkReportsAsIgnored() {
-            DateTimeOffset obsoleteTime = DateTimeOffset.UtcNow;
             var instrumentReportIdsToIgnore = new HashSet<long>(dto.ReportIdsToIgnore);
             for (int i = 0; i < instrumentReports.Count; ++i) {
                 InstrumentRawDataReportDto rawDataReport = instrumentReports[i];
                 if (!instrumentReportIdsToIgnore.Contains(rawDataReport.InstrumentReportId))
                     continue;
 
-                instrumentReports[i] = rawDataReport with {
-                    IgnoreReport = true,
-                    IsCurrent = false,
-                    CheckManually = false,
-                    ObsoletedDate = obsoleteTime
-                };
+                instrumentReports[i] = rawDataReport with { IgnoreReport = true, IsCurrent = false, CheckManually = false };
             }
         }
     }

@@ -11,7 +11,8 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
         + " FROM instrument_reports ir"
         + " WHERE ir.instrument_id = @instrument_id"
         + " AND ir.is_current = true"
-        + " AND ir.check_manually = false";
+        + " AND ir.check_manually = false"
+        + " AND ir.ignore_report = false";
 
     // Inputs
     private readonly long _instrumentId;

@@ -19,7 +19,7 @@ public class RawReportConsistencyMap : Dictionary<RawReportConsistencyMapKey, Li
             var value = new RawReportConsistencyMapValue(report.InstrumentReportId, report.IsCurrent, report.CheckManually);
 
             if (!TryGetValue(key, out List<RawReportConsistencyMapValue>? values))
-                values = new List<RawReportConsistencyMapValue>();
+                this[key] = values = new List<RawReportConsistencyMapValue>();
             values.Add(value);
 
             if (report.InstrumentReportId == dto.ReportIdToKeep)

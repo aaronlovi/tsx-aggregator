@@ -164,6 +164,7 @@ internal partial class RawCollector : BackgroundService, INamedService {
         var instrumentReportIdsToIgnore = new List<long>();
         foreach (var id in inputs.InstrumentReportIdsToIgnore)
             instrumentReportIdsToIgnore.Add((long)id);
+
         var dto = new RawInstrumentReportsToKeepAndIgnoreDto(
             (long)inputs.InstrumentId,
             (long)inputs.InstrumentReportIdToKeep,

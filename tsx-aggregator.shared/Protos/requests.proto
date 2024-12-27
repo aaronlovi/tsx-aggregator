@@ -107,7 +107,8 @@ message InstrumentWithUpdatedRawDataItem {
     google.protobuf.Timestamp created_date = 2;
     bool is_current = 3;
     bool check_manually = 4;
-    string report_json = 5;
+    bool ignore_report = 5;
+    string report_json = 6;
 }
 
 // Raw collector must find the below to be consistent

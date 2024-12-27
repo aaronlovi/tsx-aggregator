@@ -17,14 +17,14 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
     + " WHERE ir.obsoleted_date IS NULL"
     + " AND i.obsoleted_date IS NULL"
     + " AND i.exchange = @exchange"
-    // + " -- AND ir.ignore_report = FALSE"
+    + " AND ir.ignore_report = FALSE"
     + " GROUP BY ir.instrument_id, ir.report_type, ir.report_period_type, ir.report_date,"
     + " i.instrument_symbol, i.instrument_name, i.company_symbol, i.company_name"
     + " HAVING COUNT(*) > 1"
     + " )"
     + " SELECT DENSE_RANK() OVER(ORDER BY ir.instrument_id, ir.report_type, ir.report_period_type, ir.report_date) AS rank_num,"
     + " ir.instrument_id, ir.instrument_report_id, ir.report_type, ir.report_period_type, ir.report_json,"
-    + " ir.report_date, ir.created_date, ir.is_current, ir.check_manually,"
+    + " ir.report_date, ir.created_date, ir.is_current, ir.check_manually, ir.ignore_report,"
     + " dr.instrument_symbol, dr.instrument_name, dr.company_symbol, dr.company_name"
     + " FROM instrument_reports ir"
     + " JOIN duplicate_reports dr"
@@ -33,14 +33,14 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
     + " AND ir.report_period_type = dr.report_period_type"
     + " AND ir.report_date = dr.report_date"
     + " ORDER BY rank_num, dr.instrument_symbol, dr.instrument_name, dr.company_symbol, dr.company_name,"
-    + " ir.instrument_id, ir.report_type, ir.report_period_type, ir.report_date, ir.created_date, ir.is_current, ir.check_manually"
-    + " ),"
+    + " ir.instrument_id, ir.report_type, ir.report_period_type, ir.report_date, ir.created_date, ir.is_current, ir.check_manually,"
+    + " ir.ignore_report),"
     + " max_rank AS(SELECT MAX(rank_num) AS max_rank_num FROM ranked_reports)"
     + " SELECT rr.rank_num,"
     + " rr.instrument_symbol, rr.instrument_name, rr.company_symbol, rr.company_name,"
     + " rr.instrument_id, rr.instrument_report_id, rr.report_type, rr.report_period_type,"
     + " rr.report_json, rr.report_date, rr.created_date, rr.is_current, rr.check_manually,"
-    + " mr.max_rank_num"
+    + " rr.ignore_report, mr.max_rank_num"
     + " FROM ranked_reports rr CROSS JOIN max_rank mr"
     + " WHERE rr.rank_num BETWEEN @rank_min AND @rank_max"
     + " ORDER BY rr.rank_num";
@@ -59,6 +59,7 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
     private static int _createdDateIndex = -1;
     private static int _isCurrentIndex = -1;
     private static int _checkManuallyIndex = -1;
+    private static int _ignoreReportIndex = -1;
     private static int _maxRankNumIndex = -1;
 
     private readonly string _exchange;
@@ -112,6 +113,7 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
         _createdDateIndex = reader.GetOrdinal("created_date");
         _isCurrentIndex = reader.GetOrdinal("is_current");
         _checkManuallyIndex = reader.GetOrdinal("check_manually");
+        _ignoreReportIndex = reader.GetOrdinal("ignore_report");
         _maxRankNumIndex = reader.GetOrdinal("max_rank_num");
     }
 
@@ -162,6 +164,7 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
                 CreatedDate: reader.GetDateTime(_createdDateIndex),
                 IsCurrent: reader.GetBoolean(_isCurrentIndex),
                 CheckManually: reader.GetBoolean(_checkManuallyIndex),
+                IgnoreReport: reader.GetBoolean(_ignoreReportIndex),
                 SerializedReport: reader.GetString(_reportJsonIndex)
         ));
 }

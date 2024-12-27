@@ -7,9 +7,13 @@ using static tsx_aggregator.shared.Constants;
 namespace dbm_persistence;
 
 internal sealed class IgnoreRawDataReportStmt : NonQueryBatchedDbStmtBase {
-    internal const string sql = "UPDATE instrument_reports"
-        + " SET ignore_report = true, is_current = false, check_manually = false, obsoleted_date = @obsoleted_date"
+    internal const string ignoreSql = "UPDATE instrument_reports"
+        + " SET ignore_report = true, is_current = false, check_manually = false"
         + " WHERE instrument_report_id = ANY(@instrument_report_ids)";
+
+    internal const string keepSql = "UPDATE instrument_reports"
+        + " SET ignore_report = false, is_current = true, check_manually = false"
+        + " WHERE instrument_report_id = @keep_report_id";
 
     // Inputs
     private readonly long _instrumentId;
@@ -24,9 +28,12 @@ internal sealed class IgnoreRawDataReportStmt : NonQueryBatchedDbStmtBase {
 
         DateTime eventTime = DateTime.UtcNow;
 
-        AddCommandToBatch(sql, new NpgsqlParameter[] {
-            new NpgsqlParameter<DateTime>("obsoleted_date", eventTime),
+        AddCommandToBatch(ignoreSql, new NpgsqlParameter[] {
             new NpgsqlParameter<long[]>("instrument_report_ids", _instrumentReportIdsToIgnore.ToArray())
+        });
+
+        AddCommandToBatch(keepSql, new NpgsqlParameter[] {
+            new NpgsqlParameter<long>("keep_report_id", _instrumentReportIdToKeep)
         });
 
         AddCommandToBatch(InsertInstrumentEventStmt.sql, new NpgsqlParameter[] {

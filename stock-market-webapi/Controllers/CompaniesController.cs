@@ -131,8 +131,8 @@ public class CompaniesController : Controller {
             var instruments = new List<InstrumentWithConflictingRawData>();
             foreach (var i in response.InstrumentRawReportsWithUpdates) {
                 var conflictingReports = new List<InstrumentRawReportData>();
-                foreach (var r in i.RawReportAndUpdates) {
-                    var rawReport = new InstrumentRawReportData((long)r.InstrumentReportId, r.CreatedDate.ToDateTime(), r.IsCurrent, r.CheckManually, r.ReportJson);
+                foreach (InstrumentWithUpdatedRawDataItem r in i.RawReportAndUpdates) {
+                    var rawReport = new InstrumentRawReportData((long)r.InstrumentReportId, r.CreatedDate.ToDateTime(), r.IsCurrent, r.CheckManually, r.IgnoreReport, r.ReportJson);
                     conflictingReports.Add(rawReport);
                 }
                 instruments.Add(new InstrumentWithConflictingRawData(

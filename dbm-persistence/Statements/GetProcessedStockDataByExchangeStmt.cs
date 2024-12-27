@@ -18,6 +18,7 @@ internal sealed class GetProcessedStockDataByExchangeStmt : QueryDbStmtBase {
         + " AND ir.report_period_type = " + (int)Constants.ReportPeriodTypes.Annual
         + " AND ir.is_current = TRUE"
         + " AND ir.check_manually = FALSE"
+        + " AND ir.ignore_report = FALSE"
         + " GROUP BY i.instrument_id, i.company_symbol, i.company_name, i.instrument_symbol, i.instrument_name,"
         + " pir.report_json, i.created_date, pir.created_date";
 

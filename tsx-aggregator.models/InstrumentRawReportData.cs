@@ -7,4 +7,5 @@ public record InstrumentRawReportData(
     DateTime ReportCreatedDate,
     bool IsCurrent,
     bool CheckManually,
+    bool IgnoreReport,
     string ReportJson);

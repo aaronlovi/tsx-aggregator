@@ -10,7 +10,8 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
         + " FROM instrument_reports"
         + " WHERE is_current = true"
         + " AND instrument_id = @instrumentId"
-        + " AND check_manually = false";
+        + " AND check_manually = false"
+        + " AND ignore_report = false";
 
     private readonly long _instrumentId;
     private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReports;

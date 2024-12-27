@@ -84,6 +84,7 @@ public record PagedInstrumentsWithRawDataReportUpdatesDto(
                     CreatedDate = Timestamp.FromDateTimeOffset(instrumentRawDataItemDto.CreatedDate),
                     IsCurrent = instrumentRawDataItemDto.IsCurrent,
                     CheckManually = instrumentRawDataItemDto.CheckManually,
+                    IgnoreReport = instrumentRawDataItemDto.IgnoreReport,
                     ReportJson = instrumentRawDataItemDto.SerializedReport,
                 });
             }
@@ -112,6 +113,7 @@ public record InstrumentWithUpdatedRawDataItemDto(
     DateTimeOffset CreatedDate,
     bool IsCurrent,
     bool CheckManually,
+    bool IgnoreReport,
     string SerializedReport);
 
 public record ProcessedInstrumentReportDto(
