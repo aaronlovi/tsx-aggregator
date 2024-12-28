@@ -1,0 +1,169 @@
+<div *ngIf="error" class="error">
+    Error: {{ error }}
+</div>
+
+<div *ngIf="data">
+    <h2>Paging Data</h2>
+    <table>
+        <tr>
+            <th>Total Items</th>
+            <th>Page Number</th>
+            <th>Page Size</th>
+            <th>Number of Pages</th>
+        </tr>
+        <tr>
+            <td>{{ data.pagingData.totalItems }}</td>
+            <td>{{ data.pagingData.pageNumber }}</td>
+            <td>
+                <select [(ngModel)]="pageSize" (change)="onPageSizeChange($event)">
+                    <option *ngFor="let size of pageSizes" [value]="size">{{ size }}</option>
+                </select>
+            </td>
+            <td>{{ data.pagingData.numPages }}</td>
+        </tr>
+    </table>
+
+    <div class="pagination-controls">
+        <button mat-icon-button (click)="goToFirstPage()" [disabled]="data.pagingData.pageNumber === 1">
+            <mat-icon>first_page</mat-icon>
+        </button>
+        <button mat-icon-button (click)="goToPreviousPage()" [disabled]="data.pagingData.pageNumber === 1">
+            <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-icon-button (click)="goToNextPage()" [disabled]="data.pagingData.pageNumber === data.pagingData.numPages">
+            <mat-icon>chevron_right</mat-icon>
+        </button>
+        <button mat-icon-button (click)="goToLastPage()" [disabled]="data.pagingData.pageNumber === data.pagingData.numPages">
+            <mat-icon>last_page</mat-icon>
+        </button>
+    </div>
+
+    <div>
+        <button (click)="expandAll()">Expand All</button>
+        &nbsp;&nbsp;
+        <button (click)="collapseAll()">Collapse All</button>
+        &nbsp;&nbsp;
+        <button (click)="ignoreAllReports()" [disabled]="isIgnoringReports">Ignore All Reports</button>
+        <span *ngIf="isIgnoringReports">
+            Completed: {{ completedCount }} | Errors: {{ errorCount }}
+        </span>
+    </div>
+
+    <h2>Instruments</h2>
+    <ng-container *ngFor="let instrument of data.instrumentWithConflictingRawData">
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Company Symbol</th>
+                    <th>Exchange</th>
+                    <th>Instrument Symbol</th>
+                    <th>Instrument Name</th>
+                    <th>Report Type</th>
+                    <th>Report Period Type</th>
+                    <th>Report Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ instrument.companyName }}</td>
+                    <td>{{ instrument.companySymbol }}</td>
+                    <td>{{ instrument.exchange }}</td>
+                    <td>{{ instrument.instrumentSymbol }}</td>
+                    <td>{{ instrument.instrumentName }}</td>
+                    <td>{{ getReportTypeString(instrument.reportType) }}</td>
+                    <td>{{ getReportPeriodTypeString(instrument.reportPeriodType) }}</td>
+                    <td>{{ instrument.reportDate | date:'yyyy-MM-dd':'UTC' }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Conflicting Raw Reports</h4>
+        <table class="report-table" border="1">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports; let i = index">
+                        <label>
+                            <input type="radio" name="action-{{ report.instrumentReportId }}" value="keep"
+                                   [checked]="i === instrument.conflictingRawReports.length - 1"
+                                   (change)="updateReportAction(instrument, report, 'keep')">
+                            Keep
+                        </label>
+                        <label>
+                            <input type="radio" name="action-{{ report.instrumentReportId }}" value="ignore"
+                                   [checked]="i !== instrument.conflictingRawReports.length - 1"
+                                   (change)="updateReportAction(instrument, report, 'ignore')">
+                            Ignore
+                        </label>
+                    </th>
+                    <td>
+                        <ng-container *ngIf="true">
+                            <ng-container *ngTemplateOutlet="instrumentKeyTemplate; context: { $implicit: getInstrumentKey(instrument).toString() }">
+                            </ng-container>
+                        </ng-container>
+
+                        <ng-template #instrumentKeyTemplate let-key>
+                            <button (click)="onIgnoreReportsClick(instrument)" [disabled]="!canIgnoreReports(instrument)">Ignore Reports</button>
+                            <span *ngIf="validationErrors[key]" class="validation-error">{{ validationErrors[key] }}</span>
+                            <span *ngIf="successMessages[key]" class="success-message">{{ successMessages[key] }}</span>
+                        </ng-template>
+                    </td>
+                </tr>
+                <tr>
+                    <th (click)="toggleCollapse(instrument)">Report ID</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports">
+                        {{ report.instrumentReportId }}
+                    </th>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr *ngIf="!isCollapsed(instrument)" (click)="toggleCollapse(instrument)">
+                    <th>Report Created Date</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports">
+                        {{ report.reportCreatedDate | date:'yyyy-MM-dd':'UTC' }}
+                    </th>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr *ngIf="!isCollapsed(instrument)" (click)="toggleCollapse(instrument)">
+                    <th>Is Current</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports">
+                        {{ report.isCurrent }}
+                    </th>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr *ngIf="!isCollapsed(instrument)" (click)="toggleCollapse(instrument)">
+                    <th>Check Manually</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports">
+                        {{ report.checkManually }}
+                    </th>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr *ngIf="!isCollapsed(instrument)" (click)="toggleCollapse(instrument)">
+                    <th>Ignore Report</th>
+                    <th *ngFor="let report of instrument.conflictingRawReports">
+                        {{ report.ignoreReport }}
+                    </th>
+                    <td>&nbsp;</td>
+                </tr>
+            </thead>
+            <tbody *ngIf="!isCollapsed(instrument)">
+                <tr *ngFor="let key of getAllKeys(instrument.conflictingRawReports)" (click)="toggleCollapse(instrument)">
+                    <th>{{ key }}</th>
+                    <td *ngFor="let report of instrument.conflictingRawReports"
+                        [ngClass]="{'report-table__cell--highlight': isValueDifferent(key, instrument.conflictingRawReports, instrument)}"
+                        class="report-table__cell--right-aligned">
+                        {{ report.parseReportJson()[key] | number:'1.2-2' || '&nbsp;' }}
+                    </td>
+                    <td [ngClass]="{'report-table__cell--highlight': isValueDifferent(key, instrument.conflictingRawReports, instrument)}">
+                        <ng-container *ngIf="isValueDifferent(key, instrument.conflictingRawReports, instrument); else sameValue">
+                            *
+                        </ng-container>
+                        <ng-template #sameValue>&nbsp;</ng-template>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr />
+    </ng-container>
+</div>

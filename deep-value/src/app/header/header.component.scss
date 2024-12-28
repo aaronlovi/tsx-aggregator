@@ -1,0 +1,46 @@
+.title__flag {
+    width: 48px;
+    height: 48px;
+}
+
+.title .title__title-name {
+    margin-left: 5px;
+}
+
+.title__spacer {
+    flex: 1 1 auto;
+}
+
+.title .title--nav {
+    font-size: 1rem;
+    display: flex;
+    margin-left: 1rem;
+    padding: 0;
+
+    a {
+        text-decoration: none;
+        display: inline-block;
+        position: relative;
+    }
+
+    a::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        transform: scaleX(0);
+        height: 1px;
+        bottom: 0;
+        left: 0;
+        transform-origin: bottom right;
+        transition: transform 0.25s ease-out;
+    }
+
+    a:hover::after {
+        transform: scaleX(1);
+        transform-origin: bottom left;
+    }
+
+    &.title--locale {
+        cursor: pointer;
+    }
+}

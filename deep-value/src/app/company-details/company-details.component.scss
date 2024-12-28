@@ -1,0 +1,57 @@
+h2 {
+    margin-left: 20px;
+}
+
+table.data-table {
+    border-collapse: collapse;
+    width: 80%;
+    padding: 20px;
+}
+
+// Header cells for data points
+.data-table__header {
+    width: 8%;
+    text-align: right;
+    vertical-align: center;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+// Major sections: "Overview", "Score", "Financials"
+.data-table__header--caption-cell {
+    width: 16%;
+    text-align: center;
+    font-size: 16px;
+}
+
+.data-table__data {
+    width: 8%;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+}
+
+.data-table__data--numeric {
+    text-align: right;
+}
+
+.data-table__data--score {
+    text-align: center;
+}
+
+.data-table__data--score.no {
+    font-weight: 600;
+    font-style: italic;
+}
+
+div.table-container {
+    margin-left: 20px;
+    margin-right: 20px;
+}

@@ -1,3 +1,0 @@
-2024-11-03 12:30:16 [INF] {"SourceContext":"tsx_aggregator.Aggregator"} Aggregator - Interval elapsed, continuing
-2024-11-03 12:30:19 [INF] {"SourceContext":"tsx_aggregator.Aggregator"} Aggregator - Got a message tsx_aggregator.AggregatorTimeoutInput
-2024-11-03 12:30:23 [INF] {"SourceContext":"tsx_aggregator.Aggregator","Scope":[{"ReqId":5786}]} Aggregator: No instrument events to process. Sleeping "00:02:00"

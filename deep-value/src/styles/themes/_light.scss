@@ -1,0 +1,108 @@
+@use "sass:map";
+@use "@angular/material" as mat;
+
+// Primary color is: #A62C2B
+$canada-palette: (
+    50: #fcebee,
+    100: #f7cdd4,
+    200: #e49b9e,
+    300: #d77579,
+    400: #e0585a,
+    500: #e44944,
+    600: #d54142,
+    700: #c3383c,
+    800: #b63355,
+    900: #a62b2b,
+    A100: #f3bed8,
+    A200: #ed95be,
+    A400: #e64d8f,
+    A700: #bc2e6f,
+    contrast: (50: rgba(black, 0.87),
+        100: rgba(black, 0.87),
+        200: rgba(black, 0.87),
+        300: rgba(black, 0.87),
+        400: rgba(black, 0.87),
+        500: rgba(black, 0.87),
+        600: rgba(black, 0.87),
+        700: white,
+        800: white,
+        900: white,
+        A100: rgba(black, 0.87),
+        A200: rgba(black, 0.87),
+        A400: rgba(black, 0.87),
+        A700: white)
+);
+
+// Primary color is: #2BA6A6
+$canada-accent-palette: (
+    50: #e1f2f3,
+    100: #b3dfe0,
+    200: #82cbcd,
+    300: #50b6b7,
+    400: #2ba6a6,
+    500: #0f9694,
+    600: #0e8986,
+    700: #0d7975,
+    800: #0f6965,
+    900: #0a4d48,
+    A100: #f7cdd4,
+    A200: #e49b9e,
+    A400: #e0585a,
+    A700: #c3383c,
+    contrast: (50: rgba(black, 0.87),
+        100: rgba(black, 0.87),
+        200: rgba(black, 0.87),
+        300: rgba(black, 0.87),
+        400: rgba(black, 0.87),
+        500: rgba(black, 0.87),
+        600: rgba(black, 0.87),
+        700: white,
+        800: white,
+        900: white,
+        A100: rgba(black, 0.87),
+        A200: rgba(black, 0.87),
+        A400: rgba(black, 0.87),
+        A700: white)
+);
+
+// Primary color is: #A6692B
+$canada-warn-palette: (
+    50: #ffe5ad,
+    100: #fdc490,
+    200: #e0a26d,
+    300: #be8248,
+    400: #a6692b,
+    500: #8d5009,
+    600: #824604,
+    700: #723a00,
+    800: #662b00,
+    900: #571b00,
+    A100: #bedef2,
+    A200: #98caea,
+    A400: #5aa6dc,
+    A700: #3379b8,
+    contrast: (50: rgba(black, 0.87),
+        100: rgba(black, 0.87),
+        200: rgba(black, 0.87),
+        300: rgba(black, 0.87),
+        400: rgba(black, 0.87),
+        500: white,
+        600: white,
+        700: white,
+        800: white,
+        900: white,
+        A100: rgba(black, 0.87),
+        A200: rgba(black, 0.87),
+        A400: rgba(black, 0.87),
+        A700: white)
+);
+
+$my-app-light-primary: mat.define-palette($canada-palette);
+$my-app-light-accent: mat.define-palette($canada-accent-palette);
+$my-app-light-warn: mat.define-palette($canada-warn-palette);
+
+$my-app-light-theme: mat.define-light-theme((color: (primary: $my-app-light-primary,
+                accent: $my-app-light-accent,
+                warn: $my-app-light-warn,
+            ),
+        ));

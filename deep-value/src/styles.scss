@@ -1,0 +1,28 @@
+@use "@angular/material" as mat;
+
+@use "./styles/themes/light";
+@use "./styles/components" as components;
+
+@include mat.core();
+
+@include mat.core-theme(light.$my-app-light-theme);
+// @include mat.form-field-theme(light.$my-app-light-theme);
+// @include mat.input-theme(light.$my-app-light-theme);
+// @include mat.select-theme(light.$my-app-light-theme);
+// @include mat.autocomplete-theme(light.$my-app-light-theme);
+// @include mat.button-theme(light.$my-app-light-theme);
+// @include mat.icon-button-theme(light.$my-app-light-theme);
+@include mat.all-component-themes(light.$my-app-light-theme);
+@include components.theme(
+    light.$my-app-light-theme
+);
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
