@@ -17,7 +17,7 @@ public class CompanyFullDetailReport {
         decimal averageNetCashFlow,
         decimal averageOwnerEarnings,
         decimal curDividendsPaid,
-        decimal curRetainedEarnings,
+        decimal curAdjustedRetainedEarnings, // oldestRetainedEarnings + Dividends + Share buybacks
         decimal oldestRetainedEarnings,
         int numAnnualProcessedCashFlowReports) {
 
@@ -34,7 +34,7 @@ public class CompanyFullDetailReport {
         AverageNetCashFlow = averageNetCashFlow;
         AverageOwnerEarnings = averageOwnerEarnings;
         CurDividendsPaid = curDividendsPaid;
-        CurRetainedEarnings = curRetainedEarnings;
+        CurRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
     }

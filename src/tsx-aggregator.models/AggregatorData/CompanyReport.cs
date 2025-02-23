@@ -25,13 +25,13 @@ public class CompanyReport
         Name = name;
         Exchange = exchange;
         CurNumShares = curNumShares;
-        _annualRawCashFlowReports = new();
-        _annualRawIncomeStatements = new();
-        _annualRawBalanceSheets = new();
-        _nonAnnualRawCashFlowReports = new();
-        _nonAnnualRawIncomeStatements = new();
-        _nonAnnualRawBalanceSheets = new();
-        _annualProcessedCashFlowItems = new();
+        _annualRawCashFlowReports = [];
+        _annualRawIncomeStatements = [];
+        _annualRawBalanceSheets = [];
+        _nonAnnualRawCashFlowReports = [];
+        _nonAnnualRawIncomeStatements = [];
+        _nonAnnualRawBalanceSheets = [];
+        _annualProcessedCashFlowItems = [];
     }
 
     #region PUBLIC PROPERTIES
@@ -49,8 +49,9 @@ public class CompanyReport
     public decimal CurLongTermDebt { get; set; }
     public decimal CurDividendsPaid { get; set; }
     public decimal CurRetainedEarnings { get; set; }
+    public decimal CurAdjustedRetainedEarnings { get; set; }
     public decimal OldestRetainedEarnings { get; set; }
-    public bool DidRetainedEarningsIncrease => CurRetainedEarnings > OldestRetainedEarnings;
+    public bool DidRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
     public decimal CurBookValue => CurTotalShareholdersEquity - (CurGoodwill + CurIntangibles);
     public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
     public decimal AverageNetCashFlow
@@ -379,6 +380,10 @@ public class CompanyReport
 
     private void TransformRawFinancialReports(IList<string> warnings)
     {
+        decimal totalAnnualDividendsPaid = 0;
+        decimal totalAnnualCommonStockIssuance = 0;
+        decimal totalAnnualPreferredStockIssuance = 0;
+
         foreach ((DateOnly reportDate, RawReportDataMap rawCashFlowReport) in _annualRawCashFlowReports)
         {
             if (_annualProcessedCashFlowItems.ContainsKey(reportDate))
@@ -419,15 +424,28 @@ public class CompanyReport
                     LogMissingPropertyWarning(reportDate, "NetIssuanceOfDebt", warnings);
             }
 
+            if (rawCashFlowReport.HasValue("CashDividendsPaid"))
+                totalAnnualDividendsPaid += rawCashFlowReport["CashDividendsPaid"]!.Value;
+
             if (rawCashFlowReport.HasValue("NetCommonStockIssuance"))
+            {
                 cashFlowReport.NetIssuanceOfStock = rawCashFlowReport["NetCommonStockIssuance"]!.Value;
+                totalAnnualCommonStockIssuance += cashFlowReport.NetIssuanceOfStock;
+            }
             else
+            {
                 LogMissingPropertyWarning(reportDate, "NetIssuanceOfStock", warnings);
+            }
 
             if (rawCashFlowReport.HasValue("NetPreferredStockIssuance"))
+            {
                 cashFlowReport.NetIssuanceOfPreferredStock = rawCashFlowReport["NetPreferredStockIssuance"]!.Value;
+                totalAnnualPreferredStockIssuance += cashFlowReport.NetIssuanceOfPreferredStock;
+            }
             else
+            {
                 LogMissingPropertyWarning(reportDate, "NetIssuanceOfPreferredStock", warnings);
+            }
 
             if (rawCashFlowReport.HasValue("ChangeInWorkingCapital"))
                 cashFlowReport.ChangeInWorkingCapital = rawCashFlowReport["ChangeInWorkingCapital"]!.Value;
@@ -469,6 +487,8 @@ public class CompanyReport
 
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
+
+        CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
     }
 
     /// <summary>
@@ -544,7 +564,7 @@ public class CompanyReport
         return value;
     }
 
-    private decimal? CalcLongTermDebtFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
+    private static decimal? CalcLongTermDebtFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
         if (rawBalanceSheet.HasValue("LongTermDebtAndCapitalLeaseObligation"))
             return rawBalanceSheet["LongTermDebtAndCapitalLeaseObligation"]!.Value;
@@ -557,7 +577,7 @@ public class CompanyReport
         }
     }
 
-    private decimal? CalcWorkingCapitalFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
+    private static decimal? CalcWorkingCapitalFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
         decimal? currentAssets = CalcCurrentAssetsFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
         decimal? currentLiabilities = CalcCurrentLiabilitiesFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
@@ -567,7 +587,7 @@ public class CompanyReport
             : null;
     }
 
-    private decimal? CalcCurrentAssetsFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
+    private static decimal? CalcCurrentAssetsFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
         if (rawBalanceSheet.HasValue("CurrentAssets"))
         {
@@ -580,7 +600,7 @@ public class CompanyReport
         }
     }
 
-    private decimal? CalcCurrentLiabilitiesFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
+    private static decimal? CalcCurrentLiabilitiesFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
         if (rawBalanceSheet.HasValue("CurrentLiabilities"))
         {
@@ -593,7 +613,7 @@ public class CompanyReport
         }
     }
 
-    private decimal? CalcNetIncomeFromContinuingOperationsFromRawIncomeStatement(DateOnly reportDate, RawReportDataMap rawIncomeStatement, IList<string> warnings)
+    private static decimal? CalcNetIncomeFromContinuingOperationsFromRawIncomeStatement(DateOnly reportDate, RawReportDataMap rawIncomeStatement, IList<string> warnings)
     {
         if (rawIncomeStatement.HasValue("NetIncomeContinuousOperations"))
         {
@@ -606,7 +626,7 @@ public class CompanyReport
         }
     }
 
-    private void LogMissingPropertyWarning(DateOnly reportDate, string missingPropertyName, IList<string> warnings)
+    private static void LogMissingPropertyWarning(DateOnly reportDate, string missingPropertyName, IList<string> warnings)
     {
         warnings.Add($"Missing property '{missingPropertyName}'. Report date: {reportDate}");
     }

@@ -49,7 +49,7 @@ message GetStocksDataReplyItem {
     int64 current_intangibles = 10;
     int64 current_long_term_debt = 11;
     int64 current_dividends_paid = 12;
-    int64 current_retained_earnings = 13;
+    int64 current_adjusted_retained_earnings = 13;
     int64 oldest_retained_earnings = 14;
     int64 current_book_value = 15;
     int64 average_net_cash_flow = 16;

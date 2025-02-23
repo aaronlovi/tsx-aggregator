@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -46,7 +46,7 @@ public class CompaniesController : Controller {
                 averageNetCashFlow: item.AverageNetCashFlow,
                 averageOwnerEarnings: item.AverageOwnerEarnings,
                 curDividendsPaid: item.CurrentDividendsPaid,
-                curRetainedEarnings: item.CurrentRetainedEarnings,
+                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
                 oldestRetainedEarnings: item.OldestRetainedEarnings,
                 numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
         }
@@ -93,7 +93,7 @@ public class CompaniesController : Controller {
             averageNetCashFlow: reply.StockDetail.AverageNetCashFlow,
             averageOwnerEarnings: reply.StockDetail.AverageOwnerEarnings,
             curDividendsPaid: reply.StockDetail.CurrentDividendsPaid,
-            curRetainedEarnings: reply.StockDetail.CurrentRetainedEarnings,
+            curAdjustedRetainedEarnings: reply.StockDetail.CurrentAdjustedRetainedEarnings,
             oldestRetainedEarnings: reply.StockDetail.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports);
 

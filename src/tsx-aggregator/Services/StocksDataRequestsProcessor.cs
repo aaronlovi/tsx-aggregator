@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
@@ -105,7 +105,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     || !GetDataPoint(root, "CurIntangibles", out var curIntangibles)
                     || !GetDataPoint(root, "CurLongTermDebt", out var curLongTermDebt)
                     || !GetDataPoint(root, "CurDividendsPaid", out var curDividendsPaid)
-                    || !GetDataPoint(root, "CurRetainedEarnings", out var curRetainedEarnings)
+                    || !GetDataPoint(root, "CurAdjustedRetainedEarnings", out var curAdjustedRetainedEarnings)
                     || !GetDataPoint(root, "OldestRetainedEarnings", out var oldestRetainedEarnings)
                     || !GetDataPoint(root, "CurBookValue", out var currentBookValue)
                     || !GetDataPoint(root, "AverageNetCashFlow", out var averageNetCashFlow)
@@ -128,7 +128,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     CurrentIntangibles = curIntangibles,
                     CurrentLongTermDebt = curLongTermDebt,
                     CurrentDividendsPaid = curDividendsPaid,
-                    CurrentRetainedEarnings = curRetainedEarnings,
+                    CurrentAdjustedRetainedEarnings = curAdjustedRetainedEarnings,
                     OldestRetainedEarnings = oldestRetainedEarnings,
                     CurrentBookValue = currentBookValue,
                     AverageNetCashFlow = averageNetCashFlow,
@@ -195,7 +195,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     || !GetDataPoint(root, "CurIntangibles", out var curIntangibles)
                     || !GetDataPoint(root, "CurLongTermDebt", out var curLongTermDebt)
                     || !GetDataPoint(root, "CurDividendsPaid", out var curDividendsPaid)
-                    || !GetDataPoint(root, "CurRetainedEarnings", out var curRetainedEarnings)
+                    || !GetDataPoint(root, "CurAdjustedRetainedEarnings", out var curAdjustedRetainedEarnings)
                     || !GetDataPoint(root, "OldestRetainedEarnings", out var oldestRetainedEarnings)
                     || !GetDataPoint(root, "CurBookValue", out var currentBookValue)
                     || !GetDataPoint(root, "AverageNetCashFlow", out var averageNetCashFlow)
@@ -218,7 +218,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     CurrentIntangibles = curIntangibles,
                     CurrentLongTermDebt = curLongTermDebt,
                     CurrentDividendsPaid = curDividendsPaid,
-                    CurrentRetainedEarnings = curRetainedEarnings,
+                    CurrentAdjustedRetainedEarnings = curAdjustedRetainedEarnings,
                     OldestRetainedEarnings = oldestRetainedEarnings,
                     CurrentBookValue = currentBookValue,
                     AverageNetCashFlow = averageNetCashFlow,
