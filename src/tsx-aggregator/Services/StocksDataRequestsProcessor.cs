@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
@@ -86,7 +86,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             Success = res.Success,
             ErrorMessage = res.ErrMsg
         };
-        foreach (ProcessedFullInstrumentReportDto dto in res.Data ?? Array.Empty<ProcessedFullInstrumentReportDto>()) {
+        foreach (ProcessedFullInstrumentReportDto dto in res.Data ?? []) {
             using var companyContext = _logger.BeginScope(new Dictionary<string, string> { [LogUtils.InstrumentSymbolContext] = dto.InstrumentSymbol });
             AddCompanyItem(request.Exchange, dto, reply, _logger);
         }

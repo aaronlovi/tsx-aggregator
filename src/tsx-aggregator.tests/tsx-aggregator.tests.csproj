@@ -1,32 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>tsx_aggregator.tests</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+	<PropertyGroup>
+		<RootNamespace>tsx_aggregator.tests</RootNamespace>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
 
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="coverlet.collector" Version="6.0.4">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="FluentAssertions" Version="8.0.1" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="xunit" Version="2.9.3" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="Moq" Version="4.20.70" />
-    <PackageReference Include="xunit" Version="2.5.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\tsx-aggregator.models\tsx-aggregator.models.csproj" />
+		<ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
+		<ProjectReference Include="..\tsx-aggregator\tsx-aggregator.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\tsx-aggregator.models\tsx-aggregator.models.csproj" />
-    <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
-    <ProjectReference Include="..\tsx-aggregator\tsx-aggregator.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
+	<ItemGroup>
+	  <PackageReference Update="Grpc.AspNetCore" Version="2.67.0" />
+	  <PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
+	  <PackageReference Update="Microsoft.Extensions.Hosting" Version="9.0.2" />
+	  <PackageReference Update="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
+	  <PackageReference Update="Npgsql" Version="9.0.2" />
+	  <PackageReference Update="PuppeteerSharp" Version="20.1.1" />
+	  <PackageReference Update="Serilog" Version="4.2.0" />
+	  <PackageReference Update="Serilog.Extensions.Hosting" Version="9.0.0" />
+	  <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
+	  <PackageReference Update="Serilog.Sinks.File" Version="6.0.0" />
+	</ItemGroup>
 
 </Project>

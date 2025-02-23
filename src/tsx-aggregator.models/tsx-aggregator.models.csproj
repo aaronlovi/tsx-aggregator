@@ -1,19 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>tsx_aggregator.models</RootNamespace>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<RootNamespace>tsx_aggregator.models</RootNamespace>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	  <PackageReference Update="Grpc.AspNetCore" Version="2.67.0" />
+	  <PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
+	  <PackageReference Update="Microsoft.Extensions.Hosting" Version="9.0.2" />
+	  <PackageReference Update="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
+	  <PackageReference Update="Npgsql" Version="9.0.2" />
+	  <PackageReference Update="PuppeteerSharp" Version="20.1.1" />
+	  <PackageReference Update="Serilog" Version="4.2.0" />
+	  <PackageReference Update="Serilog.Extensions.Hosting" Version="9.0.0" />
+	  <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
+	  <PackageReference Update="Serilog.Sinks.File" Version="6.0.0" />
+	</ItemGroup>
 
 </Project>

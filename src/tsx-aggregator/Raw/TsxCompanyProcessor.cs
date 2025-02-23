@@ -98,7 +98,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     private static async Task Init() {
-        using var browserFetcher = new BrowserFetcher();
+        var browserFetcher = new BrowserFetcher();
         await browserFetcher.DownloadAsync();
     }
 
