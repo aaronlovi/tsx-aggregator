@@ -51,10 +51,10 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
     protected override void ClearResults() => _processedInstrumentReportDto = null;
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() {
-        return new List<NpgsqlParameter> {
+        return [
             new NpgsqlParameter<string>("exchange", _exchange),
             new NpgsqlParameter<string>("instrument_symbol", _instrumentSymbol)
-        };
+        ];
     }
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {

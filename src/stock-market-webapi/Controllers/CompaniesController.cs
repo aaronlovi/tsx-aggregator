@@ -1,4 +1,9 @@
-﻿using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using tsx_aggregator.models;
 using tsx_aggregator.Services;
@@ -163,7 +168,7 @@ public class CompaniesController : Controller {
     public async Task<ActionResult> IgnoreRawReport(
         ulong instrumentId, ulong instrumentReportIdToKeep, [FromBody] List<ulong> instrumentReportIdsToIgnore) {
         try {
-            if (!ModelState.IsValid || instrumentReportIdsToIgnore == null || !instrumentReportIdsToIgnore.Any())
+            if (!ModelState.IsValid || instrumentReportIdsToIgnore == null || instrumentReportIdsToIgnore.Count == 0)
                 return BadRequest(ModelState);
 
             var request = new IgnoreRawDataReportRequest() {

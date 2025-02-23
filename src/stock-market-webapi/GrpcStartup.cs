@@ -1,4 +1,7 @@
-﻿namespace stock_market_webapi;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace stock_market_webapi;
 
 public class GrpcStartup {
     public void ConfigureServices(IServiceCollection services) {

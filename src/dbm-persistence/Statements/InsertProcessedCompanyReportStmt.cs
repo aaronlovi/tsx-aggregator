@@ -18,22 +18,22 @@ internal sealed class InsertProcessedCompanyReportStmt : NonQueryBatchedDbStmtBa
 
     public InsertProcessedCompanyReportStmt(ProcessedInstrumentReportDto dto) 
         : base(nameof(InsertProcessedCompanyReportStmt)) {
-        AddCommandToBatch(ObsoleteOldRecordsSql, new NpgsqlParameter[] {
+        AddCommandToBatch(ObsoleteOldRecordsSql, [
             new NpgsqlParameter<DateTime>("obsoleted_date", dto.ReportObsoletedDate?.DateTime ?? DateTime.UtcNow),
             new NpgsqlParameter<long>("instrument_id", dto.InstrumentId)
-        });
+        ]);
 
-        AddCommandToBatch(InsertNewRecordSql, new NpgsqlParameter[] {
+        AddCommandToBatch(InsertNewRecordSql, [
             new NpgsqlParameter<long>("instrument_id", dto.InstrumentId),
             new NpgsqlParameter<string>("report_json", dto.SerializedReport),
             new NpgsqlParameter<DateTime>("created_date", dto.ReportCreatedDate.DateTime)
-        });
+        ]);
 
-        AddCommandToBatch(UpdateInstrumentEventStmt.sql, new NpgsqlParameter[] {
+        AddCommandToBatch(UpdateInstrumentEventStmt.sql, [
             new NpgsqlParameter<bool>("is_processed", true),
             new NpgsqlParameter<long>("instrument_id", dto.InstrumentId),
             new NpgsqlParameter<int>("event_type", (int)Constants.CompanyEventTypes.RawDataChanged),
             new NpgsqlParameter<DateTime>("event_date", dto.ReportCreatedDate.DateTime)
-        });
+        ]);
     }
 }
