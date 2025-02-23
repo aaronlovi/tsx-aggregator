@@ -405,4 +405,4 @@ tsx-aggregator/linear-hangar-381814-2526009b7ea3.json
 package-lock.json
 
 # Log files
-tsx-aggregator/tsx-aggregator-*.txt
+src/tsx-aggregator/tsx-aggregator-*.txt
