@@ -1,16 +1,36 @@
-version: '3.8'
+name: tsx-aggregator
 
 services:
   postgres:
-    image: postgres
-    container_name: tsx-aggregator
+    image: postgres:${POSTGRES_VERSION}
+    container_name: tsx-postgres
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - tsx-data-network
+
+  pgadmin:
+    image: dpage/pgadmin4:${PGADMIN_VERSION}
+    container_name: tsx-pgadmin
+    ports:
+      - "8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - tsx-data-network
 
 volumes:
-  pgdata:
+  postgres-data:
+    driver: local
+
+networks:
+  tsx-data-network:

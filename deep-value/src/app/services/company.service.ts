@@ -50,7 +50,7 @@ export class CompanyService {
                     data.averageNetCashFlow,
                     data.averageOwnerEarnings,
                     data.curDividendsPaid,
-                    data.curRetainedEarnings,
+                    data.curAdjustedRetainedEarnings,
                     data.oldestRetainedEarnings,
                     data.numAnnualProcessedCashFlowReports);
             })

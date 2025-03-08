@@ -34,7 +34,7 @@ public class CompanyFullDetailReport {
         AverageNetCashFlow = averageNetCashFlow;
         AverageOwnerEarnings = averageOwnerEarnings;
         CurDividendsPaid = curDividendsPaid;
-        CurRetainedEarnings = curAdjustedRetainedEarnings;
+        CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
     }
@@ -52,7 +52,7 @@ public class CompanyFullDetailReport {
     public decimal AverageNetCashFlow { get; init; }
     public decimal AverageOwnerEarnings { get; init; }
     public decimal CurDividendsPaid { get; init; }
-    public decimal CurRetainedEarnings { get; init; }
+    public decimal CurAdjustedRetainedEarnings { get; init; }
     public decimal OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
 
@@ -61,7 +61,7 @@ public class CompanyFullDetailReport {
     public decimal DebtToEquityRatio => Utilities.DivSafe(CurLongTermDebt, CurTotalShareholdersEquity);
     public decimal CurPriceToBookRatio => Utilities.DivSafe(CurMarketCap, CurBookValue);
     public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
-    public bool DidRetainedEarningsIncrease => CurRetainedEarnings > OldestRetainedEarnings;
+    public bool DidAdjustedRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
     public decimal EstimatedNextYearBookValue_FromCashFlow {
         get {
             return CurBookValue == decimal.MinValue || AverageNetCashFlow == decimal.MinValue
@@ -110,7 +110,7 @@ public class CompanyFullDetailReport {
     public bool DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromCashFlow < 40M;
     public bool DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings < 40M;
     public bool DoesPassCheck_DebtToBookRatioSmallEnough => LongTermDebtToBookRatio < 1M;
-    public bool DoesPassCheck_RetainedEarningsPositive => CurRetainedEarnings > 0;
+    public bool DoesPassCheck_RetainedEarningsPositive => CurAdjustedRetainedEarnings > 0;
     public bool DoesPassCheck_IsHistoryLongEnough => NumAnnualProcessedCashFlowReports >= 4;
     public bool DoesPassCheck_Overall =>
         DoesPassCheck_DebtToEquitySmallEnough
@@ -125,7 +125,7 @@ public class CompanyFullDetailReport {
         && DoesPassCheck_DebtToBookRatioSmallEnough
         && DoesPassCheck_RetainedEarningsPositive
         && DoesPassCheck_IsHistoryLongEnough
-        && DidRetainedEarningsIncrease;
+        && DidAdjustedRetainedEarningsIncrease;
     public int OverallScore =>
         (DoesPassCheck_DebtToEquitySmallEnough ? 1 : 0)
         + (DoesPassCheck_BookValueBigEnough ? 1 : 0)
@@ -139,5 +139,5 @@ public class CompanyFullDetailReport {
         + (DoesPassCheck_DebtToBookRatioSmallEnough ? 1 : 0)
         + (DoesPassCheck_RetainedEarningsPositive ? 1 : 0)
         + (DoesPassCheck_IsHistoryLongEnough ? 1 : 0)
-        + (DidRetainedEarningsIncrease ? 1 : 0);
+        + (DidAdjustedRetainedEarningsIncrease ? 1 : 0);
 }

@@ -151,8 +151,8 @@
                         {{ textService.company_details_retained_earnings_positive_tooltip | translate }}
                     </span>
 				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckRetainedEarningsPositive}">
-                    {{ companyDetails.doesPassCheckRetainedEarningsPositive ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckAdjustedRetainedEarningsPositive}">
+                    {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? (textService.text_yes | translate) : (textService.text_no | translate) }}
                 </td>
                 
                 <th class="mat-header-cell data-table__header">
@@ -160,8 +160,8 @@
                         {{ textService.company_details_retained_earnings_increased | translate}}
                     </span>
 				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.didRetainedEarningsIncrease}">
-                    {{ companyDetails.didRetainedEarningsIncrease ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.didAdjustedRetainedEarningsIncrease}">
+                    {{ companyDetails.didAdjustedRetainedEarningsIncrease ? (textService.text_yes | translate) : (textService.text_no | translate) }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
@@ -252,7 +252,7 @@
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
-                    {{ companyDetails.curRetainedEarnings | currency:'USD':'symbol':'1.0-0' }}
+                    {{ companyDetails.curAdjustedRetainedEarnings | currency:'USD':'symbol':'1.0-0' }}
                 </td>
                 
                 <th class="mat-header-cell data-table__header">

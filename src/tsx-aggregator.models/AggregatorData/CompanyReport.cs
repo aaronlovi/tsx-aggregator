@@ -51,7 +51,7 @@ public class CompanyReport
     public decimal CurRetainedEarnings { get; set; }
     public decimal CurAdjustedRetainedEarnings { get; set; }
     public decimal OldestRetainedEarnings { get; set; }
-    public bool DidRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
+    public bool DidAdjustedRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
     public decimal CurBookValue => CurTotalShareholdersEquity - (CurGoodwill + CurIntangibles);
     public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
     public decimal AverageNetCashFlow

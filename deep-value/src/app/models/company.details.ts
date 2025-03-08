@@ -14,7 +14,7 @@ export class CompanyDetails {
     averageNetCashFlow: number;
     averageOwnerEarnings: number;
     curDividendsPaid: number;
-    curRetainedEarnings: number;
+    curAdjustedRetainedEarnings: number;
     oldestRetainedEarnings: number;
     numAnnualProcessedCashFlowReports: number;
 
@@ -32,7 +32,7 @@ export class CompanyDetails {
         averageNetCashFlow: number,
         averageOwnerEarnings: number,
         curDividendsPaid: number,
-        curRetainedEarnings: number,
+        curAdjustedRetainedEarnings: number,
         oldestRetainedEarnings: number,
         numAnnualProcessedCashFlowReports: number) {
         this.exchange = exchange;
@@ -48,7 +48,7 @@ export class CompanyDetails {
         this.averageNetCashFlow = averageNetCashFlow;
         this.averageOwnerEarnings = averageOwnerEarnings;
         this.curDividendsPaid = curDividendsPaid;
-        this.curRetainedEarnings = curRetainedEarnings;
+        this.curAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         this.oldestRetainedEarnings = oldestRetainedEarnings;
         this.numAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
     }
@@ -58,7 +58,7 @@ export class CompanyDetails {
     public get debtToEquityRatio() { return Utilities.DivSafe(this.curLongTermDebt, this.curTotalShareholdersEquity); }
     public get curPriceToBookRatio() { return Utilities.DivSafe(this.curMarketCap, this.curBookValue); }
     public get longTermDebtToBookRatio() { return Utilities.DivSafe(this.curLongTermDebt, this.curBookValue); }
-    public get didRetainedEarningsIncrease() { return this.curRetainedEarnings > this.oldestRetainedEarnings; }
+    public get didAdjustedRetainedEarningsIncrease() { return this.curAdjustedRetainedEarnings > this.oldestRetainedEarnings; }
     public get estimatedNextYearBookValue_FromCashFlow() {
         return this.curBookValue === Number.MIN_VALUE || this.averageNetCashFlow === Number.MIN_VALUE
             ? Number.MIN_VALUE
@@ -99,7 +99,7 @@ export class CompanyDetails {
     public get doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig() { return this.estimatedNextYearTotalReturnPercentage_FromCashFlow < 40; }
     public get doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig() { return this.estimatedNextYearTotalReturnPercentageFromOwnerEarnings < 40; }
     public get doesPassCheckDebtToBookRatioSmallEnough() { return this.longTermDebtToBookRatio < 1; }
-    public get doesPassCheckRetainedEarningsPositive() { return this.curRetainedEarnings > 0; }
+    public get doesPassCheckAdjustedRetainedEarningsPositive() { return this.curAdjustedRetainedEarnings > 0; }
     public get doesPassCheckIsHistoryLongEnough() { return this.numAnnualProcessedCashFlowReports >= 4; }
     public get doesPassCheckOverall() {
         return this.doesPassCheckDebtToEquitySmallEnough
@@ -112,9 +112,9 @@ export class CompanyDetails {
             && this.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig
             && this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig
             && this.doesPassCheckDebtToBookRatioSmallEnough
-            && this.doesPassCheckRetainedEarningsPositive
+            && this.doesPassCheckAdjustedRetainedEarningsPositive
             && this.doesPassCheckIsHistoryLongEnough
-            && this.didRetainedEarningsIncrease;
+            && this.didAdjustedRetainedEarningsIncrease;
     }
     public get overallScore() {
         return (this.doesPassCheckDebtToEquitySmallEnough ? 1 : 0)
@@ -127,8 +127,8 @@ export class CompanyDetails {
             + (this.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? 1 : 0)
             + (this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ? 1 : 0)
             + (this.doesPassCheckDebtToBookRatioSmallEnough ? 1 : 0)
-            + (this.doesPassCheckRetainedEarningsPositive ? 1 : 0)
+            + (this.doesPassCheckAdjustedRetainedEarningsPositive ? 1 : 0)
             + (this.doesPassCheckIsHistoryLongEnough ? 1 : 0)
-            + (this.didRetainedEarningsIncrease ? 1 : 0);
+            + (this.didAdjustedRetainedEarningsIncrease ? 1 : 0);
     }
 }
