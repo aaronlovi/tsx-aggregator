@@ -17,4 +17,8 @@
     <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="PuppeteerSharp" Version="20.2.2" />
+  </ItemGroup>
+
 </Project>

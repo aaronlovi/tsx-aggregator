@@ -14,7 +14,7 @@
 	  <PackageReference Update="Microsoft.Extensions.Hosting" Version="9.0.2" />
 	  <PackageReference Update="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
 	  <PackageReference Update="Npgsql" Version="9.0.2" />
-	  <PackageReference Update="PuppeteerSharp" Version="20.1.1" />
+	  <PackageReference Update="PuppeteerSharp" Version="20.2.2" />
 	  <PackageReference Update="Serilog" Version="4.2.0" />
 	  <PackageReference Update="Serilog.Extensions.Hosting" Version="9.0.0" />
 	  <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
