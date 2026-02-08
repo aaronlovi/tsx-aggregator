@@ -5,7 +5,7 @@
 
 <!-- While loading -->
 <div *ngIf="loading || !companyDetails">
-    <h2>{{ textService.text_loading_ellipses | translate  }}</h2>
+    <h2>{{ textService.text_loading_ellipses | translate }}</h2>
 </div>
 
 <!-- Valid company details loaded, display report -->
@@ -24,28 +24,30 @@
 
                 <th class="mat-header-cell data-table__header">{{ textService.text_exchange | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.exchange }}</td>
-                
+
                 <th class="mat-header-cell data-table__header">{{ textService.text_company_name | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.companyName }}</td>
-                
+
                 <th class="mat-header-cell data-table__header">{{ textService.text_instrument_name | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.instrumentName }}</td>
-                
+
                 <th class="mat-header-cell data-table__header">&nbsp;</th>
                 <td class="mat-cell data-table__data">&nbsp;</td>
             </tr>
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">{{ textService.text_company_symbol | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.companySymbol }}</td>
-                
+
                 <th class="mat-header-cell data-table__header">{{ textService.text_instrument_symbol | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.instrumentSymbol }}</td>
-                
+
                 <th class="mat-header-cell data-table__header">{{ textService.text_price_per_share | translate }}</th>
-                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.pricePerShare | currency:'USD':'symbol':'1.2-2' }}</td>
-                
+                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.pricePerShare |
+                    currency:'USD':'symbol':'1.2-2' }}</td>
+
                 <th class="mat-header-cell data-table__header">{{ textService.text_number_of_shares | translate }}</th>
-                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.curNumShares | number:'1.0-0' }}</td>
+                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.curNumShares |
+                    number:'1.0-0' }}</td>
             </tr>
 
             <!-- Scores -->
@@ -59,8 +61,10 @@
                         {{ textService.company_details_debt_to_equity_small_enough | translate }}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckDebtToEquitySmallEnough}">
-                    {{ companyDetails.doesPassCheckDebtToEquitySmallEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckDebtToEquitySmallEnough}">
+                    {{ companyDetails.doesPassCheckDebtToEquitySmallEnough ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
@@ -68,63 +72,83 @@
                         {{ textService.company_details_debt_to_book_small_enough | translate }}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckDebtToBookRatioSmallEnough}">
-                    {{ companyDetails.doesPassCheckDebtToBookRatioSmallEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckDebtToBookRatioSmallEnough}">
+                    {{ companyDetails.doesPassCheckDebtToBookRatioSmallEnough ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_book_value_big_enough_tooltip | translate">
                         {{ textService.company_details_book_value_big_enough | translate }}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckBookValueBigEnough}">
-                    {{ companyDetails.doesPassCheckBookValueBigEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckBookValueBigEnough}">
+                    {{ companyDetails.doesPassCheckBookValueBigEnough ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_price_to_book_small_enough_tooltip | translate">
                         {{ textService.company_details_price_to_book_small_enough | translate }}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckPriceToBookSmallEnough}">
-                    {{ companyDetails.doesPassCheckPriceToBookSmallEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckPriceToBookSmallEnough}">
+                    {{ companyDetails.doesPassCheckPriceToBookSmallEnough ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_big_enough_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_big_enough_tooltip | translate">
                         {{ textService.company_details_est_next_year_total_return_cash_flow_big_enough | translate}}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough}">
-                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough}">
+                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? (textService.text_yes |
+                    translate) : (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_big_enough_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_owner_earnings_big_enough | translate}}
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_big_enough_tooltip | translate">
+                        {{ textService.company_details_est_next_year_total_return_owner_earnings_big_enough |
+                        translate}}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough}">
-                    {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough}">
+                    {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough ?
+                    (textService.text_yes | translate) : (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_not_too_big_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_not_too_big_tooltip | translate">
                         {{ textService.company_details_est_next_year_total_return_cash_flow_not_too_big | translate}}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig}">
-                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig}">
+                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? (textService.text_yes |
+                    translate) : (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_not_too_big_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_owner_earnings_not_too_big | translate}}
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_not_too_big_tooltip | translate">
+                        {{ textService.company_details_est_next_year_total_return_owner_earnings_not_too_big |
+                        translate}}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
-                    {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
+                    {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ?
+                    (textService.text_yes | translate) : (textService.text_no | translate) }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
@@ -133,45 +157,55 @@
                         {{ textService.company_details_avg_cash_flow_positive | translate}}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckAvgCashFlow_Positive}">
-                    {{ companyDetails.doesPassCheckAvgCashFlow_Positive ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckAvgCashFlow_Positive}">
+                    {{ companyDetails.doesPassCheckAvgCashFlow_Positive ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-					<span [matTooltip]="textService.company_details_avg_owner_earnings_positive_tooltip | translate">
+                    <span [matTooltip]="textService.company_details_avg_owner_earnings_positive_tooltip | translate">
                         {{ textService.company_details_avg_owner_earnings_positive | translate}}
                     </span>
-				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckAvgOwnerEarningsPositive}">
-                    {{ companyDetails.doesPassCheckAvgOwnerEarningsPositive ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                </th>
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckAvgOwnerEarningsPositive}">
+                    {{ companyDetails.doesPassCheckAvgOwnerEarningsPositive ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-					<span [matTooltip]="textService.company_details_retained_earnings_positive_tooltip | translate">
+                    <span [matTooltip]="textService.company_details_retained_earnings_positive_tooltip | translate">
                         {{ textService.company_details_retained_earnings_positive_tooltip | translate }}
                     </span>
-				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckAdjustedRetainedEarningsPositive}">
-                    {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                </th>
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckAdjustedRetainedEarningsPositive}">
+                    {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? (textService.text_yes | translate)
+                    : (textService.text_no | translate) }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
-					<span [matTooltip]="textService.company_details_retained_earnings_increased_tooltip | translate">
+                    <span [matTooltip]="textService.company_details_retained_earnings_increased_tooltip | translate">
                         {{ textService.company_details_retained_earnings_increased | translate}}
                     </span>
-				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.didAdjustedRetainedEarningsIncrease}">
-                    {{ companyDetails.didAdjustedRetainedEarningsIncrease ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                </th>
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.didAdjustedRetainedEarningsIncrease}">
+                    {{ companyDetails.didAdjustedRetainedEarningsIncrease ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header">
-					<span [matTooltip]="textService.company_details_history_long_enough_tooltip | translate">
+                    <span [matTooltip]="textService.company_details_history_long_enough_tooltip | translate">
                         {{ textService.company_details_history_long_enough | translate}}
                     </span>
-				</th>
-                <td class="mat-cell data-table__data data-table__data--score" [ngClass]="{no: !companyDetails.doesPassCheckIsHistoryLongEnough}">
-                    {{ companyDetails.doesPassCheckIsHistoryLongEnough ? (textService.text_yes | translate) : (textService.text_no | translate) }}
+                </th>
+                <td class="mat-cell data-table__data data-table__data--score"
+                    [ngClass]="{no: !companyDetails.doesPassCheckIsHistoryLongEnough}">
+                    {{ companyDetails.doesPassCheckIsHistoryLongEnough ? (textService.text_yes | translate) :
+                    (textService.text_no | translate) }}
                 </td>
 
                 <!-- Spacer -->
@@ -199,7 +233,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.curMarketCap | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_long_term_debt_tooltip | translate">
                         {{ textService.text_long_term_debt | translate }}
@@ -208,7 +242,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.curLongTermDebt | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_total_shareholders_equity_tooltip | translate">
                         {{ textService.text_total_shareholders_equity | translate }}
@@ -217,7 +251,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.curTotalShareholdersEquity | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_cur_dividends_paid_tooltip | translate">
                         {{ textService.text_cur_dividends_paid | translate }}
@@ -236,7 +270,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.averageNetCashFlow | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_avg_owner_earnings_tooltip | translate">
                         {{ textService.text_avg_owner_earnings | translate }}
@@ -245,7 +279,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.averageOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_cur_retained_earnings_tooltip | translate">
                         {{ textService.text_cur_retained_earnings | translate }}
@@ -254,7 +288,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.curAdjustedRetainedEarnings | currency:'USD':'symbol':'1.0-0' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_oldest_retained_earnings_tooltip | translate">
                         {{ textService.text_oldest_retained_earnings | translate }}
@@ -273,7 +307,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.debtToEquityRatio | number:'1.2-2' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_cur_price_to_book_ratio_tooltip | translate">
                         {{ textService.text_cur_price_to_book_ratio | translate }}
@@ -282,7 +316,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.curPriceToBookRatio | number:'1.2-2' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
                     <span [matTooltip]="textService.company_details_debt_to_book_ratio_tooltip | translate">
                         {{ textService.text_debt_to_book_ratio | translate }}
@@ -291,7 +325,7 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.longTermDebtToBookRatio | number:'1.2-2' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">&nbsp;</th>
                 <td class="mat-cell data-table__data">&nbsp;</td>
             </tr>
@@ -306,7 +340,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_book_value_from_cash_flow_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_book_value_from_cash_flow_tooltip | translate">
                         {{ textService.company_details_est_next_year_book_value_from_cash_flow | translate }}
                     </span>
                 </th>
@@ -315,7 +350,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_book_value_from_owner_earnings_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_book_value_from_owner_earnings_tooltip | translate">
                         {{ textService.company_details_est_next_year_book_value_from_owner_earnings | translate}}
                     </span>
                 </th>
@@ -326,23 +362,26 @@
                 <th class="mat-header-cell data-table__header">&nbsp;</th>
                 <td class="mat-cell data-table__data">&nbsp;</td>
             </tr>
-            <tr class="mat-row data-table__row">                
+            <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_from_cash_flow_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_from_cash_flow_tooltip | translate">
                         {{ textService.company_details_est_next_year_total_return_from_cash_flow | translate }}
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromCashFlow / 100.0 | percent:'1.2-2' }}
                 </td>
-                
+
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_est_next_year_total_return_from_owner_earnings_tooltip | translate">
+                    <span
+                        [matTooltip]="textService.company_details_est_next_year_total_return_from_owner_earnings_tooltip | translate">
                         {{ textService.company_details_est_next_year_total_return_from_owner_earnings | translate }}
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
-                    {{ companyDetails.estimatedNextYearTotalReturnPercentageFromOwnerEarnings / 100.0 | percent:'1.2-2' }}
+                    {{ companyDetails.estimatedNextYearTotalReturnPercentageFromOwnerEarnings / 100.0 | percent:'1.2-2'
+                    }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
@@ -350,7 +389,8 @@
                         {{ textService.company_details_num_annual_reports | translate }}
                     </span>
                 </th>
-                <td class="mat-cell data-table__data data-table__data--score">{{ companyDetails.numAnnualProcessedCashFlowReports }}</td>
+                <td class="mat-cell data-table__data data-table__data--score">{{
+                    companyDetails.numAnnualProcessedCashFlowReports }}</td>
 
                 <th class="mat-header-cell data-table__header">&nbsp;</th>
                 <td class="mat-cell data-table__data">&nbsp;</td>

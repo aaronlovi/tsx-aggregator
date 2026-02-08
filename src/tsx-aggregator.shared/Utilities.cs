@@ -63,10 +63,55 @@ public static class Utilities {
     /// </summary>
     public static Task CreateCancellationTask(CancellationToken ct) {
         var tcs = new TaskCompletionSource<bool>();
-        ct.Register(() => tcs.SetResult(true));
+        _ = ct.Register(() => tcs.SetResult(true));
         return tcs.Task;
     }
 
     public static bool EqualsInvariant(this string str, string other)
         => str.Equals(other, StringComparison.InvariantCulture);
+
+    /// <summary>
+    /// Executes an asynchronous operation with retry logic.
+    /// </summary>
+    /// <typeparam name="T">The return type of the operation.</typeparam>
+    /// <param name="operation">The async operation to execute.</param>
+    /// <param name="maxRetries">Maximum number of retry attempts (0 = no retries, just execute once).</param>
+    /// <param name="delayBetweenRetries">Delay between retry attempts.</param>
+    /// <param name="shouldRetry">Optional predicate to determine if the result should trigger a retry. If null, only exceptions trigger retries.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The result of the operation.</returns>
+    public static async Task<T> RetryAsync<T>(
+        Func<Task<T>> operation,
+        int maxRetries,
+        TimeSpan delayBetweenRetries,
+        Func<T, bool>? shouldRetry = null,
+        CancellationToken ct = default) {
+
+        int attempts = 0;
+        int totalAttempts = maxRetries + 1; // Initial attempt + retries
+
+        while (true) {
+            ct.ThrowIfCancellationRequested();
+            attempts++;
+
+            try {
+                T result = await operation().ConfigureAwait(false);
+
+                // If we have a retry predicate and it says we should retry, and we have retries left
+                if (shouldRetry is not null && shouldRetry(result) && attempts < totalAttempts) {
+                    await Task.Delay(delayBetweenRetries, ct).ConfigureAwait(false);
+                    continue;
+                }
+
+                return result;
+            } catch (OperationCanceledException) {
+                throw; // Don't retry on cancellation
+            } catch {
+                if (attempts >= totalAttempts)
+                    throw; // No more retries, rethrow
+
+                await Task.Delay(delayBetweenRetries, ct).ConfigureAwait(false);
+            }
+        }
+    }
 }

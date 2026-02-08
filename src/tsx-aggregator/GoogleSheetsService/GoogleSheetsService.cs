@@ -68,7 +68,7 @@ public class GoogleSheetsService : IGoogleSheetsService {
         // Create the Google credential object
         var credential = GoogleCredential
             .FromFile(_googleCredentials.CredentialFilePath)
-            .CreateScoped(new[] { SheetsService.Scope.Spreadsheets });
+            .CreateScoped([SheetsService.Scope.Spreadsheets]);
 
         // Initialize the SheetsService instance
         _sheetService = new SheetsService(new BaseClientService.Initializer() {
@@ -208,7 +208,7 @@ public class GoogleSheetsService : IGoogleSheetsService {
 
                 // Prepare the ValueRange object with the override price
                 var valueRange = new ValueRange {
-                    Values = new List<IList<object>> { new List<object> { price } }
+                    Values = [[price]]
                 };
 
                 // Calculate the cell to update in column C
@@ -217,7 +217,7 @@ public class GoogleSheetsService : IGoogleSheetsService {
                 // Execute the update request
                 var updateRequest = _sheetService.Spreadsheets.Values.Update(valueRange, _googleCredentials.SpreadsheetId, updateRange);
                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                await updateRequest.ExecuteAsync(ct);
+                _ = await updateRequest.ExecuteAsync(ct);
             } catch (Exception ex) {
                 _logger.LogError(ex, "FetchQuoteOverrides - Error processing row {RowIndex}", rowIndex);
             }

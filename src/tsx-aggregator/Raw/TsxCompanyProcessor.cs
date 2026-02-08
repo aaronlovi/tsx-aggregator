@@ -19,13 +19,15 @@ namespace tsx_aggregator;
 /// Contains an asynchronous loop which is kept alive until all responses from the web page are complete.
 /// </summary>
 internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
+    private const int MaxRetries = 2;
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
+
     private readonly ILogger _logger;
     private readonly InstrumentDto _instrumentDto;
     private readonly TsxCompanyProcessorFsm _fsm;
-    private readonly TaskCompletionSource _tcs;
+    private TaskCompletionSource _tcs;
     private readonly Channel<TsxCompanyProcessorFsmInputBase> _inputChannel;
     private readonly CancellationToken _externalCancellationToken;
-    private TsxCompanyData? _companyReport;
 
     private TsxCompanyProcessor(
         InstrumentDto instrumentDto,
@@ -40,7 +42,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     public bool IsFaulted { get; private set; }
-    public TsxCompanyData? CompanyReport => _companyReport;
+    public TsxCompanyData? CompanyReport { get; private set; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, _externalCancellationToken);
@@ -68,8 +70,35 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     public async Task<Result<TsxCompanyData>> GetRawFinancials() {
-        TimeSpan runTime = TimeSpan.Zero;
-        DateTime dateTimstart = DateTime.UtcNow;
+        int attempt = 0;
+        Result<TsxCompanyData> result;
+
+        do {
+            attempt++;
+            if (attempt > 1) {
+                _logger.LogInformation("GetRawFinancials retry attempt {Attempt} of {MaxRetries} for instrument {Instrument}",
+                    attempt - 1, MaxRetries, _instrumentDto);
+                
+                try {
+                    await Task.Delay(RetryDelay, _externalCancellationToken);
+                } catch (OperationCanceledException) {
+                    _logger.LogInformation("GetRawFinancials retry cancelled for instrument {Instrument}", _instrumentDto);
+                    return Result<TsxCompanyData>.SetFailure("Retry cancelled");
+                }
+            }
+
+            result = await GetRawFinancialsCore();
+
+        } while (!result.Success && attempt <= MaxRetries && !_externalCancellationToken.IsCancellationRequested);
+
+        return result;
+    }
+
+    private async Task<Result<TsxCompanyData>> GetRawFinancialsCore() {
+        // Reset state for retry attempts
+        CompanyReport = null;
+        _fsm.Reset();
+        _tcs = new TaskCompletionSource(); // Create new TCS for each attempt
 
         try {
             var launchOptions = new LaunchOptions { Headless = true };
@@ -103,30 +132,31 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     private async void ProcessPageResponse(object? sender, ResponseCreatedEventArgs e) {
-        if (e.Response.Status != HttpStatusCode.OK)
-            return;
-
-        //_logger.LogInformation("Response received for {Url},{IsEnhancedQuotes},{IsFinancialsEnhanced}",
-        //    e.Response.Url,
-        //    e.Response.Url.Contains("getEnhancedQuotes.json"),
-        //    e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json"));
-
-        if (!e.Response.Url.Contains("getEnhancedQuotes.json")
-            && !e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json"))
-            return;
-
-        var headers = e.Response.Headers;
-        if (!headers.ContainsKey("content-encoding"))
-            return;
-
         try {
-            string responseText = await e.Response.TextAsync();
-            _ = _inputChannel.Writer.TryWrite(new GotResponse() {
-                Text = responseText,
-                Url = e.Response.Url
-            });
+            if (e.Response.Status != HttpStatusCode.OK)
+                return;
+
+            if (!e.Response.Url.Contains("getEnhancedQuotes.json")
+                && !e.Response.Url.Contains("getFinancialsEnhancedBySymbol.json"))
+                return;
+
+            var headers = e.Response.Headers;
+            if (!headers.ContainsKey("content-encoding"))
+                return;
+
+            try {
+                string responseText = await e.Response.TextAsync();
+                _ = _inputChannel.Writer.TryWrite(new GotResponse() {
+                    Text = responseText,
+                    Url = e.Response.Url
+                });
+            } catch (Exception ex) {
+                _logger.LogError(ex, "Error when reading response body for URL {Url}", e.Response.Url);
+            }
         } catch (Exception ex) {
-            _logger.LogError(ex, "Error when reading response body for URL {Url}", e.Response.Url);
+            // Catch-all for any unexpected exceptions in the event handler
+            // This prevents async void from crashing the application
+            _logger.LogError(ex, "Unexpected error in ProcessPageResponse for instrument {Instrument}", _instrumentDto);
         }
     }
 
@@ -135,7 +165,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
             switch (output) {
                 case TsxCompanyProcessorFsmOutputInProgress: break; // Progress report
                 case TsxCompanyProcessorFsmOutputCompanyRawFinancials crf: // Processing complete
-                    _companyReport = crf.CompanyReport;
+                    CompanyReport = crf.CompanyReport;
                     _ = _tcs.TrySetResult();
                     break;
                 case TsxCompanyProcessorFsmOutputEncounteredError:

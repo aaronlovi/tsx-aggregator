@@ -4,12 +4,12 @@ namespace tsx_aggregator.models;
 
 public class TsxCompanyData {
     public TsxCompanyData() {
-        AnnualRawCashFlowReports = new List<RawReportDataMap>();
-        AnnualRawIncomeStatements = new List<RawReportDataMap>();
-        AnnualRawBalanceSheets = new List<RawReportDataMap>();
-        QuarterlyRawCashFlowReports = new List<RawReportDataMap>();
-        QuarterlyRawIncomeStatements = new List<RawReportDataMap>();
-        QuarterlyRawBalanceSheets = new List<RawReportDataMap>();
+        AnnualRawCashFlowReports = [];
+        AnnualRawIncomeStatements = [];
+        AnnualRawBalanceSheets = [];
+        QuarterlyRawCashFlowReports = [];
+        QuarterlyRawIncomeStatements = [];
+        QuarterlyRawBalanceSheets = [];
     }
 
     public string Symbol { get; set; } = string.Empty;      // From enhanced quote
@@ -23,4 +23,21 @@ public class TsxCompanyData {
     public IList<RawReportDataMap> QuarterlyRawCashFlowReports { get; init; }
     public IList<RawReportDataMap> QuarterlyRawIncomeStatements { get; init; }
     public IList<RawReportDataMap> QuarterlyRawBalanceSheets { get; init; }
+
+    /// <summary>
+    /// Clears all data to allow reuse for retry attempts.
+    /// </summary>
+    public void Clear() {
+        Symbol = string.Empty;
+        Name = string.Empty;
+        Exchange = string.Empty;
+        PricePerShare = 0;
+        CurNumShares = 0;
+        AnnualRawCashFlowReports.Clear();
+        AnnualRawIncomeStatements.Clear();
+        AnnualRawBalanceSheets.Clear();
+        QuarterlyRawCashFlowReports.Clear();
+        QuarterlyRawIncomeStatements.Clear();
+        QuarterlyRawBalanceSheets.Clear();
+    }
 }

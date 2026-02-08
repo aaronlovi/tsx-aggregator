@@ -30,7 +30,7 @@ public class QuoteService : BackgroundService, IQuoteService {
         _sheetsService = svp.GetRequiredService<IGoogleSheetsService>();
         _svp = svp;
         _inputChannel = Channel.CreateUnbounded<QuoteServiceInputBase>();
-        _pricesByInstrumentSymbol = new();
+        _pricesByInstrumentSymbol = [];
         QuoteServiceReady = new();
 
         _logger.LogInformation("QuoteService - Created");
@@ -150,7 +150,7 @@ public class QuoteService : BackgroundService, IQuoteService {
 
         IReadOnlyCollection<InstrumentDto> instruments = _registry.GetInstruments();
         foreach (InstrumentDto instrument in instruments) {
-            retVal.Add(new List<object> { instrument.InstrumentSymbol });
+            retVal.Add([instrument.InstrumentSymbol]);
         }
 
         return retVal;

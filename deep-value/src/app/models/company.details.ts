@@ -71,6 +71,10 @@ export class CompanyDetails {
             return Number.MIN_VALUE;
         }
 
+        console.log(`estimatedNextYearBookValue_FromCashFlow: ${this.estimatedNextYearBookValue_FromCashFlow}, curDividendsPaid: ${this.curDividendsPaid}, curBookValue: ${this.curBookValue}, curMarketCap: ${this.curMarketCap}`);
+        console.log(`calculation: 100.0 * (${this.estimatedNextYearBookValue_FromCashFlow} - ${this.curDividendsPaid} - ${this.curBookValue}) / ${this.curMarketCap}`);
+        console.log(`result: ${100.0 * (this.estimatedNextYearBookValue_FromCashFlow - this.curDividendsPaid - this.curBookValue) / this.curMarketCap}`);
+
         return 100.0 * (this.estimatedNextYearBookValue_FromCashFlow - this.curDividendsPaid - this.curBookValue) / this.curMarketCap;
     }
     public get estimatedNextYearBookValueFromOwnerEarnings() {

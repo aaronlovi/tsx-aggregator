@@ -48,6 +48,17 @@ internal class TsxCompanyProcessorFsm {
     public bool IsDone => _state.IsCompleted();
     public bool GotAllData => _gotQuarterlyFigures && _gotAnnualFigures && _gotEnhancedQuotes;
 
+    /// <summary>
+    /// Resets the FSM state for retry attempts.
+    /// </summary>
+    public void Reset() {
+        _gotQuarterlyFigures = false;
+        _gotAnnualFigures = false;
+        _gotEnhancedQuotes = false;
+        _companyData.Clear();
+        _state = TsxCompanyProcessorFsmStates.Initial;
+    }
+
     public IList<TsxCompanyProcessorFsmOutputBase> Update(TsxCompanyProcessorFsmInputBase input) {
         var outputList = new List<TsxCompanyProcessorFsmOutputBase>();
 
