@@ -1,10 +1,4 @@
-<button mat-raised-button color="primary" (click)="loadCompanies()" class="action-button">
-    {{ textService.company_list_get_top_30_companies | translate }}
-    <!-- Get the Top 30 Companies -->
-</button>
-<button mat-raised-button color="accent" (click)="loadBottomCompanies()" class="action-button">
-    {{ textService.company_list_get_bottom_30_companies | translate }}
-</button>
+<h2 class="page-title">{{ pageTitle }}</h2>
 
 <div class="table-container">
     <mat-table [dataSource]="companies" class="data-table" width="80%">

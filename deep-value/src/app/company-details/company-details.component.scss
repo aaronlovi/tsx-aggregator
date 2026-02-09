@@ -51,6 +51,21 @@ table.data-table {
     font-style: italic;
 }
 
+.external-links {
+    margin-left: 20px;
+    margin-bottom: 16px;
+
+    a {
+        margin-right: 16px;
+        text-decoration: none;
+        color: #1976d2;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
 div.table-container {
     margin-left: 20px;
     margin-right: 20px;

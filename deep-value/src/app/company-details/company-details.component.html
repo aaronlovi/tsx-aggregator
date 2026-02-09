@@ -13,6 +13,12 @@
     <!-- Display the company details here -->
     <h2>{{ companyDetails.companyName }}</h2>
 
+    <div class="external-links">
+        <a [href]="'https://finance.yahoo.com/quote/' + instrumentSymbol + '.TO/'" target="_blank" rel="noopener noreferrer">Yahoo Finance</a>
+        <a [href]="'https://www.google.com/finance/quote/' + instrumentSymbol + ':TSE'" target="_blank" rel="noopener noreferrer">Google Finance</a>
+        <a [href]="'https://money.tmx.com/en/quote/' + instrumentSymbol" target="_blank" rel="noopener noreferrer">TMX Money</a>
+    </div>
+
     <div class="table-container">
         <table class="mat-table data-table">
 

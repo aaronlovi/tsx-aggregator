@@ -24,6 +24,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
     companies: CompanySummary[];
     loading: boolean;
     errorMsg: string;
+    pageTitle: string = '';
     private routeSub: Subscription | null = null;
 
     constructor(
@@ -39,8 +40,10 @@ export class CompanyListComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.routeSub = this.route.data.subscribe(data => {
             if (data['mode'] === 'bottom') {
+                this.pageTitle = 'Bottom 30 Companies';
                 this.loadBottomCompanies();
             } else {
+                this.pageTitle = 'Top 30 Companies';
                 this.loadCompanies();
             }
         });
