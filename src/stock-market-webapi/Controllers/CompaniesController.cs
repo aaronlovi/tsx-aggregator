@@ -120,6 +120,57 @@ public class CompaniesController : Controller {
         return Ok(summaryReports);
     }
 
+    [HttpGet("companies/all")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedCompanySummaryReports>> GetAllCompanies(
+        [FromQuery] int pageNumber, [FromQuery] int pageSize) {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+        if (!reply.Success)
+            return BadRequest("abc");
+
+        var fullDetailReports = new List<CompanyFullDetailReport>();
+        foreach (GetStocksDataReplyItem item in reply.StocksData) {
+            fullDetailReports.Add(new CompanyFullDetailReport(
+                exchange: item.Exchange,
+                companySymbol: item.CompanySymbol,
+                instrumentSymbol: item.InstrumentSymbol,
+                companyName: item.CompanyName,
+                instrumentName: item.InstrumentName,
+                pricePerShare: item.PerSharePrice,
+                curLongTermDebt: item.CurrentLongTermDebt,
+                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
+                curBookValue: item.CurrentBookValue,
+                curNumShares: item.CurrentNumShares,
+                averageNetCashFlow: item.AverageNetCashFlow,
+                averageOwnerEarnings: item.AverageOwnerEarnings,
+                curDividendsPaid: item.CurrentDividendsPaid,
+                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
+                oldestRetainedEarnings: item.OldestRetainedEarnings,
+                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+        }
+
+        // Sort descending by overall score, then by average return
+        fullDetailReports.Sort((a, b) => {
+            int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
+            if (scoreCompare != 0)
+                return scoreCompare;
+
+            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            return bAvgReturn.CompareTo(aAvgReturn);
+        });
+
+        var pagingData = new PagingData(fullDetailReports.Count, pageNumber, pageSize);
+        var summaryReports = fullDetailReports
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(CompanySummaryReport.FromDetailedReport)
+            .ToList();
+
+        return Ok(new PagedCompanySummaryReports(pagingData, summaryReports));
+    }
+
     [HttpGet("companies/{exchange}/{instrumentSymbol}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -52,6 +52,12 @@ export class CompanyService {
         );
     }
 
+    getAllCompanies(pageNumber: number, pageSize: number): Observable<any> {
+        return this.http.get<any>(
+            `${this.config.apiEndpoint}/companies/all?pageNumber=${pageNumber}&pageSize=${pageSize}`
+        );
+    }
+
     getCompanyDetails(exchange: string, instrumentSymbol: string): Observable<CompanyDetails> {
         return this.http.get<any>(`${this.config.apiEndpoint}/companies/${exchange}/${instrumentSymbol}`).pipe(
             map(data => {

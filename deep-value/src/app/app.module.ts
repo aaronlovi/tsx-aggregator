@@ -31,6 +31,7 @@ import { QuickSearchComponent } from './quick-search/quick-search.component';
 import { LocalStorageService } from './services/local-storage.service';
 import { TranslateService } from './services/translate.service';
 import { TranslocoRootModule } from './transloco-root.module';
+import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 
 
@@ -38,6 +39,7 @@ import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updat
 @NgModule({
     declarations: [
         AppComponent,
+        AllCompaniesComponent,
         CompanyListComponent,
         HeaderComponent,
         AboutComponent,
