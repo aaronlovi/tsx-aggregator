@@ -18,6 +18,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
+import { MatListModule } from '@angular/material/list';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -58,6 +60,8 @@ import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updat
         MatInputModule,
         MatFormFieldModule,
         MatAutocompleteModule,
+        MatListModule,
+        MatSidenavModule,
         MatToolbarModule,
         MatTooltipModule,
         FormsModule,

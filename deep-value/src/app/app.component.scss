@@ -1,0 +1,12 @@
+mat-sidenav-container {
+  height: calc(100vh - 64px);
+}
+
+mat-sidenav {
+  width: 220px;
+}
+
+.active {
+  background-color: rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+}

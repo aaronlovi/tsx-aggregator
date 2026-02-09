@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
-import { CompanyService } from '../services/company.service';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CompanySummary } from '../models/company.summary';
+import { CompanyService } from '../services/company.service';
 import { TextService } from '../services/text.service';
 
 @Component({
@@ -8,7 +10,7 @@ import { TextService } from '../services/text.service';
     templateUrl: './company-list.component.html',
     styleUrls: ['./company-list.component.scss']
 })
-export class CompanyListComponent {
+export class CompanyListComponent implements OnInit, OnDestroy {
     displayedColumns: string[] = [
         'instrumentSymbol',
         'companyName',
@@ -22,11 +24,32 @@ export class CompanyListComponent {
     companies: CompanySummary[];
     loading: boolean;
     errorMsg: string;
+    private routeSub: Subscription | null = null;
 
-    constructor(public textService: TextService, private companyService: CompanyService) {
+    constructor(
+        public textService: TextService,
+        private companyService: CompanyService,
+        private route: ActivatedRoute
+    ) {
         this.companies = [];
         this.loading = false;
         this.errorMsg = '';
+    }
+
+    ngOnInit() {
+        this.routeSub = this.route.data.subscribe(data => {
+            if (data['mode'] === 'bottom') {
+                this.loadBottomCompanies();
+            } else {
+                this.loadCompanies();
+            }
+        });
+    }
+
+    ngOnDestroy() {
+        if (this.routeSub) {
+            this.routeSub.unsubscribe();
+        }
     }
 
     loadCompanies() {

@@ -1,2 +1,14 @@
 <app-header></app-header>
-<router-outlet></router-outlet>
+<mat-sidenav-container>
+  <mat-sidenav mode="side" opened>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
+      <a mat-list-item routerLink="/companies" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Top Companies</a>
+      <a mat-list-item routerLink="/companies/bottom" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Bottom Companies</a>
+      <a mat-list-item routerLink="/companies/updated_raw_data_reports" routerLinkActive="active">Raw Data Reports</a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
