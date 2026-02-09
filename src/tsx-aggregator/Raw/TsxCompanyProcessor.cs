@@ -128,7 +128,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
 
     private static async Task Init() {
         var browserFetcher = new BrowserFetcher();
-        await browserFetcher.DownloadAsync();
+        _ = await browserFetcher.DownloadAsync();
     }
 
     private async void ProcessPageResponse(object? sender, ResponseCreatedEventArgs e) {

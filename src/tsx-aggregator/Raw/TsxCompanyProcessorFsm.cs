@@ -200,13 +200,11 @@ internal class TsxCompanyProcessorFsm {
         }
     }
 
-    private void ProcessQuarterlyFigures(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) {
+    private void ProcessQuarterlyFigures(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) => 
         ProcessReports(text, Constants.ReportPeriodTypes.Quarterly, fsmOutputs);
-    }
 
-    private void ProcessAnnualFigures(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) {
+    private void ProcessAnnualFigures(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) =>
         ProcessReports(text, Constants.ReportPeriodTypes.Annual, fsmOutputs);
-    }
 
     private void ProcessReports(string text, Constants.ReportPeriodTypes reportPeriodType, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) {
         _logger.LogInformation("ProcessReports - Instrument:{Instrument}, Period Type:{ReportPeriodType}", _instrumentDto, reportPeriodType);
