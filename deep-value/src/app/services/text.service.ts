@@ -28,6 +28,7 @@ export class TextService {
     text_loading_ellipses: string = "text_loading_ellipses";
     text_long_term_debt: string = "text_long_term_debt";
     text_market_cap: string = "text_market_cap";
+    text_max_price: string = "text_max_price";
     text_no: string = "text_no";
     text_number_of_shares: string = "text_number_of_shares";
     text_oldest_retained_earnings: string = "text_oldest_retained_earnings";
@@ -77,6 +78,7 @@ export class TextService {
     company_details_retained_earnings_increased: string = "company_details_retained_earnings_increased";
     company_details_history_long_enough_tooltip: string = "company_details_history_long_enough_tooltip";
     company_details_history_long_enough: string = "company_details_history_long_enough";
+    company_details_max_price_tooltip: string = "company_details_max_price_tooltip";
     company_details_market_cap_tooltip: string = "company_details_market_cap_tooltip";
     company_details_long_term_debt_tooltip: string = "company_details_long_term_debt_tooltip";
     company_details_total_shareholders_equity_tooltip: string = "company_details_total_shareholders_equity_tooltip";
@@ -103,6 +105,7 @@ export class TextService {
     ///////////////////////////////////////////////////////////////////////////
     // Company list component strings
     company_list_get_top_30_companies: string = "company_list_get_top_30_companies";
+    company_list_get_bottom_30_companies: string = "company_list_get_bottom_30_companies";
     company_list_est_next_year_total_return_from_cash_flow: string = "company_list_est_next_year_total_return_from_cash_flow";
     company_list_est_next_year_total_return_from_owner_earnings: string = "company_list_est_next_year_total_return_from_owner_earnings";
 

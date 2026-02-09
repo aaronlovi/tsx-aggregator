@@ -54,7 +54,11 @@ export class CompanyDetailsComponent implements OnInit {
                 this.loading = false;
             },
             (error: any) => {
-                this.errorMsg = 'An error occurred while fetching companies data';
+                if (error?.status === 404) {
+                    this.errorMsg = `No data available yet for ${this.instrumentSymbol} on ${this.exchange}`;
+                } else {
+                    this.errorMsg = 'An error occurred while fetching company data';
+                }
                 this.loading = false;
             }
         );

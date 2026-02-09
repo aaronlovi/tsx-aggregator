@@ -27,6 +27,7 @@
     "text_loading_ellipses": "Loading...",
     "text_long_term_debt": "Long Term Debt",
     "text_market_cap": "Market Cap",
+    "text_max_price": "Max Buy Price",
     "text_no": "No",
     "text_number_of_shares": "Number of Shares",
     "text_oldest_retained_earnings": "Oldest Retained Earnings",
@@ -63,6 +64,7 @@
     "company_details_retained_earnings_increased": "Retained Earnings Increased?",
     "company_details_history_long_enough_tooltip": "Have there been at least 4 years of annual reports?",
     "company_details_history_long_enough": "History Long Enough?",
+    "company_details_max_price_tooltip": "The maximum per-share price at which the company passes all valuation checks. Based on the most conservative of: 3x book value, 20x estimated return from cash flow, and 20x estimated return from owner earnings.",
     "company_details_market_cap_tooltip": "Total value of the outstanding shares. Calculated by multiplying the share price by the total number of shares.",
     "company_details_long_term_debt_tooltip": "Liabilities that are due in more than one year including loans, bonds, and other forms of debt with a maturity date beyond the next twelve months.",
     "company_details_total_shareholders_equity_tooltip": "Total value of assets minus liabilities.",
@@ -87,6 +89,7 @@
     "company_details_num_annual_reports": "Num Annual Processed Cash Flow Reports",
 
     "company_list_get_top_30_companies": "Get the Top 30 Companies",
+    "company_list_get_bottom_30_companies": "Get the Bottom 30 Companies",
     "company_list_est_next_year_total_return_from_cash_flow": "Est. Next Year Total Return From Cash Flow",
     "company_list_est_next_year_total_return_from_owner_earnings": "Est. Next Year Total Return From Owner Earnings",
 

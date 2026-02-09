@@ -71,13 +71,63 @@ public class CompaniesController : Controller {
         return Ok(summaryReports);
     }
 
+    [HttpGet("companies/bottom")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetBottomCompanies() {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+        if (!reply.Success)
+            return BadRequest("abc");
+
+        var fullDetailReports = new List<CompanyFullDetailReport>();
+        foreach (GetStocksDataReplyItem item in reply.StocksData) {
+            fullDetailReports.Add(new CompanyFullDetailReport(
+                exchange: item.Exchange,
+                companySymbol: item.CompanySymbol,
+                instrumentSymbol: item.InstrumentSymbol,
+                companyName: item.CompanyName,
+                instrumentName: item.InstrumentName,
+                pricePerShare: item.PerSharePrice,
+                curLongTermDebt: item.CurrentLongTermDebt,
+                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
+                curBookValue: item.CurrentBookValue,
+                curNumShares: item.CurrentNumShares,
+                averageNetCashFlow: item.AverageNetCashFlow,
+                averageOwnerEarnings: item.AverageOwnerEarnings,
+                curDividendsPaid: item.CurrentDividendsPaid,
+                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
+                oldestRetainedEarnings: item.OldestRetainedEarnings,
+                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+        }
+
+        // Sort the output list first by overall score ascending, then by the average of total return ascending
+        fullDetailReports.Sort((a, b) => {
+            int scoreCompare = a.OverallScore.CompareTo(b.OverallScore);
+            if (scoreCompare != 0)
+                return scoreCompare;
+
+            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+            return aAvgReturn.CompareTo(bAvgReturn);
+        });
+
+        // Keep only the bottom 'GetCompaniesMaxNumCompanies' companies, and transform to summary reports
+        var summaryReports = fullDetailReports
+            .Take(GetCompaniesMaxNumCompanies)
+            .Select(CompanySummaryReport.FromDetailedReport)
+            .ToList();
+
+        return Ok(summaryReports);
+    }
+
     [HttpGet("companies/{exchange}/{instrumentSymbol}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CompanyFullDetailReport>> GetCompany(string exchange, string instrumentSymbol) {
         GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = "TSX", InstrumentSymbol = instrumentSymbol });
-        if (!reply.Success)
-            return BadRequest("abc");
+        if (!reply.Success || reply.StockDetail is null)
+            return NotFound(new { error = $"No data available for {instrumentSymbol} on {exchange}" });
 
         var fullDetailReport = new CompanyFullDetailReport(
             exchange: reply.StockDetail.Exchange,

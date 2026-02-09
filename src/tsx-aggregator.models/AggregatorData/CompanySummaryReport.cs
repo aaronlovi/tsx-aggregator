@@ -8,7 +8,8 @@ public record CompanySummaryReport(
     decimal CurMarketCap,
     decimal EstimatedNextYearTotalReturnPercentage_FromCashFlow,
     decimal EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-    int OverallScore) {
+    int OverallScore,
+    decimal MaxPrice) {
 
     public static CompanySummaryReport FromDetailedReport(CompanyFullDetailReport fullDetailReport) {
         return new CompanySummaryReport(
@@ -19,6 +20,7 @@ public record CompanySummaryReport(
             fullDetailReport.CurMarketCap,
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromCashFlow,
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-            fullDetailReport.OverallScore);
+            fullDetailReport.OverallScore,
+            fullDetailReport.MaxPrice);
     }
 }

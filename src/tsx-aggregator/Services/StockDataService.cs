@@ -138,6 +138,11 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Got an invalid repsonse");
             }
 
+            if (!reply.Success || reply.StockDetail is null) {
+                _logger.LogWarning("GetStocksDetail - No data found for {InstrumentSymbol}", request.InstrumentSymbol);
+                return reply;
+            }
+
             var symbols = new List<string>() { request.InstrumentSymbol };
 
             using CancellationTokenSource cts2 = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
@@ -296,9 +301,9 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
 
             var inputs = new RawCollectorIgnoreRawReportInput(
                 reqId, request.InstrumentId, request.InstrumentReportIdToKeep, request.InstrumentReportIdsToIgnore, cts);
-            _rawCollector.PostRequest(inputs);
+            _ = _rawCollector.PostRequest(inputs);
 
-            await Task.WhenAny(inputs.Completed.Task, cancellationTask);
+            _ = await Task.WhenAny(inputs.Completed.Task, cancellationTask);
 
             if (!inputs.Completed.Task.IsCompleted) {
                 // The task was cancelled

@@ -27,6 +27,7 @@
     "text_loading_ellipses": "加载中...",
     "text_long_term_debt": "长期债务",
     "text_market_cap": "市值",
+    "text_max_price": "最高买入价",
     "text_no": "不",
     "text_number_of_shares": "已发行股票数量",
     "text_oldest_retained_earnings": "最早留存收益",
@@ -63,6 +64,7 @@
     "company_details_retained_earnings_increased": "留存收益增加？",
     "company_details_history_long_enough_tooltip": "是否有至少4年的年度报告？",
     "company_details_history_long_enough": "历史够长吗？",
+    "company_details_max_price_tooltip": "公司通过所有估值检查的最高每股价格。基于以下最保守的值：3倍账面价值、20倍现金流预期回报和20倍所有者收益预期回报。",
     "company_details_market_cap_tooltip": "已发行股票的总价值。 它的计算方法是用股价乘以股份总数。",
     "company_details_long_term_debt_tooltip": "一年以上到期的负债，包括贷款、债券和其他形式的、到期日超过未来十二个月的债务。",
     "company_details_total_shareholders_equity_tooltip": "资产总额减去负债。",
@@ -87,6 +89,7 @@
     "company_details_num_annual_reports": "处理的年度报告数量",
 
     "company_list_get_top_30_companies": "获取前 30 名公司",
+    "company_list_get_bottom_30_companies": "获取最后 30 名公司",
     "company_list_est_next_year_total_return_from_cash_flow": "预计明年现金流总回报",
     "company_list_est_next_year_total_return_from_owner_earnings": "明年所有者收入的预期总回报",
 

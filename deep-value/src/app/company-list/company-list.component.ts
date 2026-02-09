@@ -13,6 +13,7 @@ export class CompanyListComponent {
         'instrumentSymbol',
         'companyName',
         'pricePerShare',
+        'maxPrice',
         'marketCap',
         'estimatedNextYearTotalReturnPercentageFromCashFlow',
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',
@@ -34,6 +35,27 @@ export class CompanyListComponent {
         this.errorMsg = '';
 
         this.companyService.getCompanies().subscribe(
+            (data: Object) => {
+                if (Array.isArray(data)) {
+                    this.companies = data as CompanySummary[];
+                } else {
+                    console.error('Invalid data format received from API. Expected an array.');
+                }
+                this.loading = false;
+            },
+            (error: any) => {
+                this.errorMsg = 'An error occurred while fetching companies data';
+                this.loading = false;
+            }
+        );
+    }
+
+    loadBottomCompanies() {
+        this.companies = [];
+        this.loading = true;
+        this.errorMsg = '';
+
+        this.companyService.getBottomCompanies().subscribe(
             (data: Object) => {
                 if (Array.isArray(data)) {
                     this.companies = data as CompanySummary[];

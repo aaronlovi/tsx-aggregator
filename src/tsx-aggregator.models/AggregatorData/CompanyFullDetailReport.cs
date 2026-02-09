@@ -1,4 +1,5 @@
-﻿using tsx_aggregator.shared;
+﻿using System;
+using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
 
@@ -96,6 +97,23 @@ public class CompanyFullDetailReport {
             }
 
             return 100M * (EstimatedNextYearBookValue_FromOwnerEarnings - CurDividendsPaid - CurBookValue) / CurMarketCap;
+        }
+    }
+
+    public decimal MaxPrice {
+        get {
+            if (CurNumShares <= 0
+                || EstimatedNextYearBookValue_FromCashFlow == decimal.MinValue
+                || EstimatedNextYearBookValue_FromOwnerEarnings == decimal.MinValue
+                || CurBookValue == decimal.MinValue) {
+                return -1;
+            }
+
+            decimal maxPriceSoFar = 3M * CurBookValue;
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromCashFlow - CurDividendsPaid - CurBookValue));
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromOwnerEarnings - CurDividendsPaid - CurBookValue));
+
+            return maxPriceSoFar / CurNumShares;
         }
     }
 

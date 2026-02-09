@@ -1,10 +1,10 @@
 <!-- On error -->
-<div *ngIf="!errorMsg">
+<div *ngIf="errorMsg">
     <h2>{{ errorMsg }}</h2>
 </div>
 
 <!-- While loading -->
-<div *ngIf="loading || !companyDetails">
+<div *ngIf="loading && !errorMsg">
     <h2>{{ textService.text_loading_ellipses | translate }}</h2>
 </div>
 
@@ -31,8 +31,13 @@
                 <th class="mat-header-cell data-table__header">{{ textService.text_instrument_name | translate }}</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.instrumentName }}</td>
 
-                <th class="mat-header-cell data-table__header">&nbsp;</th>
-                <td class="mat-cell data-table__data">&nbsp;</td>
+                <th class="mat-header-cell data-table__header">
+                    <span [matTooltip]="textService.company_details_max_price_tooltip | translate">
+                        {{ textService.text_max_price | translate }}
+                    </span>
+                </th>
+                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.maxPrice |
+                    currency:'USD':'symbol':'1.2-2' }}</td>
             </tr>
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">{{ textService.text_company_symbol | translate }}</th>

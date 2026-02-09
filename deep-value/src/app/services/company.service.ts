@@ -27,7 +27,26 @@ export class CompanyService {
                     item.curMarketCap,
                     item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
                     item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-                    item.overallScore
+                    item.overallScore,
+                    item.maxPrice
+                ));
+            })
+        );
+    }
+
+    getBottomCompanies(): Observable<CompanySummary[]> {
+        return this.http.get<any[]>(`${this.config.apiEndpoint}/companies/bottom`).pipe(
+            map(data => {
+                return data.map(item => new CompanySummary(
+                    item.exchange,
+                    item.instrumentSymbol,
+                    item.companyName,
+                    item.pricePerShare,
+                    item.curMarketCap,
+                    item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
+                    item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
+                    item.overallScore,
+                    item.maxPrice
                 ));
             })
         );

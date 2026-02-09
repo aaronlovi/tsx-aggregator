@@ -92,6 +92,19 @@ export class CompanyDetails {
         return 100.0 * (this.estimatedNextYearBookValueFromOwnerEarnings - this.curDividendsPaid - this.curBookValue) / this.curMarketCap;
     }
 
+    public get maxPrice() {
+        if (this.curNumShares <= 0
+            || this.estimatedNextYearBookValue_FromCashFlow === Number.MIN_VALUE
+            || this.estimatedNextYearBookValueFromOwnerEarnings === Number.MIN_VALUE
+            || this.curBookValue === Number.MIN_VALUE) {
+            return -1;
+        }
+        let maxPriceSoFar = 3.0 * this.curBookValue;
+        maxPriceSoFar = Math.min(maxPriceSoFar, 20.0 * (this.estimatedNextYearBookValue_FromCashFlow - this.curDividendsPaid - this.curBookValue));
+        maxPriceSoFar = Math.min(maxPriceSoFar, 20.0 * (this.estimatedNextYearBookValueFromOwnerEarnings - this.curDividendsPaid - this.curBookValue));
+        return maxPriceSoFar / this.curNumShares;
+    }
+
     // Scores
     public get doesPassCheckDebtToEquitySmallEnough() { return this.debtToEquityRatio < 0.5; }
     public get doesPassCheckBookValueBigEnough() { return this.curBookValue > 150_000_000; }

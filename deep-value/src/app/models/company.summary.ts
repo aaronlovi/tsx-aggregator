@@ -7,6 +7,7 @@ export class CompanySummary {
     estimatedNextYearTotalReturnPercentageFromCashFlow: number;
     estimatedNextYearTotalReturnPercentageOwnerEarnings: number;
     overallScore: number;
+    maxPrice: number;
 
     constructor(
         exchange: string,
@@ -16,7 +17,8 @@ export class CompanySummary {
         curMarketCap: number,
         estimatedNextYearTotalReturnPercentageFromCashFlow: number,
         estimatedNextYearTotalReturnPercentageOwnerEarnings: number,
-        overallScore: number) {
+        overallScore: number,
+        maxPrice: number) {
             this.exchange = exchange;
             this.instrumentSymbol = instrumentSymbol;
             this.companyName = companyName;
@@ -25,5 +27,6 @@ export class CompanySummary {
             this.estimatedNextYearTotalReturnPercentageFromCashFlow = estimatedNextYearTotalReturnPercentageFromCashFlow;
             this.estimatedNextYearTotalReturnPercentageOwnerEarnings = estimatedNextYearTotalReturnPercentageOwnerEarnings;
             this.overallScore = overallScore;
+            this.maxPrice = maxPrice;
     }
 }
