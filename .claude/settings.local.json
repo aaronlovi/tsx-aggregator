@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"C:\\\\Users\\\\aaron\\\\source\\\\repos\\\\tsx-aggregator\" log --oneline)",
+      "Bash(dotnet build:*)",
+      "Bash(npm run build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(npx ng build:*)",
+      "WebSearch"
+    ]
+  }
+}
