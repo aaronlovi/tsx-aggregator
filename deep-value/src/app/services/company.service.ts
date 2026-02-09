@@ -82,6 +82,12 @@ export class CompanyService {
         );
     }
 
+    getMissingDataCompanies(exchange: string, pageNumber: number, pageSize: number): Observable<any> {
+        return this.http.get<any>(
+            `${this.config.apiEndpoint}/companies/missing_data?exchange=${exchange}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+        );
+    }
+
     getUpdatedRawDataReports(exchange: string, pageNumber: number, pageSize: number): Observable<any> {
         return this.http.get<any>(`${this.config.apiEndpoint}/companies/updated_raw_data_reports?exchange=${exchange}&pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
             map(data => {

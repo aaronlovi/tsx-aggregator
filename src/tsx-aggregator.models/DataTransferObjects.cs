@@ -330,6 +330,45 @@ public record InstrumentPriceDto(
     DateTimeOffset CreatedDate,
     DateTimeOffset? ObsoletedDate);
 
+public record InstrumentInfoDto(
+    long InstrumentId,
+    string Exchange,
+    string CompanySymbol,
+    string InstrumentSymbol,
+    string CompanyName,
+    string InstrumentName);
+
+public record PagedInstrumentInfoDto(
+    int PageNumber,
+    int PageSize,
+    int TotalInstruments,
+    IList<InstrumentInfoDto> Instruments) {
+    public static PagedInstrumentInfoDto WithPageNumberAndSizeOnly(int pageNumber, int pageSize)
+        => new(pageNumber, pageSize, 0, Array.Empty<InstrumentInfoDto>());
+
+    public bool IsValid => PageNumber > 0 && PageSize > 0 && TotalInstruments > 0 && Instruments.Count > 0;
+
+    public GetInstrumentsWithNoRawReportsReply ToGetInstrumentsWithNoRawReportsReply() {
+        var retVal = new GetInstrumentsWithNoRawReportsReply() {
+            Success = true,
+            TotalItems = TotalInstruments,
+            PageNumber = PageNumber,
+            PageSize = PageSize,
+        };
+        foreach (var dto in Instruments) {
+            retVal.Instruments.Add(new InstrumentInfoItem {
+                InstrumentId = (ulong)dto.InstrumentId,
+                Exchange = dto.Exchange,
+                CompanySymbol = dto.CompanySymbol,
+                InstrumentSymbol = dto.InstrumentSymbol,
+                CompanyName = dto.CompanyName,
+                InstrumentName = dto.InstrumentName,
+            });
+        }
+        return retVal;
+    }
+}
+
 public record InstrumentRawDataReportDto(
     long InstrumentReportId,
     long InstrumentId,

@@ -261,6 +261,41 @@ public class CompaniesController : Controller {
         }
     }
 
+    [HttpGet("companies/missing_data")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedInstrumentInfoReports>> GetMissingDataCompanies(
+        [FromQuery] string exchange, [FromQuery] int pageNumber, [FromQuery] int pageSize) {
+        try {
+            var request = new GetInstrumentsWithNoRawReportsRequest {
+                Exchange = exchange,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            GetInstrumentsWithNoRawReportsReply response = await _client.GetInstrumentsWithNoRawReportsAsync(request);
+            if (!response.Success)
+                return BadRequest(new { error = response.ErrorMessage });
+
+            var pagingData = new PagingData(response.TotalItems, response.PageNumber, response.PageSize);
+            var instruments = new List<InstrumentInfo>();
+            foreach (var i in response.Instruments) {
+                instruments.Add(new InstrumentInfo(
+                    (long)i.InstrumentId,
+                    i.Exchange,
+                    i.CompanySymbol,
+                    i.InstrumentSymbol,
+                    i.CompanyName,
+                    i.InstrumentName));
+            }
+
+            return Ok(new PagedInstrumentInfoReports(pagingData, instruments));
+        } catch (Exception ex) {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
     [HttpPost("companies/ignore_raw_report/{instrumentId}/{instrumentReportIdToKeep}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -97,3 +97,17 @@ public sealed class RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput :
     public int PageNumber { get; init; }
     public int PageSize { get; init; }
 }
+
+public sealed class RawCollectorGetInstrumentsWithNoRawReportsInput : RawCollectorInputBase {
+    public RawCollectorGetInstrumentsWithNoRawReportsInput(
+        long reqId, string exchange, int pageNumber, int pageSize, CancellationTokenSource? cts)
+        : base(reqId, cts) {
+        Exchange = exchange;
+        PageNumber = pageNumber;
+        PageSize = pageSize;
+    }
+
+    public string Exchange { get; init; }
+    public int PageNumber { get; init; }
+    public int PageSize { get; init; }
+}

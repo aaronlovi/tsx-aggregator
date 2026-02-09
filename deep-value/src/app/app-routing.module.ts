@@ -5,12 +5,14 @@ import { CompanyDetailsComponent } from './company-details/company-details.compo
 import { CompanyListComponent } from './company-list/company-list.component';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
+import { MissingDataComponent } from './missing-data/missing-data.component';
 
 const routes: Routes = [
     { path: '', component: AboutComponent },
     { path: 'companies', component: CompanyListComponent, data: { mode: 'top' } },
     { path: 'companies/bottom', component: CompanyListComponent, data: { mode: 'bottom' } },
     { path: 'companies/all', component: AllCompaniesComponent },
+    { path: 'companies/missing_data', component: MissingDataComponent },
     { path: 'company-details/:exchange/:instrumentSymbol', component: CompanyDetailsComponent },
     { path: 'companies/updated_raw_data_reports', component: UpdatedRawDataReportsComponent },
     { path: '**', redirectTo: '/' }

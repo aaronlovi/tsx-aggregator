@@ -184,6 +184,19 @@ public sealed class DbmService : IDisposable, IDbmService {
             res.Success, res.ErrMsg, stmt.PagedInstrumentsWithRawDataReportUpdates);
     }
 
+    public async ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(
+        string exchange, int pageNumber, int pageSize, CancellationToken ct) {
+        var stmt = new GetInstrumentsWithNoRawReportsStmt(exchange, pageNumber, pageSize);
+        var res = await _exec.ExecuteWithRetry(stmt, ct);
+        if (res.Success) {
+            _logger.LogInformation("GetInstrumentsWithNoRawReports success - Page: {PageNumber}, Size: {PageSize}, Total: {Total}",
+                pageNumber, pageSize, stmt.PagedInstrumentInfo.TotalInstruments);
+        } else {
+            _logger.LogWarning("GetInstrumentsWithNoRawReports failed with error {Error}", res.ErrMsg);
+        }
+        return new Result<PagedInstrumentInfoDto>(res.Success, res.ErrMsg, stmt.PagedInstrumentInfo);
+    }
+
     public async ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct) {
         var getInstrumentReportsStmt = new GetInstrumentReportsStmt(dto.InstrumentId);
         var res = await _exec.ExecuteWithRetry(getInstrumentReportsStmt, ct);

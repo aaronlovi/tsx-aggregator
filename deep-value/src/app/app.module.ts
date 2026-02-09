@@ -33,6 +33,7 @@ import { TranslateService } from './services/translate.service';
 import { TranslocoRootModule } from './transloco-root.module';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
+import { MissingDataComponent } from './missing-data/missing-data.component';
 
 
 
@@ -46,6 +47,7 @@ import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updat
         CompanyDetailsComponent,
         QuickSearchComponent,
         UpdatedRawDataReportsComponent,
+        MissingDataComponent,
         TranslatePipe
     ],
     imports: [

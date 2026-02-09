@@ -157,6 +157,9 @@ internal partial class RawCollector : BackgroundService, INamedService {
         if (inputs is RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput getUpdatedReportsInput)
             return ProcessGetStocksWithUpdatedRawDataReportsRequest(getUpdatedReportsInput, ct);
 
+        if (inputs is RawCollectorGetInstrumentsWithNoRawReportsInput noRawReportsInput)
+            return ProcessGetInstrumentsWithNoRawReportsRequest(noRawReportsInput, ct);
+
         return Task.CompletedTask;
     }
 
@@ -186,6 +189,17 @@ internal partial class RawCollector : BackgroundService, INamedService {
             _logger.LogInformation("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports success");
         else
             _logger.LogWarning("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports failed with error: {ErrMsg}", res.ErrMsg);
+
+        inputs.Completed.TrySetResult(res);
+    }
+
+    private async Task ProcessGetInstrumentsWithNoRawReportsRequest(
+        RawCollectorGetInstrumentsWithNoRawReportsInput inputs, CancellationToken ct) {
+        Result<PagedInstrumentInfoDto> res = await _dbm.GetInstrumentsWithNoRawReports(inputs.Exchange, inputs.PageNumber, inputs.PageSize, ct);
+        if (res.Success)
+            _logger.LogInformation("PreprocessInputs - GetInstrumentsWithNoRawReports success");
+        else
+            _logger.LogWarning("PreprocessInputs - GetInstrumentsWithNoRawReports failed with error: {ErrMsg}", res.ErrMsg);
 
         inputs.Completed.TrySetResult(res);
     }

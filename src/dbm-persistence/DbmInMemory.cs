@@ -136,6 +136,11 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
+    public ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct) {
+        var emptyResult = PagedInstrumentInfoDto.WithPageNumberAndSizeOnly(pageNumber, pageSize);
+        return ValueTask.FromResult(new Result<PagedInstrumentInfoDto>(true, string.Empty, emptyResult));
+    }
+
     public ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct) {
         lock (_data) {
             var res = _data.IgnoreRawUpdatedDataReport(dto);

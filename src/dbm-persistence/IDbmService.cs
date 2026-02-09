@@ -37,6 +37,8 @@ public interface IDbmService {
     /// </summary>
     ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
 
+    ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
+
     /// <summary>
     /// Operation to ignore updated raw data reports.
     /// This may be necessary if the incoming data is bad, missing a lot of values, etc.

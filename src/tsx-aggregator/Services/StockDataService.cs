@@ -281,6 +281,56 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
         static GetStocksWithUpdatedRawDataReportsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
     }
 
+    public override async Task<GetInstrumentsWithNoRawReportsReply> GetInstrumentsWithNoRawReports(
+        GetInstrumentsWithNoRawReportsRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
+            [LogUtils.ReqIdContext] = reqId,
+            [LogUtils.ExchangeContext] = request.Exchange,
+        });
+
+        try {
+            _logger.LogInformation("GetInstrumentsWithNoRawReports({PageNumber},{PageSize})",
+                request.PageNumber, request.PageSize);
+
+            if (context is null) {
+                _logger.LogWarning("GetInstrumentsWithNoRawReports - Null context");
+                return Failure("No context supplied");
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var req = new RawCollectorGetInstrumentsWithNoRawReportsInput(
+                reqId, request.Exchange, request.PageNumber, request.PageSize, cts);
+            if (!_rawCollector.PostRequest(req)) {
+                _logger.LogWarning("GetInstrumentsWithNoRawReports - Failed to post request, aborting");
+                return Failure("Failed to post request");
+            }
+
+            var res_ = await req.Completed.Task;
+            if (res_ is not Result<PagedInstrumentInfoDto> res) {
+                _logger.LogWarning("GetInstrumentsWithNoRawReports - Received invalid response");
+                return Failure("Got an invalid response");
+            }
+
+            if (!res.Success) {
+                _logger.LogWarning("GetInstrumentsWithNoRawReports - Failed to get data");
+                return Failure("Failed to get data");
+            }
+
+            GetInstrumentsWithNoRawReportsReply reply = res.Data!.ToGetInstrumentsWithNoRawReportsReply();
+            _logger.LogInformation("GetInstrumentsWithNoRawReports - complete - {@Reply}", reply);
+            return reply;
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("GetInstrumentsWithNoRawReports canceled");
+            return Failure("GetInstrumentsWithNoRawReports - Canceled");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "GetInstrumentsWithNoRawReports - General Fault");
+            return Failure("GetInstrumentsWithNoRawReports ran into a general error");
+        }
+
+        static GetInstrumentsWithNoRawReportsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+    }
+
     public override async Task<StockDataServiceReply> IgnoreRawDataReport(IgnoreRawDataReportRequest request, ServerCallContext context) {
         long reqId = Interlocked.Increment(ref _reqId);
         using var logContext = _logger.BeginScope(new Dictionary<string, object>() {

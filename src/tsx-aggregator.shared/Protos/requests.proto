@@ -13,6 +13,7 @@ service StockDataService {
     rpc GetStocksWithUpdatedRawDataReports(GetStocksWithUpdatedRawDataReportsRequest) returns (GetStocksWithUpdatedRawDataReportsReply);
     // Raw data report to be ignored must be one that has the 'check manually' flag set to true
     rpc IgnoreRawDataReport(IgnoreRawDataReportRequest) returns (StockDataServiceReply);
+    rpc GetInstrumentsWithNoRawReports(GetInstrumentsWithNoRawReportsRequest) returns (GetInstrumentsWithNoRawReportsReply);
 }
 
 message GetStocksDataRequest {
@@ -128,4 +129,28 @@ message IgnoreRawDataReportRequest {
 message StockDataServiceReply {
     bool success = 1;
     string error_message = 2;
+}
+
+message GetInstrumentsWithNoRawReportsRequest {
+    string exchange = 1;
+    int32 page_number = 2;
+    int32 page_size = 3;
+}
+
+message GetInstrumentsWithNoRawReportsReply {
+    bool success = 1;
+    string error_message = 2;
+    int32 total_items = 3;
+    int32 page_number = 4;
+    int32 page_size = 5;
+    repeated InstrumentInfoItem instruments = 6;
+}
+
+message InstrumentInfoItem {
+    uint64 instrument_id = 1;
+    string exchange = 2;
+    string company_symbol = 3;
+    string instrument_symbol = 4;
+    string company_name = 5;
+    string instrument_name = 6;
 }
