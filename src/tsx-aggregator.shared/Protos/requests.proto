@@ -14,6 +14,8 @@ service StockDataService {
     // Raw data report to be ignored must be one that has the 'check manually' flag set to true
     rpc IgnoreRawDataReport(IgnoreRawDataReportRequest) returns (StockDataServiceReply);
     rpc GetInstrumentsWithNoRawReports(GetInstrumentsWithNoRawReportsRequest) returns (GetInstrumentsWithNoRawReportsReply);
+    rpc SetPriorityCompanies(SetPriorityCompaniesRequest) returns (StockDataServiceReply);
+    rpc GetPriorityCompanies(GetPriorityCompaniesRequest) returns (GetPriorityCompaniesReply);
 }
 
 message GetStocksDataRequest {
@@ -153,4 +155,16 @@ message InstrumentInfoItem {
     string instrument_symbol = 4;
     string company_name = 5;
     string instrument_name = 6;
+}
+
+message SetPriorityCompaniesRequest {
+    repeated string company_symbols = 1;
+}
+
+message GetPriorityCompaniesRequest { }
+
+message GetPriorityCompaniesReply {
+    bool success = 1;
+    string error_message = 2;
+    repeated string company_symbols = 3;
 }

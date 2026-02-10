@@ -59,6 +59,10 @@ internal class RawCollectorFsm {
                 _logger.LogInformation("RawCollectorFsm received an ignore raw report input: {Input}", rawCollectorIgnoreRawReportInput);
                 ProcessUpdateTime(output);
                 break;
+            case RawCollectorSetPriorityCompaniesInput:
+            case RawCollectorGetPriorityCompaniesInput:
+                ProcessUpdateTime(output);
+                break;
             default:
                 _logger.LogWarning("RawCollectorFsm received an unknown input: {Input}", input);
                 break;
@@ -98,10 +102,17 @@ internal class RawCollectorFsm {
 
         if (NextFetchInstrumentDataTime is null || _curTime > NextFetchInstrumentDataTime) {
             NextFetchInstrumentDataTime = _curTime.AddMinutes(4);
-            InstrumentKey? nextKey = _registry.GetNextInstrumentKey(PrevInstrumentKey);
-            if (nextKey is not null) {
-                PrevInstrumentKey = nextKey;
-                output.OutputList.Add(new FetchRawCollectorInstrumentDataOutput(nextKey.CompanySymbol, nextKey.InstrumentSymbol, nextKey.Exchange));
+
+            // Check priority queue before round-robin
+            if (_registry.TryDequeueNextPriorityInstrumentKey(out var priorityKey)) {
+                // Use priority key but do NOT update PrevInstrumentKey so round-robin resumes from where it left off
+                output.OutputList.Add(new FetchRawCollectorInstrumentDataOutput(priorityKey!.CompanySymbol, priorityKey.InstrumentSymbol, priorityKey.Exchange));
+            } else {
+                InstrumentKey? nextKey = _registry.GetNextInstrumentKey(PrevInstrumentKey);
+                if (nextKey is not null) {
+                    PrevInstrumentKey = nextKey;
+                    output.OutputList.Add(new FetchRawCollectorInstrumentDataOutput(nextKey.CompanySymbol, nextKey.InstrumentSymbol, nextKey.Exchange));
+                }
             }
         }
     }

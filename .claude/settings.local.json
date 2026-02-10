@@ -6,7 +6,10 @@
       "Bash(npm run build:*)",
       "Bash(dotnet test:*)",
       "Bash(npx ng build:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell:*)"
     ]
   }
 }

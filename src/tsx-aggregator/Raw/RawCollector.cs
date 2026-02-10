@@ -160,6 +160,30 @@ internal partial class RawCollector : BackgroundService, INamedService {
         if (inputs is RawCollectorGetInstrumentsWithNoRawReportsInput noRawReportsInput)
             return ProcessGetInstrumentsWithNoRawReportsRequest(noRawReportsInput, ct);
 
+        if (inputs is RawCollectorSetPriorityCompaniesInput setPriorityInput)
+            return ProcessSetPriorityCompanies(setPriorityInput);
+
+        if (inputs is RawCollectorGetPriorityCompaniesInput getPriorityInput)
+            return ProcessGetPriorityCompanies(getPriorityInput);
+
+        return Task.CompletedTask;
+    }
+
+    private Task ProcessSetPriorityCompanies(RawCollectorSetPriorityCompaniesInput input) {
+        int validCount = _registry.SetPriorityCompanies(input.CompanySymbols);
+        _logger.LogInformation("ProcessSetPriorityCompanies - set {ValidCount} valid priority companies out of {TotalCount} requested",
+            validCount, input.CompanySymbols.Count);
+
+        // Trigger immediate fetch by resetting the timer
+        _stateFsm.NextFetchInstrumentDataTime = DateTime.UtcNow;
+
+        input.Completed.TrySetResult(validCount);
+        return Task.CompletedTask;
+    }
+
+    private Task ProcessGetPriorityCompanies(RawCollectorGetPriorityCompaniesInput input) {
+        var symbols = _registry.GetPriorityCompanySymbols();
+        input.Completed.TrySetResult(symbols);
         return Task.CompletedTask;
     }
 

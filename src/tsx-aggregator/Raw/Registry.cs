@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using tsx_aggregator.models;
 
 namespace tsx_aggregator.Raw;
@@ -8,9 +10,17 @@ namespace tsx_aggregator.Raw;
 internal class Registry {
 
     private readonly List<InstrumentDto> _instruments; // Sorted by company symbol then instrument symbol
+    private readonly Queue<string> _priorityCompanySymbols;
+    private readonly object _priorityLock;
+    private readonly ILogger? _logger;
 
-	public Registry() {
+	public Registry() : this(null) { }
+
+    public Registry(ILogger? logger) {
 		_instruments = new();
+        _priorityCompanySymbols = new();
+        _priorityLock = new object();
+        _logger = logger;
         DirectoryInitialized = new TaskCompletionSource();
 	}
 
@@ -124,5 +134,80 @@ internal class Registry {
         lock (_instruments) {
             return _instruments.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Replaces the current priority queue with the given company symbols (deduped, order-preserved).
+    /// Returns the count of symbols that match known instruments.
+    /// </summary>
+    public int SetPriorityCompanies(IReadOnlyList<string> companySymbols) {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var deduped = new List<string>();
+        foreach (var symbol in companySymbols) {
+            if (seen.Add(symbol))
+                deduped.Add(symbol);
+        }
+
+        int validCount = 0;
+        lock (_priorityLock) {
+            _priorityCompanySymbols.Clear();
+            foreach (var symbol in deduped) {
+                _priorityCompanySymbols.Enqueue(symbol);
+                if (FindFirstInstrumentByCompanySymbol(symbol) is not null)
+                    validCount++;
+            }
+        }
+
+        return validCount;
+    }
+
+    /// <summary>
+    /// Dequeues the next priority company symbol and resolves it to an InstrumentKey.
+    /// Skips unknown symbols. Returns true if a key was found, false if queue is empty or all remaining symbols were invalid.
+    /// </summary>
+    public bool TryDequeueNextPriorityInstrumentKey(out InstrumentKey? key) {
+        lock (_priorityLock) {
+            while (_priorityCompanySymbols.Count > 0) {
+                string symbol = _priorityCompanySymbols.Dequeue();
+                var instrument = FindFirstInstrumentByCompanySymbol(symbol);
+                if (instrument is not null) {
+                    key = new InstrumentKey(instrument.CompanySymbol, instrument.InstrumentSymbol, instrument.Exchange);
+                    return true;
+                }
+
+                _logger?.LogWarning("Priority company symbol '{Symbol}' not found in instrument list, skipping", symbol);
+            }
+        }
+
+        key = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns a snapshot of the current priority queue contents without dequeuing.
+    /// </summary>
+    public IReadOnlyList<string> GetPriorityCompanySymbols() {
+        lock (_priorityLock) {
+            return _priorityCompanySymbols.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Clears the priority queue.
+    /// </summary>
+    public void ClearPriorityCompanies() {
+        lock (_priorityLock) {
+            _priorityCompanySymbols.Clear();
+        }
+    }
+
+    private InstrumentDto? FindFirstInstrumentByCompanySymbol(string companySymbol) {
+        lock (_instruments) {
+            foreach (var instrument in _instruments) {
+                if (string.Equals(instrument.CompanySymbol, companySymbol, StringComparison.Ordinal))
+                    return instrument;
+            }
+        }
+        return null;
     }
 }

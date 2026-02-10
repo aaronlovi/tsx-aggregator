@@ -11,6 +11,14 @@ public record CompanySummaryReport(
     int OverallScore,
     decimal MaxPrice) {
 
+    public decimal PercentageUpside {
+        get {
+            if (PricePerShare <= 0 || MaxPrice == -1)
+                return decimal.MinValue;
+            return (MaxPrice - PricePerShare) / PricePerShare * 100M;
+        }
+    }
+
     public static CompanySummaryReport FromDetailedReport(CompanyFullDetailReport fullDetailReport) {
         return new CompanySummaryReport(
             fullDetailReport.Exchange,

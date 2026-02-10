@@ -296,6 +296,43 @@ public class CompaniesController : Controller {
         }
     }
 
+    [HttpPost("companies/priority")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SetPriorityCompanies([FromBody] List<string> companySymbols) {
+        try {
+            if (companySymbols == null)
+                return BadRequest(new { error = "Request body must be a JSON array of company symbols" });
+
+            var request = new SetPriorityCompaniesRequest();
+            request.CompanySymbols.AddRange(companySymbols);
+
+            StockDataServiceReply reply = await _client.SetPriorityCompaniesAsync(request);
+            if (!reply.Success)
+                return BadRequest(new { error = reply.ErrorMessage });
+
+            return Ok();
+        } catch (Exception ex) {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("companies/priority")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<string>>> GetPriorityCompanies() {
+        try {
+            GetPriorityCompaniesReply reply = await _client.GetPriorityCompaniesAsync(new GetPriorityCompaniesRequest());
+            if (!reply.Success)
+                return BadRequest(new { error = reply.ErrorMessage });
+
+            return Ok(reply.CompanySymbols.ToList());
+        } catch (Exception ex) {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
     [HttpPost("companies/ignore_raw_report/{instrumentId}/{instrumentReportIdToKeep}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

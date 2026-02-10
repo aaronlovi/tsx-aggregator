@@ -117,6 +117,14 @@ public class CompanyFullDetailReport {
         }
     }
 
+    public decimal PercentageUpside {
+        get {
+            if (PricePerShare <= 0 || MaxPrice == -1)
+                return decimal.MinValue;
+            return (MaxPrice - PricePerShare) / PricePerShare * 100M;
+        }
+    }
+
     // Scores
     public bool DoesPassCheck_DebtToEquitySmallEnough => DebtToEquityRatio < 0.5M;
     public bool DoesPassCheck_BookValueBigEnough => CurBookValue > 150_000_000M;

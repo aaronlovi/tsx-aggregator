@@ -331,6 +331,78 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
         static GetInstrumentsWithNoRawReportsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
     }
 
+    public override async Task<StockDataServiceReply> SetPriorityCompanies(SetPriorityCompaniesRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() { [LogUtils.ReqIdContext] = reqId });
+
+        try {
+            _logger.LogInformation("SetPriorityCompanies - {Count} symbols", request.CompanySymbols.Count);
+
+            if (context is null) {
+                _logger.LogWarning("SetPriorityCompanies - Null context");
+                return new StockDataServiceReply { Success = false, ErrorMessage = "No context supplied" };
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            var symbols = new List<string>(request.CompanySymbols);
+            using var input = new RawCollectorSetPriorityCompaniesInput(reqId, symbols, cts);
+            if (!_rawCollector.PostRequest(input)) {
+                _logger.LogWarning("SetPriorityCompanies - Failed to post request, aborting");
+                return new StockDataServiceReply { Success = false, ErrorMessage = "Failed to post request" };
+            }
+
+            var result = await input.Completed.Task;
+            _logger.LogInformation("SetPriorityCompanies - complete, {ValidCount} valid symbols", result);
+            return new StockDataServiceReply { Success = true };
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("SetPriorityCompanies canceled");
+            return new StockDataServiceReply { Success = false, ErrorMessage = "SetPriorityCompanies - Canceled" };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "SetPriorityCompanies - General Fault");
+            return new StockDataServiceReply { Success = false, ErrorMessage = "SetPriorityCompanies ran into a general error" };
+        }
+    }
+
+    public override async Task<GetPriorityCompaniesReply> GetPriorityCompanies(GetPriorityCompaniesRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() { [LogUtils.ReqIdContext] = reqId });
+
+        try {
+            _logger.LogInformation("GetPriorityCompanies");
+
+            if (context is null) {
+                _logger.LogWarning("GetPriorityCompanies - Null context");
+                return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "No context supplied" };
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var input = new RawCollectorGetPriorityCompaniesInput(reqId, cts);
+            if (!_rawCollector.PostRequest(input)) {
+                _logger.LogWarning("GetPriorityCompanies - Failed to post request, aborting");
+                return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "Failed to post request" };
+            }
+
+            var result = await input.Completed.Task;
+            if (result is not IReadOnlyList<string> symbols) {
+                _logger.LogWarning("GetPriorityCompanies - Received invalid response");
+                return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "Got an invalid response" };
+            }
+
+            var reply = new GetPriorityCompaniesReply { Success = true };
+            foreach (var symbol in symbols)
+                reply.CompanySymbols.Add(symbol);
+
+            _logger.LogInformation("GetPriorityCompanies - complete, {Count} symbols in queue", symbols.Count);
+            return reply;
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("GetPriorityCompanies canceled");
+            return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "GetPriorityCompanies - Canceled" };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "GetPriorityCompanies - General Fault");
+            return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "GetPriorityCompanies ran into a general error" };
+        }
+    }
+
     public override async Task<StockDataServiceReply> IgnoreRawDataReport(IgnoreRawDataReportRequest request, ServerCallContext context) {
         long reqId = Interlocked.Increment(ref _reqId);
         using var logContext = _logger.BeginScope(new Dictionary<string, object>() {
