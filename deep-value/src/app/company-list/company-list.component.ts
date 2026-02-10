@@ -16,6 +16,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         'companyName',
         'pricePerShare',
         'maxPrice',
+        'percentageUpside',
         'marketCap',
         'estimatedNextYearTotalReturnPercentageFromCashFlow',
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',

@@ -29,6 +29,7 @@ export class TextService {
     text_long_term_debt: string = "text_long_term_debt";
     text_market_cap: string = "text_market_cap";
     text_max_price: string = "text_max_price";
+    text_percentage_upside: string = "text_percentage_upside";
     text_no: string = "text_no";
     text_number_of_shares: string = "text_number_of_shares";
     text_oldest_retained_earnings: string = "text_oldest_retained_earnings";
@@ -112,4 +113,15 @@ export class TextService {
     ///////////////////////////////////////////////////////////////////////////
     // Header component strings
     header_tsx_deep_value_guide: string = "header_tsx_deep_value_guide";
+
+    ///////////////////////////////////////////////////////////////////////////
+    // System controls component strings
+    system_controls_title: string = "system_controls_title";
+    system_controls_priority_heading: string = "system_controls_priority_heading";
+    system_controls_input_label: string = "system_controls_input_label";
+    system_controls_set_button: string = "system_controls_set_button";
+    system_controls_clear_button: string = "system_controls_clear_button";
+    system_controls_queue_empty: string = "system_controls_queue_empty";
+    system_controls_success: string = "system_controls_success";
+    system_controls_error: string = "system_controls_error";
 }

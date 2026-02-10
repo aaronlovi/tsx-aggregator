@@ -121,6 +121,18 @@ export class CompanyService {
         );
     }
 
+    setPriorityCompanies(symbols: string[]): Observable<any> {
+        const url = `${this.config.apiEndpoint}/companies/priority`;
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.http.post<void>(url, symbols, { headers }).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    getPriorityCompanies(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.config.apiEndpoint}/companies/priority`);
+    }
+
     ignoreRawDataReports(instrumentId: number, instrumentReportIdToKeep: number, instrumentReportIdsToIgnore: number[]): Observable<any> {
         const url = `${this.config.apiEndpoint}/companies/ignore_raw_report/${instrumentId}/${instrumentReportIdToKeep}`;
         const headers = new HttpHeaders({ 'Content-Type': 'application/json' });

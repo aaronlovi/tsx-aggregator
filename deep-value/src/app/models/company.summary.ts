@@ -29,4 +29,10 @@ export class CompanySummary {
             this.overallScore = overallScore;
             this.maxPrice = maxPrice;
     }
+
+    public get percentageUpside() {
+        if (this.pricePerShare <= 0 || this.maxPrice === -1)
+            return Number.MIN_VALUE;
+        return (this.maxPrice - this.pricePerShare) / this.pricePerShare * 100.0;
+    }
 }

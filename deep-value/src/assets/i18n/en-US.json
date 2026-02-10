@@ -28,6 +28,7 @@
     "text_long_term_debt": "Long Term Debt",
     "text_market_cap": "Market Cap",
     "text_max_price": "Max Buy Price",
+    "text_percentage_upside": "% Upside",
     "text_no": "No",
     "text_number_of_shares": "Number of Shares",
     "text_oldest_retained_earnings": "Oldest Retained Earnings",
@@ -93,5 +94,14 @@
     "company_list_est_next_year_total_return_from_cash_flow": "Est. Next Year Total Return From Cash Flow",
     "company_list_est_next_year_total_return_from_owner_earnings": "Est. Next Year Total Return From Owner Earnings",
 
-    "header_tsx_deep_value_guide": "TSX Deep Value Guide"
+    "header_tsx_deep_value_guide": "TSX Deep Value Guide",
+
+    "system_controls_title": "System Controls",
+    "system_controls_priority_heading": "Priority Companies",
+    "system_controls_input_label": "Company symbols (comma-separated)",
+    "system_controls_set_button": "Set Priority",
+    "system_controls_clear_button": "Clear Queue",
+    "system_controls_queue_empty": "Queue is empty",
+    "system_controls_success": "Operation completed successfully",
+    "system_controls_error": "An error occurred"
 }

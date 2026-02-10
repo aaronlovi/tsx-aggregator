@@ -28,6 +28,7 @@
     "text_long_term_debt": "长期债务",
     "text_market_cap": "市值",
     "text_max_price": "最高买入价",
+    "text_percentage_upside": "上涨百分比",
     "text_no": "不",
     "text_number_of_shares": "已发行股票数量",
     "text_oldest_retained_earnings": "最早留存收益",
@@ -93,5 +94,14 @@
     "company_list_est_next_year_total_return_from_cash_flow": "预计明年现金流总回报",
     "company_list_est_next_year_total_return_from_owner_earnings": "明年所有者收入的预期总回报",
 
-    "header_tsx_deep_value_guide": "TSX 深入价值指南"
+    "header_tsx_deep_value_guide": "TSX 深入价值指南",
+
+    "system_controls_title": "系统控制",
+    "system_controls_priority_heading": "优先公司",
+    "system_controls_input_label": "公司代码（逗号分隔）",
+    "system_controls_set_button": "设置优先级",
+    "system_controls_clear_button": "清空队列",
+    "system_controls_queue_empty": "队列为空",
+    "system_controls_success": "操作成功完成",
+    "system_controls_error": "发生错误"
 }

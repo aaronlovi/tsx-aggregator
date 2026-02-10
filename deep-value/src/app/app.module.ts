@@ -34,6 +34,7 @@ import { TranslocoRootModule } from './transloco-root.module';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
+import { SystemControlsComponent } from './system-controls/system-controls.component';
 
 
 
@@ -48,6 +49,7 @@ import { MissingDataComponent } from './missing-data/missing-data.component';
         QuickSearchComponent,
         UpdatedRawDataReportsComponent,
         MissingDataComponent,
+        SystemControlsComponent,
         TranslatePipe
     ],
     imports: [

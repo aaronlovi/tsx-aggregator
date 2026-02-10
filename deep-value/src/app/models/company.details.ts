@@ -105,6 +105,12 @@ export class CompanyDetails {
         return maxPriceSoFar / this.curNumShares;
     }
 
+    public get percentageUpside() {
+        if (this.pricePerShare <= 0 || this.maxPrice === -1)
+            return Number.MIN_VALUE;
+        return (this.maxPrice - this.pricePerShare) / this.pricePerShare * 100.0;
+    }
+
     // Scores
     public get doesPassCheckDebtToEquitySmallEnough() { return this.debtToEquityRatio < 0.5; }
     public get doesPassCheckBookValueBigEnough() { return this.curBookValue > 150_000_000; }

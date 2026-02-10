@@ -1,0 +1,39 @@
+.priority-input-section {
+    margin-bottom: 16px;
+}
+
+.priority-input {
+    width: 400px;
+    display: block;
+}
+
+.priority-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.status-message {
+    margin: 8px 0;
+}
+
+.error-message {
+    color: #f44336;
+}
+
+.success-message {
+    color: #4caf50;
+}
+
+.priority-queue-section {
+    margin-top: 24px;
+}
+
+.queue-empty {
+    color: #999;
+    font-style: italic;
+}
+
+.queue-symbol {
+    font-weight: 500;
+}

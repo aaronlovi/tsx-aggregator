@@ -15,6 +15,7 @@ export class AllCompaniesComponent implements OnInit {
         'companyName',
         'pricePerShare',
         'maxPrice',
+        'percentageUpside',
         'marketCap',
         'estimatedNextYearTotalReturnPercentageFromCashFlow',
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',

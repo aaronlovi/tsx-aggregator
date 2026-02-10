@@ -56,9 +56,10 @@
                 <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.pricePerShare |
                     currency:'USD':'symbol':'1.2-2' }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_number_of_shares | translate }}</th>
-                <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.curNumShares |
-                    number:'1.0-0' }}</td>
+                <th class="mat-header-cell data-table__header">{{ textService.text_percentage_upside | translate }}</th>
+                <td class="mat-cell data-table__data data-table__data--numeric">
+                    {{ companyDetails.percentageUpside / 100.0 | percent:'1.2-2' }}
+                </td>
             </tr>
 
             <!-- Scores -->
