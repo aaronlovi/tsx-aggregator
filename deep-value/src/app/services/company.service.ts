@@ -111,6 +111,9 @@ export class CompanyService {
                 data.companiesPassingAllChecks,
                 data.averageEstimatedReturn_FromCashFlow,
                 data.averageEstimatedReturn_FromOwnerEarnings,
+                data.medianEstimatedReturn_FromCashFlow,
+                data.medianEstimatedReturn_FromOwnerEarnings,
+                data.totalMarketCap,
                 data.scoreDistribution
             ))
         );

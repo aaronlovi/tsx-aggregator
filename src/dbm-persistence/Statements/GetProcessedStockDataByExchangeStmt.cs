@@ -40,7 +40,7 @@ internal sealed class GetProcessedStockDataByExchangeStmt : QueryDbStmtBase {
 
     public GetProcessedStockDataByExchangeStmt(string exchange) : base(sql, nameof(GetProcessedStockDataByExchangeStmt)) {
         _exchange = exchange;
-        _processedInstrumentReportDtoList = new();
+        _processedInstrumentReportDtoList = [];
     }
 
     public IReadOnlyList<ProcessedFullInstrumentReportDto> ProcessedInstrumentReports => _processedInstrumentReportDtoList;

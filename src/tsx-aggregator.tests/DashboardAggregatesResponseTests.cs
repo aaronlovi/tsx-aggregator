@@ -22,6 +22,9 @@ public class DashboardAggregatesResponseTests {
             CompaniesPassingAllChecks: 5,
             AverageEstimatedReturn_FromCashFlow: 12.34M,
             AverageEstimatedReturn_FromOwnerEarnings: 8.76M,
+            MedianEstimatedReturn_FromCashFlow: 10.50M,
+            MedianEstimatedReturn_FromOwnerEarnings: 7.25M,
+            TotalMarketCap: 1234567890.00M,
             ScoreDistribution: scoreDistribution);
 
         // Assert
@@ -31,6 +34,9 @@ public class DashboardAggregatesResponseTests {
         _ = response.CompaniesPassingAllChecks.Should().Be(5);
         _ = response.AverageEstimatedReturn_FromCashFlow.Should().Be(12.34M);
         _ = response.AverageEstimatedReturn_FromOwnerEarnings.Should().Be(8.76M);
+        _ = response.MedianEstimatedReturn_FromCashFlow.Should().Be(10.50M);
+        _ = response.MedianEstimatedReturn_FromOwnerEarnings.Should().Be(7.25M);
+        _ = response.TotalMarketCap.Should().Be(1234567890.00M);
         _ = response.ScoreDistribution.Should().HaveCount(3);
         _ = response.ScoreDistribution[0].Score.Should().Be(13);
         _ = response.ScoreDistribution[0].Count.Should().Be(5);

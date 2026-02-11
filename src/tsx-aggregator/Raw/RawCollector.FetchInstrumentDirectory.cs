@@ -267,6 +267,10 @@ internal partial class RawCollector : BackgroundService {
             _logger.LogInformation("Instrument is a Mutual fund, not adding: {Instrument}", dto);
             return false;
         }
+        if (dto.IsTsxCdr) {
+            _logger.LogInformation("Instrument is a CDR (CAD Hedged), not adding: {Instrument}", dto);
+            return false;
+        }
 
         return true;
     }

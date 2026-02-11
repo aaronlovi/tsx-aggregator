@@ -19,7 +19,7 @@ internal sealed class GetRawReportCountsByTypeStmt : QueryDbStmtBase {
     private readonly List<RawReportCountByTypeDto> _counts;
 
     public GetRawReportCountsByTypeStmt() : base(sql, nameof(GetRawReportCountsByTypeStmt)) {
-        _counts = new List<RawReportCountByTypeDto>();
+        _counts = [];
     }
 
     public IReadOnlyList<RawReportCountByTypeDto> Counts => _counts;
@@ -27,7 +27,7 @@ internal sealed class GetRawReportCountsByTypeStmt : QueryDbStmtBase {
     protected override void ClearResults() => _counts.Clear();
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
-        Array.Empty<NpgsqlParameter>();
+        [];
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);

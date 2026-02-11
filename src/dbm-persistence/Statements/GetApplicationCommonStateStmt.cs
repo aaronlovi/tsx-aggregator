@@ -26,7 +26,7 @@ internal sealed class GetApplicationCommonStateStmt : QueryDbStmtBase {
     protected override void ClearResults() => _rawCollectorState = new();
 
     protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
-        Array.Empty<NpgsqlParameter>();
+        [];
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);

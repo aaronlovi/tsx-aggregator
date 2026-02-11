@@ -26,6 +26,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AboutComponent } from './about/about.component';
 import { CompanyDetailsComponent } from './company-details/company-details.component';
 import { HeaderComponent } from './header/header.component';
+import { CompactCurrencyPipe } from './pipes/compact-currency.pipe';
 import { RelativeTimePipe } from './pipes/relative-time.pipe';
 import { TranslatePipe } from './pipes/translate.pipe';
 import { QuickSearchComponent } from './quick-search/quick-search.component';
@@ -54,6 +55,7 @@ import { MatCardModule } from '@angular/material/card';
         MissingDataComponent,
         SystemControlsComponent,
         DashboardComponent,
+        CompactCurrencyPipe,
         RelativeTimePipe,
         TranslatePipe
     ],

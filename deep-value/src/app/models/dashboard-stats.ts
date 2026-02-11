@@ -15,6 +15,9 @@ export class DashboardAggregates {
     companiesPassingAllChecks: number;
     averageEstimatedReturn_FromCashFlow: number;
     averageEstimatedReturn_FromOwnerEarnings: number;
+    medianEstimatedReturn_FromCashFlow: number;
+    medianEstimatedReturn_FromOwnerEarnings: number;
+    totalMarketCap: number;
     scoreDistribution: ScoreDistributionItem[];
 
     constructor(
@@ -24,6 +27,9 @@ export class DashboardAggregates {
         companiesPassingAllChecks: number,
         averageEstimatedReturn_FromCashFlow: number,
         averageEstimatedReturn_FromOwnerEarnings: number,
+        medianEstimatedReturn_FromCashFlow: number,
+        medianEstimatedReturn_FromOwnerEarnings: number,
+        totalMarketCap: number,
         scoreDistribution: any[]
     ) {
         this.totalCompanies = totalCompanies;
@@ -32,6 +38,9 @@ export class DashboardAggregates {
         this.companiesPassingAllChecks = companiesPassingAllChecks;
         this.averageEstimatedReturn_FromCashFlow = averageEstimatedReturn_FromCashFlow;
         this.averageEstimatedReturn_FromOwnerEarnings = averageEstimatedReturn_FromOwnerEarnings;
+        this.medianEstimatedReturn_FromCashFlow = medianEstimatedReturn_FromCashFlow;
+        this.medianEstimatedReturn_FromOwnerEarnings = medianEstimatedReturn_FromOwnerEarnings;
+        this.totalMarketCap = totalMarketCap;
         this.scoreDistribution = scoreDistribution.map(
             sd => new ScoreDistributionItem(sd.score, sd.count)
         );

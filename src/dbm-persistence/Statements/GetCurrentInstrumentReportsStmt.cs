@@ -26,7 +26,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
         : base(sql, nameof(GetCurrentInstrumentReportsStmt)) 
     {
         _instrumentId = instrumentId;
-        _instrumentReports = new();
+        _instrumentReports = [];
     }
 
     public IReadOnlyList<CurrentInstrumentRawDataReportDto> InstrumentReports => _instrumentReports;

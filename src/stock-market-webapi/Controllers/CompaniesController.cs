@@ -407,9 +407,15 @@ public class CompaniesController : Controller {
 
             decimal avgReturnCashFlow = 0M;
             decimal avgReturnOwnerEarnings = 0M;
+            decimal medianReturnCashFlow = 0M;
+            decimal medianReturnOwnerEarnings = 0M;
+            decimal totalMarketCap = 0M;
             if (withPrice.Count > 0) {
                 avgReturnCashFlow = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow), 2);
                 avgReturnOwnerEarnings = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings), 2);
+                medianReturnCashFlow = Math.Round(Median(withPrice.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow)), 2);
+                medianReturnOwnerEarnings = Math.Round(Median(withPrice.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings)), 2);
+                totalMarketCap = withPrice.Sum(r => r.CurMarketCap);
             }
 
             var scoreDistribution = reports
@@ -425,6 +431,9 @@ public class CompaniesController : Controller {
                 CompaniesPassingAllChecks: companiesPassingAllChecks,
                 AverageEstimatedReturn_FromCashFlow: avgReturnCashFlow,
                 AverageEstimatedReturn_FromOwnerEarnings: avgReturnOwnerEarnings,
+                MedianEstimatedReturn_FromCashFlow: medianReturnCashFlow,
+                MedianEstimatedReturn_FromOwnerEarnings: medianReturnOwnerEarnings,
+                TotalMarketCap: totalMarketCap,
                 ScoreDistribution: scoreDistribution);
 
             return Ok(response);
@@ -460,5 +469,13 @@ public class CompaniesController : Controller {
                 StatusCodes.Status500InternalServerError,
                 new { error = "An unexpected error occurred." });
         }
+    }
+
+    private static decimal Median(IEnumerable<decimal> source) {
+        var sorted = source.OrderBy(x => x).ToList();
+        int count = sorted.Count;
+        if (count == 0) return 0M;
+        if (count % 2 == 1) return sorted[count / 2];
+        return (sorted[count / 2 - 1] + sorted[count / 2]) / 2M;
     }
 }

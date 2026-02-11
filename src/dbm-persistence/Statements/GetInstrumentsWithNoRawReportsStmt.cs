@@ -78,7 +78,7 @@ internal sealed class GetInstrumentsWithNoRawReportsStmt : QueryDbStmtBase {
         if (!PagedInstrumentInfo.IsValid) {
             int totalCount = reader.GetInt32(_totalCountIndex);
             PagedInstrumentInfo = new PagedInstrumentInfoDto(
-                _pageNumber, _pageSize, totalCount, new List<InstrumentInfoDto>());
+                _pageNumber, _pageSize, totalCount, []);
         }
 
         var dto = new InstrumentInfoDto(

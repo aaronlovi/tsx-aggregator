@@ -133,7 +133,7 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
     private void EnsurePagedInstrumentReports(NpgsqlDataReader reader) =>
         PagedInstrumentsWithRawDataReportUpdates = PagedInstrumentsWithRawDataReportUpdates with {
             TotalInstruments = reader.GetInt32(_maxRankNumIndex),
-            InstrumentsWithUpdates = new List<InstrumentWithUpdatedRawDataDto>()
+            InstrumentsWithUpdates = []
         };
 
     private void AppendNewInstrumentWithRawDataOverrides(NpgsqlDataReader reader, int rankNum) {
@@ -153,7 +153,7 @@ internal sealed class GetRawInstrumentsWithUpdatedDataReportsStmt : QueryDbStmtB
             ReportType: reader.GetInt32(_reportTypeIndex),
             ReportPeriodType: reader.GetInt32(_reportPeriodTypeIndex),
             ReportDate: curReportDate,
-            RawReportAndUpdates: new List<InstrumentWithUpdatedRawDataItemDto>()
+            RawReportAndUpdates: []
         ));
     }
 

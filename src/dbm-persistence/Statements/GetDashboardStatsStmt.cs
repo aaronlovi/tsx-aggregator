@@ -39,36 +39,27 @@ internal sealed class GetDashboardStatsStmt : QueryDbStmtBase {
     private static int _unprocessedEventsIndex = -1;
     private static int _manualReviewIndex = -1;
 
-    private long _totalActive;
-    private long _totalObsoleted;
-    private long _withProcessed;
-    private DateTimeOffset? _latestRaw;
-    private DateTimeOffset? _latestProcessed;
-    private long _unprocessedEvents;
-    private long _manualReview;
-
     public GetDashboardStatsStmt() : base(sql, nameof(GetDashboardStatsStmt)) { }
 
-    public long TotalActiveInstruments => _totalActive;
-    public long TotalObsoletedInstruments => _totalObsoleted;
-    public long InstrumentsWithProcessedReports => _withProcessed;
-    public DateTimeOffset? MostRecentRawIngestion => _latestRaw;
-    public DateTimeOffset? MostRecentAggregation => _latestProcessed;
-    public long UnprocessedEventCount => _unprocessedEvents;
-    public long ManualReviewCount => _manualReview;
+    public long TotalActiveInstruments { get; private set; }
+    public long TotalObsoletedInstruments { get; private set; }
+    public long InstrumentsWithProcessedReports { get; private set; }
+    public DateTimeOffset? MostRecentRawIngestion { get; private set; }
+    public DateTimeOffset? MostRecentAggregation { get; private set; }
+    public long UnprocessedEventCount { get; private set; }
+    public long ManualReviewCount { get; private set; }
 
     protected override void ClearResults() {
-        _totalActive = 0;
-        _totalObsoleted = 0;
-        _withProcessed = 0;
-        _latestRaw = null;
-        _latestProcessed = null;
-        _unprocessedEvents = 0;
-        _manualReview = 0;
+        TotalActiveInstruments = 0;
+        TotalObsoletedInstruments = 0;
+        InstrumentsWithProcessedReports = 0;
+        MostRecentRawIngestion = null;
+        MostRecentAggregation = null;
+        UnprocessedEventCount = 0;
+        ManualReviewCount = 0;
     }
 
-    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() =>
-        Array.Empty<NpgsqlParameter>();
+    protected override IReadOnlyCollection<NpgsqlParameter> GetBoundParameters() => [];
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);
@@ -86,13 +77,13 @@ internal sealed class GetDashboardStatsStmt : QueryDbStmtBase {
     }
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
-        _totalActive = reader.GetInt64(_totalActiveIndex);
-        _totalObsoleted = reader.GetInt64(_totalObsoletedIndex);
-        _withProcessed = reader.GetInt64(_withProcessedIndex);
-        _latestRaw = reader.IsDBNull(_latestRawIndex) ? null : reader.GetDateTime(_latestRawIndex);
-        _latestProcessed = reader.IsDBNull(_latestProcessedIndex) ? null : reader.GetDateTime(_latestProcessedIndex);
-        _unprocessedEvents = reader.GetInt64(_unprocessedEventsIndex);
-        _manualReview = reader.GetInt64(_manualReviewIndex);
+        TotalActiveInstruments = reader.GetInt64(_totalActiveIndex);
+        TotalObsoletedInstruments = reader.GetInt64(_totalObsoletedIndex);
+        InstrumentsWithProcessedReports = reader.GetInt64(_withProcessedIndex);
+        MostRecentRawIngestion = reader.IsDBNull(_latestRawIndex) ? null : reader.GetDateTime(_latestRawIndex);
+        MostRecentAggregation = reader.IsDBNull(_latestProcessedIndex) ? null : reader.GetDateTime(_latestProcessedIndex);
+        UnprocessedEventCount = reader.GetInt64(_unprocessedEventsIndex);
+        ManualReviewCount = reader.GetInt64(_manualReviewIndex);
         return false; // Single-row result
     }
 }

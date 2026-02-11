@@ -17,7 +17,7 @@ public class DashboardStatsDtoTests {
             MostRecentAggregation: DateTimeOffset.UtcNow,
             UnprocessedEventCount: 5,
             ManualReviewCount: 3,
-            RawReportCountsByType: Array.Empty<RawReportCountByTypeDto>());
+            RawReportCountsByType: []);
 
         // Act & Assert
         _ = dto.InstrumentsWithoutProcessedReports.Should().Be(25);
@@ -34,7 +34,7 @@ public class DashboardStatsDtoTests {
             MostRecentAggregation: null,
             UnprocessedEventCount: 0,
             ManualReviewCount: 0,
-            RawReportCountsByType: Array.Empty<RawReportCountByTypeDto>());
+            RawReportCountsByType: []);
 
         // Act & Assert
         _ = dto.InstrumentsWithoutProcessedReports.Should().Be(0);
@@ -78,7 +78,7 @@ public class DashboardStatsDtoTests {
             MostRecentAggregation: null,
             UnprocessedEventCount: 0,
             ManualReviewCount: 0,
-            RawReportCountsByType: Array.Empty<RawReportCountByTypeDto>());
+            RawReportCountsByType: []);
 
         // Act & Assert
         _ = dto.MostRecentRawIngestion.Should().BeNull();

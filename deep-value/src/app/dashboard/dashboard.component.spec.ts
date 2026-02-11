@@ -22,7 +22,7 @@ describe('DashboardComponent', () => {
     );
 
     const mockAggregates = new DashboardAggregates(
-        500, 450, 50, 5, 12.34, 8.76,
+        500, 450, 50, 5, 12.34, 8.76, 10.50, 7.25, 1234567890,
         [{ score: 13, count: 5 }, { score: 12, count: 10 }]
     );
 

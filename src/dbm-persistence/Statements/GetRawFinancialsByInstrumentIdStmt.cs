@@ -33,7 +33,7 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
 
     public GetRawFinancialsByInstrumentIdStmt(long instrumentId) : base(sql, nameof(GetRawFinancialsByInstrumentIdStmt)) {
         _instrumentId = instrumentId;
-        _instrumentReportDtoList = new();
+        _instrumentReportDtoList = [];
     }
 
     public IReadOnlyList<CurrentInstrumentRawDataReportDto> InstrumentReports => _instrumentReportDtoList;

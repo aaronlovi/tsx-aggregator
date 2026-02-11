@@ -98,34 +98,52 @@
 <div *ngIf="aggregatesErrorMsg" class="dashboard__error">{{ aggregatesErrorMsg }}</div>
 
 <div *ngIf="aggregates" class="dashboard__grid">
-    <mat-card class="dashboard__card">
+    <mat-card class="dashboard__card dashboard__card--wide">
         <mat-card-header>
             <mat-card-title>Company Analysis</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.totalCompanies | number }}</span>
-                <span class="dashboard__stat-label">Total Companies</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.companiesWithPriceData | number }}</span>
-                <span class="dashboard__stat-label">With Price Data</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.companiesWithoutPriceData | number }}</span>
-                <span class="dashboard__stat-label">Without Price Data</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.companiesPassingAllChecks | number }}</span>
-                <span class="dashboard__stat-label">Passing All Checks</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
-                <span class="dashboard__stat-label">Avg Return (Cash Flow)</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
-                <span class="dashboard__stat-label">Avg Return (Owner Earnings)</span>
+            <div class="dashboard__score-grid">
+                <div class="dashboard__score-column">
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.totalCompanies | number }}</span>
+                        <span class="dashboard__stat-label">Total Companies</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.companiesWithPriceData | number }}</span>
+                        <span class="dashboard__stat-label">With Price Data</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.companiesWithoutPriceData | number }}</span>
+                        <span class="dashboard__stat-label">Without Price Data</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.companiesPassingAllChecks | number }}</span>
+                        <span class="dashboard__stat-label">Passing All Checks</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.totalMarketCap | compactCurrency }}</span>
+                        <span class="dashboard__stat-label">Total Market Cap</span>
+                    </div>
+                </div>
+                <div class="dashboard__score-column">
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
+                        <span class="dashboard__stat-label">Avg Return (Cash Flow)</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
+                        <span class="dashboard__stat-label">Median Return (Cash Flow)</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
+                        <span class="dashboard__stat-label">Avg Return (Owner Earnings)</span>
+                    </div>
+                    <div class="dashboard__stat">
+                        <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
+                        <span class="dashboard__stat-label">Median Return (Owner Earnings)</span>
+                    </div>
+                </div>
             </div>
         </mat-card-content>
     </mat-card>

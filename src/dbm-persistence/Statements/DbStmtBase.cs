@@ -172,7 +172,7 @@ internal abstract class NonQueryBatchedDbStmtBase : IPostgresStatement {
 
     protected NonQueryBatchedDbStmtBase(string className) {
         _className = className;
-        _commands = new();
+        _commands = [];
     }
 
     public async Task<DbStmtResult> Execute(NpgsqlConnection conn, CancellationToken ct) {

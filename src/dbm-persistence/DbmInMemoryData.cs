@@ -17,12 +17,12 @@ internal class DbmInMemoryData {
     private ApplicationCommonState? _stateFsmState;
 
     public DbmInMemoryData() {
-        _instrumentEventsByInstrumentId = new();
-        _instrumentsByInstrumentId = new();
-        _pricesByInstrumentId = new();
-        _rawDataReportsByInstrumentId = new();
-        _processedInstrumentReportsByInstrumentId = new();
-        _serviceIsPausedByName = new();
+        _instrumentEventsByInstrumentId = [];
+        _instrumentsByInstrumentId = [];
+        _pricesByInstrumentId = [];
+        _rawDataReportsByInstrumentId = [];
+        _processedInstrumentReportsByInstrumentId = [];
+        _serviceIsPausedByName = [];
     }
 
     public InstrumentEventExDto? GetNextInstrumentEvent() {
@@ -322,7 +322,7 @@ internal class DbmInMemoryData {
 
                 var key = (rawDataReport.ReportDate, (ReportPeriodTypes)rawDataReport.ReportPeriodType);
                 if (!rawDataReportsMap.TryGetValue(key, out List<InstrumentRawDataReportDto>? reports))
-                    rawDataReportsMap[key] = reports = new();
+                    rawDataReportsMap[key] = reports = [];
                 reports.Add(rawDataReport);
             }
 
@@ -462,7 +462,7 @@ internal class DbmInMemoryData {
 
     public void InsertInstrumentEvent(InstrumentEventDto dto) {
         if (!_instrumentEventsByInstrumentId.TryGetValue(dto.InstrumentId, out List<InstrumentEventDto>? instrumentEvents))
-            instrumentEvents = _instrumentEventsByInstrumentId[dto.InstrumentId] = new();
+            instrumentEvents = _instrumentEventsByInstrumentId[dto.InstrumentId] = [];
 
         instrumentEvents.Add(dto);
     }
@@ -538,7 +538,7 @@ internal class DbmInMemoryData {
         // Insert new instrument reports
         foreach (var newReport in instrumentReportsToInsert) {
             if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
-                instrumentReports = _rawDataReportsByInstrumentId[instrumentId] = new();
+                instrumentReports = _rawDataReportsByInstrumentId[instrumentId] = [];
 
             long newInstrumentReportId = newReport.InstrumentReportId;
             instrumentReports.Add(new InstrumentRawDataReportDto(
@@ -581,7 +581,7 @@ internal class DbmInMemoryData {
 
         // Insert new instrument prices
         if (instrumentPrices == null) {
-            instrumentPrices = _pricesByInstrumentId[instrumentId] = new();
+            instrumentPrices = _pricesByInstrumentId[instrumentId] = [];
             instrumentPrices.Add(new InstrumentPriceDto(
                 instrumentId,
                 newPricePerShare,
@@ -605,7 +605,7 @@ internal class DbmInMemoryData {
 
     private void InsertProcessedInstrumentReport(ProcessedInstrumentReportDto dto) {
         if (!_processedInstrumentReportsByInstrumentId.TryGetValue(dto.InstrumentId, out List<ProcessedInstrumentReportDto>? instrumentReports))
-            instrumentReports = _processedInstrumentReportsByInstrumentId[dto.InstrumentId] = new();
+            instrumentReports = _processedInstrumentReportsByInstrumentId[dto.InstrumentId] = [];
 
         instrumentReports.Add(dto);
     }

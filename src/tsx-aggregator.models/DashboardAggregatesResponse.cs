@@ -9,6 +9,9 @@ public record DashboardAggregatesResponse(
     int CompaniesPassingAllChecks,
     decimal AverageEstimatedReturn_FromCashFlow,
     decimal AverageEstimatedReturn_FromOwnerEarnings,
+    decimal MedianEstimatedReturn_FromCashFlow,
+    decimal MedianEstimatedReturn_FromOwnerEarnings,
+    decimal TotalMarketCap,
     IReadOnlyList<ScoreDistributionItem> ScoreDistribution);
 
 public record ScoreDistributionItem(int Score, int Count);
