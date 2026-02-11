@@ -1,4 +1,10 @@
-<h2 class="page-title">All Companies</h2>
+<div class="page-header">
+    <h2 class="page-title">All Companies</h2>
+    <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
+        <mat-icon>refresh</mat-icon>
+        Refresh Data
+    </button>
+</div>
 
 <div *ngIf="loading">Loading...</div>
 <div *ngIf="errorMsg">{{ errorMsg }}</div>

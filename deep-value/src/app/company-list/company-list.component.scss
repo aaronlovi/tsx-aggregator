@@ -1,5 +1,11 @@
 @use '@angular/material' as mat;
 
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .action-button {
     margin-top: 20px;
     margin-left: 20px;

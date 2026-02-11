@@ -68,6 +68,10 @@ export class AllCompaniesComponent implements OnInit {
         });
     }
 
+    refreshData() {
+        this.loadPage(this.pagingData ? this.pagingData.pageNumber : 1);
+    }
+
     goToFirstPage() {
         this.loadPage(1);
     }
