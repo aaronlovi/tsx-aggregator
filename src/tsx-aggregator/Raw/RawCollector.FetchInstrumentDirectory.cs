@@ -271,6 +271,14 @@ internal partial class RawCollector : BackgroundService {
             _logger.LogInformation("Instrument is a CDR (CAD Hedged), not adding: {Instrument}", dto);
             return false;
         }
+        if (dto.IsTsxPrivatePool) {
+            _logger.LogInformation("Instrument is a Private Pool, not adding: {Instrument}", dto);
+            return false;
+        }
+        if (dto.IsTsxFidelityPortfolio) {
+            _logger.LogInformation("Instrument is a Fidelity Portfolio, not adding: {Instrument}", dto);
+            return false;
+        }
 
         return true;
     }

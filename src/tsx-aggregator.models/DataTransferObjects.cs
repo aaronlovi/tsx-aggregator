@@ -296,6 +296,22 @@ public record InstrumentDto : InstrumentKey {
         }
     }
 
+    public bool IsTsxPrivatePool {
+        get {
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
+                return false;
+            return CompanyName.ContainsOrdinal("Private Pool");
+        }
+    }
+
+    public bool IsTsxFidelityPortfolio {
+        get {
+            if (!Exchange.EqualsOrdinal(Constants.TsxExchange))
+                return false;
+            return CompanyName.StartsWithOrdinal("Fidelity") && CompanyName.EndsWithOrdinal("Portfolio");
+        }
+    }
+
     public bool IsPimcoMutualFund {
         get {
             if (!Exchange.Equals(Constants.TsxExchange, StringComparison.Ordinal))
