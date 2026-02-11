@@ -4,6 +4,9 @@
         <mat-icon>refresh</mat-icon>
         Refresh Data
     </button>
+    <span *ngIf="lastUpdated" class="page-header__last-updated">
+        {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
+    </span>
 </div>
 
 <div class="table-container">

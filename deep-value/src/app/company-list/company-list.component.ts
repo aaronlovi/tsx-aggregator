@@ -26,8 +26,11 @@ export class CompanyListComponent implements OnInit, OnDestroy {
     loading: boolean;
     errorMsg: string;
     pageTitle: string = '';
+    lastUpdated: Date | null = null;
+    now: Date = new Date();
     private mode: string = 'top';
     private routeSub: Subscription | null = null;
+    private timerInterval: ReturnType<typeof setInterval> | null = null;
 
     constructor(
         public textService: TextService,
@@ -50,11 +53,15 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 this.loadCompanies();
             }
         });
+        this.timerInterval = setInterval(() => this.now = new Date(), 1000);
     }
 
     ngOnDestroy() {
         if (this.routeSub) {
             this.routeSub.unsubscribe();
+        }
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
         }
     }
 
@@ -79,6 +86,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                     console.error('Invalid data format received from API. Expected an array.');
                 }
                 this.loading = false;
+                this.lastUpdated = new Date();
             },
             (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';
@@ -100,6 +108,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                     console.error('Invalid data format received from API. Expected an array.');
                 }
                 this.loading = false;
+                this.lastUpdated = new Date();
             },
             (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';

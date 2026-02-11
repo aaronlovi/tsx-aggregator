@@ -333,6 +333,106 @@ public class CompaniesController : Controller {
         }
     }
 
+    [HttpGet("companies/dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DashboardStatsResponse>> GetDashboardStats() {
+        try {
+            GetDashboardStatsReply reply = await _client.GetDashboardStatsAsync(new GetDashboardStatsRequest());
+            if (!reply.Success)
+                return BadRequest(new { error = reply.ErrorMessage });
+
+            var rawReportCounts = new List<RawReportCountItem>();
+            foreach (DashboardRawReportCount rc in reply.RawReportCounts) {
+                rawReportCounts.Add(RawReportCountItem.FromTypeAndCount(rc.ReportType, rc.Count));
+            }
+
+            var response = new DashboardStatsResponse(
+                TotalActiveInstruments: reply.TotalActiveInstruments,
+                TotalObsoletedInstruments: reply.TotalObsoletedInstruments,
+                InstrumentsWithProcessedReports: reply.InstrumentsWithProcessedReports,
+                InstrumentsWithoutProcessedReports: reply.InstrumentsWithoutProcessedReports,
+                MostRecentRawIngestion: reply.MostRecentRawIngestion?.ToDateTimeOffset(),
+                MostRecentAggregation: reply.MostRecentAggregation?.ToDateTimeOffset(),
+                UnprocessedEventCount: reply.UnprocessedEventCount,
+                ManualReviewCount: reply.ManualReviewCount,
+                RawReportCounts: rawReportCounts,
+                NextFetchDirectoryTime: reply.NextFetchDirectoryTime?.ToDateTimeOffset(),
+                NextFetchInstrumentDataTime: reply.NextFetchInstrumentDataTime?.ToDateTimeOffset(),
+                NextFetchQuotesTime: reply.NextFetchQuotesTime?.ToDateTimeOffset());
+
+            return Ok(response);
+        } catch (Exception ex) {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("companies/dashboard/aggregates")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DashboardAggregatesResponse>> GetDashboardAggregates() {
+        try {
+            GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+            if (!reply.Success)
+                return BadRequest(new { error = reply.ErrorMessage });
+
+            var reports = new List<CompanyFullDetailReport>();
+            foreach (GetStocksDataReplyItem item in reply.StocksData) {
+                reports.Add(new CompanyFullDetailReport(
+                    exchange: item.Exchange,
+                    companySymbol: item.CompanySymbol,
+                    instrumentSymbol: item.InstrumentSymbol,
+                    companyName: item.CompanyName,
+                    instrumentName: item.InstrumentName,
+                    pricePerShare: item.PerSharePrice,
+                    curLongTermDebt: item.CurrentLongTermDebt,
+                    curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
+                    curBookValue: item.CurrentBookValue,
+                    curNumShares: item.CurrentNumShares,
+                    averageNetCashFlow: item.AverageNetCashFlow,
+                    averageOwnerEarnings: item.AverageOwnerEarnings,
+                    curDividendsPaid: item.CurrentDividendsPaid,
+                    curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
+                    oldestRetainedEarnings: item.OldestRetainedEarnings,
+                    numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+            }
+
+            int totalCompanies = reports.Count;
+            var withPrice = reports.Where(r => r.CurMarketCap > 0).ToList();
+            int companiesWithPriceData = withPrice.Count;
+            int companiesWithoutPriceData = totalCompanies - companiesWithPriceData;
+            int companiesPassingAllChecks = reports.Count(r => r.DoesPassCheck_Overall);
+
+            decimal avgReturnCashFlow = 0M;
+            decimal avgReturnOwnerEarnings = 0M;
+            if (withPrice.Count > 0) {
+                avgReturnCashFlow = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow), 2);
+                avgReturnOwnerEarnings = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings), 2);
+            }
+
+            var scoreDistribution = reports
+                .GroupBy(r => r.OverallScore)
+                .Select(g => new ScoreDistributionItem(g.Key, g.Count()))
+                .OrderByDescending(s => s.Score)
+                .ToList();
+
+            var response = new DashboardAggregatesResponse(
+                TotalCompanies: totalCompanies,
+                CompaniesWithPriceData: companiesWithPriceData,
+                CompaniesWithoutPriceData: companiesWithoutPriceData,
+                CompaniesPassingAllChecks: companiesPassingAllChecks,
+                AverageEstimatedReturn_FromCashFlow: avgReturnCashFlow,
+                AverageEstimatedReturn_FromOwnerEarnings: avgReturnOwnerEarnings,
+                ScoreDistribution: scoreDistribution);
+
+            return Ok(response);
+        } catch (Exception ex) {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
     [HttpPost("companies/ignore_raw_report/{instrumentId}/{instrumentReportIdToKeep}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

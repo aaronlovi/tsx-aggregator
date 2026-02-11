@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CompanySummary } from '../models/company.summary';
 import { PagingData } from '../models/paging_data';
 import { CompanyService } from '../services/company.service';
@@ -9,7 +9,7 @@ import { TextService } from '../services/text.service';
     templateUrl: './all-companies.component.html',
     styleUrls: ['./all-companies.component.scss']
 })
-export class AllCompaniesComponent implements OnInit {
+export class AllCompaniesComponent implements OnInit, OnDestroy {
     displayedColumns: string[] = [
         'instrumentSymbol',
         'companyName',
@@ -26,6 +26,9 @@ export class AllCompaniesComponent implements OnInit {
     errorMsg: string = '';
     pagingData: PagingData | null = null;
     pageSize: number = 30;
+    lastUpdated: Date | null = null;
+    now: Date = new Date();
+    private timerInterval: ReturnType<typeof setInterval> | null = null;
 
     constructor(
         public textService: TextService,
@@ -34,6 +37,13 @@ export class AllCompaniesComponent implements OnInit {
 
     ngOnInit() {
         this.loadPage(1);
+        this.timerInterval = setInterval(() => this.now = new Date(), 1000);
+    }
+
+    ngOnDestroy() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
     }
 
     loadPage(pageNumber: number) {
@@ -60,6 +70,7 @@ export class AllCompaniesComponent implements OnInit {
                     item.maxPrice
                 ));
                 this.loading = false;
+                this.lastUpdated = new Date();
             },
             error: (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';

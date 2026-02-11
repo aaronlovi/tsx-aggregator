@@ -58,6 +58,9 @@ public interface IDbmService {
     ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);
     ValueTask<Result<ProcessedFullInstrumentReportDto>> GetProcessedStockDataByExchangeAndSymbol(string exchange, string instrumentSymbol, CancellationToken ct);
 
+    // Dashboard
+    ValueTask<(Result, DashboardStatsDto?)> GetDashboardStats(CancellationToken ct);
+
     // Service State
     ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct);
     ValueTask<Result> PersistCommonServiceState(bool isPaused, string serviceName, CancellationToken ct);

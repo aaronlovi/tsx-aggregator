@@ -2,10 +2,12 @@
 @use '../../app/quick-search/quick-search-theme' as quick-search;
 @use '../../app/company-details/company-details-theme' as company-details;
 @use '../../app/company-list/company-list-theme' as company-list;
+@use '../../app/dashboard/dashboard-theme' as dashboard;
 
 @mixin theme($theme) {
     @include header.theme($theme, null);
     @include quick-search.theme($theme, null);
     @include company-details.theme($theme, null);
     @include company-list.theme($theme, null);
+    @include dashboard.theme($theme, null);
 }

@@ -291,6 +291,34 @@ public sealed class DbmService : IDisposable, IDbmService {
 
     #endregion
 
+    #region Dashboard
+
+    public async ValueTask<(Result, DashboardStatsDto?)> GetDashboardStats(CancellationToken ct) {
+        var statsStmt = new GetDashboardStatsStmt();
+        DbStmtResult statsRes = await _exec.ExecuteWithRetry(statsStmt, ct);
+        if (!statsRes.Success)
+            return (statsRes, null);
+
+        var countsStmt = new GetRawReportCountsByTypeStmt();
+        DbStmtResult countsRes = await _exec.ExecuteWithRetry(countsStmt, ct);
+        if (!countsRes.Success)
+            return (countsRes, null);
+
+        var dto = new DashboardStatsDto(
+            TotalActiveInstruments: statsStmt.TotalActiveInstruments,
+            TotalObsoletedInstruments: statsStmt.TotalObsoletedInstruments,
+            InstrumentsWithProcessedReports: statsStmt.InstrumentsWithProcessedReports,
+            MostRecentRawIngestion: statsStmt.MostRecentRawIngestion,
+            MostRecentAggregation: statsStmt.MostRecentAggregation,
+            UnprocessedEventCount: statsStmt.UnprocessedEventCount,
+            ManualReviewCount: statsStmt.ManualReviewCount,
+            RawReportCountsByType: countsStmt.Counts);
+
+        return (Result.SUCCESS, dto);
+    }
+
+    #endregion
+
     #region Service State
 
     public async ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct) {

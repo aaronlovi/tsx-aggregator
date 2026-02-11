@@ -60,6 +60,10 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     await ProcessGetStockDetailsRequest(getStockDetailsForExchangeRequest, thisRequestCts.Token);
                     break;
                 }
+                case GetDashboardStatsRequestInput getDashboardStatsRequest: {
+                    await ProcessGetDashboardStatsRequest(getDashboardStatsRequest, thisRequestCts.Token);
+                    break;
+                }
                 default: {
                     _logger.LogError("StocksDataFetch main loop - Invalid request type received, dropping input");
                     break;
@@ -242,6 +246,53 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                 return false;
             }
         }
+    }
+
+    private async Task ProcessGetDashboardStatsRequest(GetDashboardStatsRequestInput request, CancellationToken ct) {
+        _logger.LogInformation("ProcessGetDashboardStatsRequest");
+
+        (Result res, models.DashboardStatsDto? dto) = await _dbm.GetDashboardStats(ct);
+
+        var reply = new GetDashboardStatsReply() {
+            Success = res.Success,
+            ErrorMessage = res.ErrMsg
+        };
+
+        if (res.Success && dto is not null) {
+            reply.TotalActiveInstruments = dto.TotalActiveInstruments;
+            reply.TotalObsoletedInstruments = dto.TotalObsoletedInstruments;
+            reply.InstrumentsWithProcessedReports = dto.InstrumentsWithProcessedReports;
+            reply.InstrumentsWithoutProcessedReports = dto.InstrumentsWithoutProcessedReports;
+            reply.MostRecentRawIngestion = dto.MostRecentRawIngestion.HasValue
+                ? Timestamp.FromDateTimeOffset(dto.MostRecentRawIngestion.Value) : null;
+            reply.MostRecentAggregation = dto.MostRecentAggregation.HasValue
+                ? Timestamp.FromDateTimeOffset(dto.MostRecentAggregation.Value) : null;
+            reply.UnprocessedEventCount = dto.UnprocessedEventCount;
+            reply.ManualReviewCount = dto.ManualReviewCount;
+
+            foreach (models.RawReportCountByTypeDto countDto in dto.RawReportCountsByType) {
+                reply.RawReportCounts.Add(new DashboardRawReportCount {
+                    ReportType = countDto.ReportType,
+                    Count = countDto.Count
+                });
+            }
+
+            (Result stateRes, models.ApplicationCommonState? appState) = await _dbm.GetApplicationCommonState(ct);
+            if (stateRes.Success && appState is not null) {
+                reply.NextFetchDirectoryTime = appState.NextFetchDirectoryTime.HasValue
+                    ? Timestamp.FromDateTime(DateTime.SpecifyKind(appState.NextFetchDirectoryTime.Value, DateTimeKind.Utc)) : null;
+                reply.NextFetchInstrumentDataTime = appState.NextFetchInstrumentDataTime.HasValue
+                    ? Timestamp.FromDateTime(DateTime.SpecifyKind(appState.NextFetchInstrumentDataTime.Value, DateTimeKind.Utc)) : null;
+                reply.NextFetchQuotesTime = appState.NextFetchQuotesTime.HasValue
+                    ? Timestamp.FromDateTime(DateTime.SpecifyKind(appState.NextFetchQuotesTime.Value, DateTimeKind.Utc)) : null;
+            }
+
+            _logger.LogInformation("ProcessGetDashboardStatsRequest Success - {ActiveInstruments} active instruments", dto.TotalActiveInstruments);
+        } else {
+            _logger.LogWarning("ProcessGetDashboardStatsRequest Failed - {Error}", res.ErrMsg);
+        }
+
+        request.Completed.TrySetResult(reply);
     }
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {

@@ -10,7 +10,8 @@
       "Bash(curl:*)",
       "Bash(findstr:*)",
       "Bash(powershell:*)",
-      "Bash(dotnet add package:*)"
+      "Bash(dotnet add package:*)",
+      "Bash(find:*)"
     ]
   }
 }

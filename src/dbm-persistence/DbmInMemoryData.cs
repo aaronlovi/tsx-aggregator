@@ -622,6 +622,76 @@ internal class DbmInMemoryData {
         }
     }
 
+    public DashboardStatsDto GetDashboardStats() {
+        long totalActive = 0;
+        long totalObsoleted = 0;
+        foreach (InstrumentDto instrument in _instrumentsByInstrumentId.Values) {
+            if (instrument.ObsoletedDate is null)
+                ++totalActive;
+            else
+                ++totalObsoleted;
+        }
+
+        long withProcessed = 0;
+        foreach (var entry in _processedInstrumentReportsByInstrumentId) {
+            foreach (ProcessedInstrumentReportDto pir in entry.Value) {
+                if (pir.ReportObsoletedDate is null) {
+                    ++withProcessed;
+                    break;
+                }
+            }
+        }
+
+        DateTimeOffset? latestRaw = null;
+        long manualReview = 0;
+        var reportCountsByType = new Dictionary<int, long>();
+        foreach (var entry in _rawDataReportsByInstrumentId) {
+            foreach (InstrumentRawDataReportDto report in entry.Value) {
+                if (latestRaw is null || report.CreatedDate > latestRaw)
+                    latestRaw = report.CreatedDate;
+
+                if (report.IsCurrent && report.CheckManually)
+                    ++manualReview;
+
+                if (report.IsCurrent && !report.IgnoreReport) {
+                    reportCountsByType.TryGetValue(report.ReportType, out long cnt);
+                    reportCountsByType[report.ReportType] = cnt + 1;
+                }
+            }
+        }
+
+        DateTimeOffset? latestProcessed = null;
+        foreach (var entry in _processedInstrumentReportsByInstrumentId) {
+            foreach (ProcessedInstrumentReportDto pir in entry.Value) {
+                if (latestProcessed is null || pir.ReportCreatedDate > latestProcessed)
+                    latestProcessed = pir.ReportCreatedDate;
+            }
+        }
+
+        long unprocessedEvents = 0;
+        foreach (var entry in _instrumentEventsByInstrumentId) {
+            foreach (InstrumentEventDto evt in entry.Value) {
+                if (!evt.IsProcessed)
+                    ++unprocessedEvents;
+            }
+        }
+
+        var rawReportCounts = new List<RawReportCountByTypeDto>();
+        foreach (var kvp in reportCountsByType)
+            rawReportCounts.Add(new RawReportCountByTypeDto(kvp.Key, kvp.Value));
+        rawReportCounts.Sort((a, b) => a.ReportType.CompareTo(b.ReportType));
+
+        return new DashboardStatsDto(
+            TotalActiveInstruments: totalActive,
+            TotalObsoletedInstruments: totalObsoleted,
+            InstrumentsWithProcessedReports: withProcessed,
+            MostRecentRawIngestion: latestRaw,
+            MostRecentAggregation: latestProcessed,
+            UnprocessedEventCount: unprocessedEvents,
+            ManualReviewCount: manualReview,
+            RawReportCountsByType: rawReportCounts);
+    }
+
     internal void SetCommonServiceState(bool isPaused, string serviceName) =>
         _serviceIsPausedByName[serviceName] = isPaused;
 }

@@ -26,6 +26,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AboutComponent } from './about/about.component';
 import { CompanyDetailsComponent } from './company-details/company-details.component';
 import { HeaderComponent } from './header/header.component';
+import { RelativeTimePipe } from './pipes/relative-time.pipe';
 import { TranslatePipe } from './pipes/translate.pipe';
 import { QuickSearchComponent } from './quick-search/quick-search.component';
 import { LocalStorageService } from './services/local-storage.service';
@@ -35,6 +36,8 @@ import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
 import { SystemControlsComponent } from './system-controls/system-controls.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { MatCardModule } from '@angular/material/card';
 
 
 
@@ -50,6 +53,8 @@ import { SystemControlsComponent } from './system-controls/system-controls.compo
         UpdatedRawDataReportsComponent,
         MissingDataComponent,
         SystemControlsComponent,
+        DashboardComponent,
+        RelativeTimePipe,
         TranslatePipe
     ],
     imports: [
@@ -70,6 +75,7 @@ import { SystemControlsComponent } from './system-controls/system-controls.compo
         MatSidenavModule,
         MatToolbarModule,
         MatTooltipModule,
+        MatCardModule,
         FormsModule,
         TranslocoRootModule,
         CommonModule],

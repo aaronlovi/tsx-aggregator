@@ -403,6 +403,45 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
         }
     }
 
+    public override async Task<GetDashboardStatsReply> GetDashboardStats(GetDashboardStatsRequest request, ServerCallContext context) {
+        long reqId = Interlocked.Increment(ref _reqId);
+        using var logContext = _logger.BeginScope(new Dictionary<string, object>() { [LogUtils.ReqIdContext] = reqId });
+
+        try {
+            _logger.LogInformation("GetDashboardStats");
+
+            if (context is null) {
+                _logger.LogWarning("GetDashboardStats - Null context");
+                return Failure("No context supplied");
+            }
+
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            using var req = new GetDashboardStatsRequestInput(reqId, cts);
+            if (!_requestProcessor.PostRequest(req)) {
+                _logger.LogWarning("GetDashboardStats - Failed to post request, aborting");
+                return Failure("Failed to post request");
+            }
+
+            object? response = await req.Completed.Task;
+            if (response is not GetDashboardStatsReply reply) {
+                _logger.LogWarning("GetDashboardStats - Received invalid response");
+                return Failure("Got an invalid response");
+            }
+
+            _logger.LogInformation("GetDashboardStats - complete");
+            return reply;
+
+        } catch (OperationCanceledException) {
+            _logger.LogWarning("GetDashboardStats canceled");
+            return Failure("GetDashboardStats - Canceled");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "GetDashboardStats - General Fault");
+            return Failure("GetDashboardStats ran into a general error");
+        }
+
+        static GetDashboardStatsReply Failure(string errMsg) => new() { Success = false, ErrorMessage = errMsg };
+    }
+
     public override async Task<StockDataServiceReply> IgnoreRawDataReport(IgnoreRawDataReportRequest request, ServerCallContext context) {
         long reqId = Interlocked.Increment(ref _reqId);
         using var logContext = _logger.BeginScope(new Dictionary<string, object>() {

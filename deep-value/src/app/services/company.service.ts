@@ -4,6 +4,7 @@ import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { AppConfigService } from '../app-config.service';
 import { CompanySummary } from '../models/company.summary';
 import { CompanyDetails } from '../models/company.details';
+import { DashboardAggregates, DashboardStats } from '../models/dashboard-stats';
 import { InstrumentsWithConflictingRawData } from '../models/instruments_with_conflicting_raw_data';
 import { PagingData } from '../models/paging_data';
 import { InstrumentRawReportData } from '../models/instrument_raw_report_data';
@@ -79,6 +80,39 @@ export class CompanyService {
                     data.oldestRetainedEarnings,
                     data.numAnnualProcessedCashFlowReports);
             })
+        );
+    }
+
+    getDashboardStats(): Observable<DashboardStats> {
+        return this.http.get<any>(`${this.config.apiEndpoint}/companies/dashboard`).pipe(
+            map(data => new DashboardStats(
+                data.totalActiveInstruments,
+                data.totalObsoletedInstruments,
+                data.instrumentsWithProcessedReports,
+                data.instrumentsWithoutProcessedReports,
+                data.mostRecentRawIngestion,
+                data.mostRecentAggregation,
+                data.unprocessedEventCount,
+                data.manualReviewCount,
+                data.rawReportCounts,
+                data.nextFetchDirectoryTime,
+                data.nextFetchInstrumentDataTime,
+                data.nextFetchQuotesTime
+            ))
+        );
+    }
+
+    getDashboardAggregates(): Observable<DashboardAggregates> {
+        return this.http.get<any>(`${this.config.apiEndpoint}/companies/dashboard/aggregates`).pipe(
+            map(data => new DashboardAggregates(
+                data.totalCompanies,
+                data.companiesWithPriceData,
+                data.companiesWithoutPriceData,
+                data.companiesPassingAllChecks,
+                data.averageEstimatedReturn_FromCashFlow,
+                data.averageEstimatedReturn_FromOwnerEarnings,
+                data.scoreDistribution
+            ))
         );
     }
 

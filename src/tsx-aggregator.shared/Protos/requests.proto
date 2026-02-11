@@ -16,6 +16,7 @@ service StockDataService {
     rpc GetInstrumentsWithNoRawReports(GetInstrumentsWithNoRawReportsRequest) returns (GetInstrumentsWithNoRawReportsReply);
     rpc SetPriorityCompanies(SetPriorityCompaniesRequest) returns (StockDataServiceReply);
     rpc GetPriorityCompanies(GetPriorityCompaniesRequest) returns (GetPriorityCompaniesReply);
+    rpc GetDashboardStats(GetDashboardStatsRequest) returns (GetDashboardStatsReply);
 }
 
 message GetStocksDataRequest {
@@ -167,4 +168,28 @@ message GetPriorityCompaniesReply {
     bool success = 1;
     string error_message = 2;
     repeated string company_symbols = 3;
+}
+
+message GetDashboardStatsRequest { }
+
+message GetDashboardStatsReply {
+    bool success = 1;
+    string error_message = 2;
+    int64 total_active_instruments = 3;
+    int64 total_obsoleted_instruments = 4;
+    int64 instruments_with_processed_reports = 5;
+    int64 instruments_without_processed_reports = 6;
+    google.protobuf.Timestamp most_recent_raw_ingestion = 7;
+    google.protobuf.Timestamp most_recent_aggregation = 8;
+    int64 unprocessed_event_count = 9;
+    int64 manual_review_count = 10;
+    repeated DashboardRawReportCount raw_report_counts = 11;
+    google.protobuf.Timestamp next_fetch_directory_time = 12;
+    google.protobuf.Timestamp next_fetch_instrument_data_time = 13;
+    google.protobuf.Timestamp next_fetch_quotes_time = 14;
+}
+
+message DashboardRawReportCount {
+    int32 report_type = 1;
+    int64 count = 2;
 }

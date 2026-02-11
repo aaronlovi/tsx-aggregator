@@ -7,9 +7,11 @@ import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
 import { SystemControlsComponent } from './system-controls/system-controls.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 const routes: Routes = [
     { path: '', component: AboutComponent },
+    { path: 'dashboard', component: DashboardComponent },
     { path: 'companies', component: CompanyListComponent, data: { mode: 'top' } },
     { path: 'companies/bottom', component: CompanyListComponent, data: { mode: 'bottom' } },
     { path: 'companies/all', component: AllCompaniesComponent },

@@ -178,6 +178,17 @@ public sealed class DbmInMemory : IDbmService {
 
     #endregion
 
+    #region Dashboard
+
+    public ValueTask<(Result, DashboardStatsDto?)> GetDashboardStats(CancellationToken ct) {
+        lock (_data) {
+            DashboardStatsDto dto = _data.GetDashboardStats();
+            return ValueTask.FromResult<(Result, DashboardStatsDto?)>((Result.SUCCESS, dto));
+        }
+    }
+
+    #endregion
+
     #region Service State
 
     public ValueTask<(Result, bool)> GetCommonServiceState(string serviceName, CancellationToken ct) {
