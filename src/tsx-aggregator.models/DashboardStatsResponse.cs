@@ -15,7 +15,8 @@ public record DashboardStatsResponse(
     IReadOnlyList<RawReportCountItem> RawReportCounts,
     DateTimeOffset? NextFetchDirectoryTime,
     DateTimeOffset? NextFetchInstrumentDataTime,
-    DateTimeOffset? NextFetchQuotesTime);
+    DateTimeOffset? NextFetchQuotesTime,
+    DateTimeOffset? NextAggregatorCycleTime);
 
 public record RawReportCountItem(int ReportType, string ReportTypeName, long Count) {
     private static readonly Dictionary<int, string> ReportTypeNames = new() {

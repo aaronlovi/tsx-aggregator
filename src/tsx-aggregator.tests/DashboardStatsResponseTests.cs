@@ -46,6 +46,7 @@ public class DashboardStatsResponseTests {
         var nextDir = now.AddHours(1);
         var nextInst = now.AddHours(2);
         var nextQuotes = now.AddHours(3);
+        var nextAggregator = now.AddMinutes(2);
 
         // Act
         var response = new DashboardStatsResponse(
@@ -60,7 +61,8 @@ public class DashboardStatsResponseTests {
             RawReportCounts: counts,
             NextFetchDirectoryTime: nextDir,
             NextFetchInstrumentDataTime: nextInst,
-            NextFetchQuotesTime: nextQuotes);
+            NextFetchQuotesTime: nextQuotes,
+            NextAggregatorCycleTime: nextAggregator);
 
         // Assert
         _ = response.TotalActiveInstruments.Should().Be(1000);
@@ -75,5 +77,6 @@ public class DashboardStatsResponseTests {
         _ = response.NextFetchDirectoryTime.Should().Be(nextDir);
         _ = response.NextFetchInstrumentDataTime.Should().Be(nextInst);
         _ = response.NextFetchQuotesTime.Should().Be(nextQuotes);
+        _ = response.NextAggregatorCycleTime.Should().Be(nextAggregator);
     }
 }

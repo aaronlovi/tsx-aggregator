@@ -38,9 +38,9 @@ public class DbMigrations {
         try {
             using var connection = new NpgsqlConnection(_connectionString);
             var evolve = new Evolve(connection, msg => _logger.LogInformation("Evolve: {msg}", msg)) {
-                EmbeddedResourceAssemblies = new[] { typeof(DbMigrations).Assembly },
+                EmbeddedResourceAssemblies = [typeof(DbMigrations).Assembly],
                 // EmbeddedResourceFilters = new[] { "dbm-persistence" },
-                Schemas = new[] { _databaseSchema },
+                Schemas = [_databaseSchema],
                 IsEraseDisabled = true,
                 EnableClusterMode = true
             };

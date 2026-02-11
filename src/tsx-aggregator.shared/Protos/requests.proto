@@ -187,6 +187,7 @@ message GetDashboardStatsReply {
     google.protobuf.Timestamp next_fetch_directory_time = 12;
     google.protobuf.Timestamp next_fetch_instrument_data_time = 13;
     google.protobuf.Timestamp next_fetch_quotes_time = 14;
+    google.protobuf.Timestamp next_aggregator_cycle_time = 15;
 }
 
 message DashboardRawReportCount {

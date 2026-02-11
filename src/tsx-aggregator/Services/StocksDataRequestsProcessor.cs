@@ -287,6 +287,10 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     ? Timestamp.FromDateTime(DateTime.SpecifyKind(appState.NextFetchQuotesTime.Value, DateTimeKind.Utc)) : null;
             }
 
+            var aggregator = _svp.GetService<Aggregator>();
+            if (aggregator?.NextCycleTime is { } nextCycleTime)
+                reply.NextAggregatorCycleTime = Timestamp.FromDateTime(DateTime.SpecifyKind(nextCycleTime, DateTimeKind.Utc));
+
             _logger.LogInformation("ProcessGetDashboardStatsRequest Success - {ActiveInstruments} active instruments", dto.TotalActiveInstruments);
         } else {
             _logger.LogWarning("ProcessGetDashboardStatsRequest Failed - {Error}", res.ErrMsg);

@@ -97,7 +97,8 @@ export class CompanyService {
                 data.rawReportCounts,
                 data.nextFetchDirectoryTime,
                 data.nextFetchInstrumentDataTime,
-                data.nextFetchQuotesTime
+                data.nextFetchQuotesTime,
+                data.nextAggregatorCycleTime
             ))
         );
     }

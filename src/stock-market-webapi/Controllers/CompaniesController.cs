@@ -360,7 +360,8 @@ public class CompaniesController : Controller {
                 RawReportCounts: rawReportCounts,
                 NextFetchDirectoryTime: reply.NextFetchDirectoryTime?.ToDateTimeOffset(),
                 NextFetchInstrumentDataTime: reply.NextFetchInstrumentDataTime?.ToDateTimeOffset(),
-                NextFetchQuotesTime: reply.NextFetchQuotesTime?.ToDateTimeOffset());
+                NextFetchQuotesTime: reply.NextFetchQuotesTime?.ToDateTimeOffset(),
+                NextAggregatorCycleTime: reply.NextAggregatorCycleTime?.ToDateTimeOffset());
 
             return Ok(response);
         } catch (Exception ex) {

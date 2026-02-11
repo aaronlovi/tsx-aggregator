@@ -23,6 +23,8 @@ public class Aggregator : BackgroundService, INamedService {
     private long _reqId;
     private TimeSpan _intervalToNextTimeout;
     private readonly ILogger _logger;
+
+    public DateTime? NextCycleTime { get; private set; }
     private readonly IServiceProvider _svp;
     private readonly IDbmService _dbm;
     private readonly Channel<AggregatorInputBase> _inputChannel;
@@ -51,6 +53,7 @@ public class Aggregator : BackgroundService, INamedService {
             while (!stoppingToken.IsCancellationRequested) {
                 var utcNow = DateTime.UtcNow;
                 var nextTimeout = utcNow.Add(_intervalToNextTimeout);
+                NextCycleTime = nextTimeout;
                 TimeSpan interval = Utilities.CalculateTimeDifference(utcNow, nextTimeout);
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);

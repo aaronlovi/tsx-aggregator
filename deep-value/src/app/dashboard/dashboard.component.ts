@@ -25,7 +25,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.loadStats();
         this.loadAggregates();
-        this.timerInterval = setInterval(() => this.now = new Date(), 1000);
+        this.timerInterval = setInterval(() => {
+            this.now = new Date();
+            this.autoRefreshIfScheduleElapsed();
+        }, 1000);
     }
 
     ngOnDestroy() {
@@ -66,6 +69,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (!this.aggregates) return [];
         const items = this.aggregates.scoreDistribution;
         return items.slice(Math.ceil(items.length / 2));
+    }
+
+    private autoRefreshIfScheduleElapsed() {
+        if (!this.stats || this.loading) return;
+        const times = [
+            this.stats.nextFetchDirectoryTime,
+            this.stats.nextFetchInstrumentDataTime,
+            this.stats.nextFetchQuotesTime,
+            this.stats.nextAggregatorCycleTime
+        ];
+        const nowMs = this.now.getTime();
+        if (times.some(t => t !== null && t.getTime() <= nowMs)) {
+            this.loadStats();
+        }
     }
 
     private loadAggregates() {

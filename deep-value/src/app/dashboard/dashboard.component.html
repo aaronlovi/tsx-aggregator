@@ -90,6 +90,10 @@
                 <span class="dashboard__stat-value">{{ stats.nextFetchQuotesTime | relativeTime:now }}</span>
                 <span class="dashboard__stat-label">Next Quotes Fetch</span>
             </div>
+            <div class="dashboard__stat">
+                <span class="dashboard__stat-value">{{ stats.nextAggregatorCycleTime | relativeTime:now }}</span>
+                <span class="dashboard__stat-label">Next Aggregator Cycle</span>
+            </div>
         </mat-card-content>
     </mat-card>
 </div>

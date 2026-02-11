@@ -72,6 +72,7 @@ export class DashboardStats {
     nextFetchDirectoryTime: Date | null;
     nextFetchInstrumentDataTime: Date | null;
     nextFetchQuotesTime: Date | null;
+    nextAggregatorCycleTime: Date | null;
 
     constructor(
         totalActiveInstruments: number,
@@ -85,7 +86,8 @@ export class DashboardStats {
         rawReportCounts: any[],
         nextFetchDirectoryTime: string | null,
         nextFetchInstrumentDataTime: string | null,
-        nextFetchQuotesTime: string | null
+        nextFetchQuotesTime: string | null,
+        nextAggregatorCycleTime: string | null
     ) {
         this.totalActiveInstruments = totalActiveInstruments;
         this.totalObsoletedInstruments = totalObsoletedInstruments;
@@ -101,5 +103,6 @@ export class DashboardStats {
         this.nextFetchDirectoryTime = nextFetchDirectoryTime ? new Date(nextFetchDirectoryTime) : null;
         this.nextFetchInstrumentDataTime = nextFetchInstrumentDataTime ? new Date(nextFetchInstrumentDataTime) : null;
         this.nextFetchQuotesTime = nextFetchQuotesTime ? new Date(nextFetchQuotesTime) : null;
+        this.nextAggregatorCycleTime = nextAggregatorCycleTime ? new Date(nextAggregatorCycleTime) : null;
     }
 }
