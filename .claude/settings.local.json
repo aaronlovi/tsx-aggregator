@@ -9,7 +9,8 @@
       "WebSearch",
       "Bash(curl:*)",
       "Bash(findstr:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(dotnet add package:*)"
     ]
   }
 }

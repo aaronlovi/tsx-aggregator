@@ -20,8 +20,23 @@ create table if not exists instruments (
     created_date timestamptz not null,
     obsoleted_date timestamptz default null,
     primary key (instrument_id),
-    constraint uniq_instruments unique (instrument_id, exchange, company_symbol, instrument_symbol)
+    constraint uniq_instruments unique (exchange, company_symbol, instrument_symbol)
 );
+
+-- Fix the unique constraint if it incorrectly includes instrument_id
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'uniq_instruments'
+        AND (SELECT count(*) FROM unnest(conkey) k
+             JOIN pg_attribute a ON a.attnum = k AND a.attrelid = conrelid
+             WHERE a.attname = 'instrument_id') > 0
+    ) THEN
+        ALTER TABLE instruments DROP CONSTRAINT uniq_instruments;
+        ALTER TABLE instruments ADD CONSTRAINT uniq_instruments UNIQUE (exchange, company_symbol, instrument_symbol);
+    END IF;
+END $$;
 
 create table if not exists instrument_prices (
     instrument_id bigint not null,
@@ -49,7 +64,7 @@ create index if not exists idx_instrument_report on instrument_reports (instrume
 create table if not exists generator (
     last_reserved bigint not null
 );
-insert into generator (last_reserved) values (1);
+INSERT INTO generator (last_reserved) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM generator);
 
 create table if not exists instrument_events (
     instrument_id bigint not null,
@@ -72,5 +87,5 @@ create table if not exists state_fsm_state (
     prev_company_symbol varchar(10) not null,
     prev_instrument_symbol varchar(10) not null
 );
-insert into state_fsm_state (next_fetch_directory_time, next_fetch_instrument_data_time, prev_company_symbol, prev_instrument_symbol) 
-values(now_utc(), now_utc(), '', '');
+INSERT INTO state_fsm_state (next_fetch_directory_time, next_fetch_instrument_data_time, prev_company_symbol, prev_instrument_symbol)
+SELECT now_utc(), now_utc(), '', '' WHERE NOT EXISTS (SELECT 1 FROM state_fsm_state);

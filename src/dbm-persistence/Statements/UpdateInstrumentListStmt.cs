@@ -9,7 +9,8 @@ namespace dbm_persistence;
 internal class UpdateInstrumentListStmt : NonQueryBatchedDbStmtBase {
     private const string insertSql = "INSERT INTO instruments"
         + " (instrument_id, exchange, company_symbol, company_name, instrument_symbol, instrument_name, created_date, obsoleted_date)"
-        + " VALUES (@instrument_id, @exchange, @company_symbol, @company_name, @instrument_symbol, @instrument_name, @created_date, @obsoleted_date)";
+        + " VALUES (@instrument_id, @exchange, @company_symbol, @company_name, @instrument_symbol, @instrument_name, @created_date, @obsoleted_date)"
+        + " ON CONFLICT (exchange, company_symbol, instrument_symbol) DO NOTHING";
 
     private const string obsoleteSql = "UPDATE instruments SET obsoleted_date = @obsoleted_date"
         + " WHERE instrument_id = @instrument_id";

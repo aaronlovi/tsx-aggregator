@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +47,9 @@ internal partial class RawCollector : BackgroundService {
             RestoreDbAndRegistryConsistency(instrumentUpdateResults);
             return;
         }
+
+        // Signal that the directory is available for downstream services (e.g. QuoteService)
+        _registry.DirectoryInitialized.TrySetResult();
 
         _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}", res.Success);
     }
@@ -158,14 +163,21 @@ internal partial class RawCollector : BackgroundService {
         return directory;
     }
 
-    private static HttpClient CreateFetchDirectoryHttpClient(IHttpClientFactory httpClientFactory) {
-        var httpClient = httpClientFactory.CreateClient();
-        httpClient.DefaultRequestHeaders.Add("accept", "application/json, text/javascript, */*; q=0.01");
-        httpClient.DefaultRequestHeaders.Add("accept-language", "en-US,en;q=0.9");
-        httpClient.DefaultRequestHeaders.Add("sec-fetch-dest", "empty");
-        httpClient.DefaultRequestHeaders.Add("sec-fetch-mode", "cors");
-        httpClient.DefaultRequestHeaders.Add("sec-fetch-site", "same-origin");
-        httpClient.DefaultRequestHeaders.Add("x-requested-with", "XMLHttpRequest");
+    private static HttpClient CreateFetchDirectoryHttpClient(IHttpClientFactory _) {
+        var handler = new SocketsHttpHandler {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            ConnectCallback = async (context, cancellationToken) => {
+                // Force IPv4 — TSX's IPv6 endpoints are unreachable
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                await socket.ConnectAsync(context.DnsEndPoint.Host, context.DnsEndPoint.Port, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+        };
+        var httpClient = new HttpClient(handler);
+        httpClient.Timeout = TimeSpan.FromSeconds(30);
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+        httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
         httpClient.DefaultRequestHeaders.Add("cookie", "tmx_locale=en;");
         return httpClient;
     }
@@ -175,10 +187,7 @@ internal partial class RawCollector : BackgroundService {
             RequestUri = new Uri($"https://www.tsx.com/json/company-directory/search/tsx/{curLetter}"),
             Method = HttpMethod.Get,
             Headers = {
-                        { "referrer", "https://www.tsx.com/listings/listing-with-us/listed-company-directory?lang=en" },
-                        { "referrerPolicy", "strict-origin-when-cross-origin" },
-                        // { "body", "" },
-                        { "mode", "cors" }
+                        { "Referer", "https://www.tsx.com/listings/listing-with-us/listed-company-directory?lang=en" }
                     },
             Content = null
         };
