@@ -4,6 +4,24 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 16px 20px;
+
+    &__left {
+        .page-title {
+            margin: 0;
+        }
+    }
+
+    &__subtitle {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 4px;
+    }
+
+    &__refresh {
+        margin-left: auto;
+    }
 }
 
 .page-header__last-updated {
@@ -27,9 +45,7 @@
     border-collapse: collapse;
     border-top: 0px;
     margin-top: 15px;
-    width: 95%;
-    min-width: 95%;
-    max-width: 95%;
+    width: 100%;
 
     .data-table__header {
         width: 11.1%;

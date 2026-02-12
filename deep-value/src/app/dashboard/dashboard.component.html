@@ -1,15 +1,19 @@
 <div class="page-header">
-    <h2 class="page-title">Dashboard</h2>
+    <div class="page-header__left">
+        <h2 class="page-title">Dashboard</h2>
+        <div class="page-header__subtitle">
+            <span *ngIf="lastUpdated" class="page-header__last-updated">
+                Last refreshed at: {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
+            </span>
+            <span *ngIf="nextAutoRefreshTime" class="page-header__next-refresh">
+                Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
+            </span>
+        </div>
+    </div>
     <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
         <mat-icon>refresh</mat-icon>
         Refresh Data
     </button>
-    <span *ngIf="lastUpdated" class="page-header__last-updated">
-        {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
-    </span>
-    <span *ngIf="nextAutoRefreshTime" class="page-header__next-refresh">
-        Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
-    </span>
 </div>
 
 <div *ngIf="loading" class="dashboard__loading">Loading...</div>

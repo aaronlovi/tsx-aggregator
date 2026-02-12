@@ -2,6 +2,24 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 16px 20px;
+
+    &__left {
+        .page-title {
+            margin: 0;
+        }
+    }
+
+    &__subtitle {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 4px;
+    }
+
+    &__refresh {
+        margin-left: auto;
+    }
 }
 
 .page-header__last-updated {
