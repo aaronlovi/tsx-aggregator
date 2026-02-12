@@ -5,7 +5,7 @@
 
 <!-- While loading -->
 <div *ngIf="loading && !errorMsg">
-    <h2>{{ textService.text_loading_ellipses | translate }}</h2>
+    <h2>Loading...</h2>
 </div>
 
 <!-- Valid company details loaded, display report -->
@@ -25,38 +25,38 @@
             <!-- Overview -->
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="2">
-                    {{ textService.text_overview | translate }}
+                    Overview
                 </th>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_exchange | translate }}</th>
+                <th class="mat-header-cell data-table__header">Exchange</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.exchange }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_company_name | translate }}</th>
+                <th class="mat-header-cell data-table__header">Company Name</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.companyName }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_instrument_name | translate }}</th>
+                <th class="mat-header-cell data-table__header">Instrument Name</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.instrumentName }}</td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_max_price_tooltip | translate">
-                        {{ textService.text_max_price | translate }}
+                    <span matTooltip="The maximum per-share price at which the company passes all valuation checks. Based on the most conservative of: 3x book value, 20x estimated return from cash flow, and 20x estimated return from owner earnings.">
+                        Max Buy Price
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.maxPrice |
                     currency:'USD':'symbol':'1.2-2' }}</td>
             </tr>
             <tr class="mat-row data-table__row">
-                <th class="mat-header-cell data-table__header">{{ textService.text_company_symbol | translate }}</th>
+                <th class="mat-header-cell data-table__header">Company Symbol</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.companySymbol }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_instrument_symbol | translate }}</th>
+                <th class="mat-header-cell data-table__header">Instrument Symbol</th>
                 <td class="mat-cell data-table__data">{{ companyDetails.instrumentSymbol }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_price_per_share | translate }}</th>
+                <th class="mat-header-cell data-table__header">Price Per Share</th>
                 <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.pricePerShare |
                     currency:'USD':'symbol':'1.2-2' }}</td>
 
-                <th class="mat-header-cell data-table__header">{{ textService.text_percentage_upside | translate }}</th>
+                <th class="mat-header-cell data-table__header">% Upside</th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
                     {{ companyDetails.percentageUpside / 100.0 | percent:'1.2-2' }}
                 </td>
@@ -65,166 +65,162 @@
             <!-- Scores -->
             <tr class="mat-row data-table__row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="4">
-                    {{ textService.text_scores | translate }}
+                    Scores
                 </th>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_debt_to_equity_small_enough_tooltip | translate">
-                        {{ textService.company_details_debt_to_equity_small_enough | translate }}
+                    <span matTooltip="Is Debt-to-Equity &lt; 0.5?">
+                        Debt-to-Equity Small Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckDebtToEquitySmallEnough}">
-                    {{ companyDetails.doesPassCheckDebtToEquitySmallEnough ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckDebtToEquitySmallEnough ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_debt_to_book_small_enough_tooltip | translate">
-                        {{ textService.company_details_debt_to_book_small_enough | translate }}
+                    <span matTooltip="Is Long-Term Debt To Book Ratio &lt; 1.0?">
+                        Debt-to-Book Small Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckDebtToBookRatioSmallEnough}">
-                    {{ companyDetails.doesPassCheckDebtToBookRatioSmallEnough ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckDebtToBookRatioSmallEnough ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_book_value_big_enough_tooltip | translate">
-                        {{ textService.company_details_book_value_big_enough | translate }}
+                    <span matTooltip="Is Book Value &gt; $150 million?">
+                        Book Value Big Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckBookValueBigEnough}">
-                    {{ companyDetails.doesPassCheckBookValueBigEnough ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckBookValueBigEnough ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_price_to_book_small_enough_tooltip | translate">
-                        {{ textService.company_details_price_to_book_small_enough | translate }}
+                    <span matTooltip="Is Price-to-Book &lt;&equals; 3.0">
+                        Price-to-Book Small Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckPriceToBookSmallEnough}">
-                    {{ companyDetails.doesPassCheckPriceToBookSmallEnough ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckPriceToBookSmallEnough ? 'Yes' :
+                    'No' }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_big_enough_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_cash_flow_big_enough | translate}}
+                        matTooltip="Is next year's expected total return (from cash flow) &gt; 5.0%?">
+                        Est. Next Year Total Return Cash Flow Big Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough}">
-                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? (textService.text_yes |
-                    translate) : (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? 'Yes' : 'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_big_enough_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_owner_earnings_big_enough |
-                        translate}}
+                        matTooltip="Is next year's expected total return (from owner earnings) &gt; 5.0%?">
+                        Est. Next Year Total Return Owner Earnings Big Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough}">
                     {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough ?
-                    (textService.text_yes | translate) : (textService.text_no | translate) }}
+                    'Yes' : 'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_cash_flow_not_too_big_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_cash_flow_not_too_big | translate}}
+                        matTooltip="Is next year's expected total return (from cash flow) &lt; 40%? (Greater would probably mean some data is inaccurate)">
+                        Est. Next Year Total Return Cash Flow Not Too Big?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig}">
-                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? (textService.text_yes |
-                    translate) : (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? 'Yes' : 'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_owner_earnings_not_too_big_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_owner_earnings_not_too_big |
-                        translate}}
+                        matTooltip="Is next year's expected total return (from owner earnings) &lt; 40%? (Greater would probably mean some data is inaccurate)">
+                        Est. Next Year Total Return Owner Earnings Not Too Big?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
                     {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ?
-                    (textService.text_yes | translate) : (textService.text_no | translate) }}
+                    'Yes' : 'No' }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_avg_cash_flow_positive_tooltip | translate">
-                        {{ textService.company_details_avg_cash_flow_positive | translate}}
+                    <span matTooltip="Is the average cash flow over the past 5 years positive?">
+                        Avg. Cash Flow Positive?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckAvgCashFlow_Positive}">
-                    {{ companyDetails.doesPassCheckAvgCashFlow_Positive ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckAvgCashFlow_Positive ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_avg_owner_earnings_positive_tooltip | translate">
-                        {{ textService.company_details_avg_owner_earnings_positive | translate}}
+                    <span matTooltip="Are the average owner earnings over the past 5 years positive?">
+                        Avg. Owner Earnings Positive?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckAvgOwnerEarningsPositive}">
-                    {{ companyDetails.doesPassCheckAvgOwnerEarningsPositive ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckAvgOwnerEarningsPositive ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_retained_earnings_positive_tooltip | translate">
-                        {{ textService.company_details_retained_earnings_positive_tooltip | translate }}
+                    <span matTooltip="Are the lifetime retained earnings positive?">
+                        Are the lifetime retained earnings positive?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckAdjustedRetainedEarningsPositive}">
-                    {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? (textService.text_yes | translate)
-                    : (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? 'Yes'
+                    : 'No' }}
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_retained_earnings_increased_tooltip | translate">
-                        {{ textService.company_details_retained_earnings_increased | translate}}
+                    <span matTooltip="Have the retained earnings increased from 5 years ago up until the most recent annual or quarterly report?">
+                        Retained Earnings Increased?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.didAdjustedRetainedEarningsIncrease}">
-                    {{ companyDetails.didAdjustedRetainedEarningsIncrease ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.didAdjustedRetainedEarningsIncrease ? 'Yes' :
+                    'No' }}
                 </td>
             </tr>
             <tr class="mat-row data-table__row--alternating">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_history_long_enough_tooltip | translate">
-                        {{ textService.company_details_history_long_enough | translate}}
+                    <span matTooltip="Have there been at least 4 years of annual reports?">
+                        History Long Enough?
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score"
                     [ngClass]="{no: !companyDetails.doesPassCheckIsHistoryLongEnough}">
-                    {{ companyDetails.doesPassCheckIsHistoryLongEnough ? (textService.text_yes | translate) :
-                    (textService.text_no | translate) }}
+                    {{ companyDetails.doesPassCheckIsHistoryLongEnough ? 'Yes' :
+                    'No' }}
                 </td>
 
                 <!-- Spacer -->
                 <td class="mat-row data-table__data" colspan="4">&nbsp;</td>
 
                 <th class="mat-header-cell data-table__header">
-                    {{ textService.text_overall_score | translate}}
+                    Overall Score
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score">
                     <strong>{{ companyDetails.overallScore }} / 13</strong>
@@ -234,12 +230,12 @@
             <!-- Financials -->
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="5">
-                    {{ textService.text_financials | translate }}
+                    Financials
                 </th>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_market_cap_tooltip | translate">
-                        {{ textService.text_market_cap | translate }}
+                    <span matTooltip="Total value of the outstanding shares. Calculated by multiplying the share price by the total number of shares.">
+                        Market Cap
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -247,8 +243,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_long_term_debt_tooltip | translate">
-                        {{ textService.text_long_term_debt | translate }}
+                    <span matTooltip="Liabilities that are due in more than one year including loans, bonds, and other forms of debt with a maturity date beyond the next twelve months.">
+                        Long Term Debt
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -256,8 +252,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_total_shareholders_equity_tooltip | translate">
-                        {{ textService.text_total_shareholders_equity | translate }}
+                    <span matTooltip="Total value of assets minus liabilities.">
+                        Total Shareholders Equity
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -265,8 +261,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_cur_dividends_paid_tooltip | translate">
-                        {{ textService.text_cur_dividends_paid | translate }}
+                    <span matTooltip="Dividends paid in the last 12 months">
+                        Cur. Dividends Paid
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -275,8 +271,8 @@
             </tr>
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_avg_net_cash_flow_tooltip | translate">
-                        {{ textService.text_avg_net_cash_flow | translate }}
+                    <span matTooltip="Average amount of cash generated or consumed by a company's operations annually after deducting expenses, taxes, and other costs over the past 5 years.">
+                        Avg. Net Cash Flow
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -284,8 +280,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_avg_owner_earnings_tooltip | translate">
-                        {{ textService.text_avg_owner_earnings | translate }}
+                    <span matTooltip="Average amount of cash generated by a company's operations annually that is available for distribution to owners or reinvestment in the business over the past 5 years.">
+                        Avg. Owner Earnings
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -293,8 +289,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_cur_retained_earnings_tooltip | translate">
-                        {{ textService.text_cur_retained_earnings | translate }}
+                    <span matTooltip="Lifetime accumulated profits that have not been distributed to shareholders as dividends and are reinvested in the business.">
+                        Cur. Retained Earnings
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -302,8 +298,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_oldest_retained_earnings_tooltip | translate">
-                        {{ textService.text_oldest_retained_earnings | translate }}
+                    <span matTooltip="Accumulated profits that have not been distributed to shareholders as dividends and are reinvested in the business taken from the cash flow report 5 years ago. Used for comparison with 'Current Retained Earnings'.">
+                        Oldest Retained Earnings
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -312,8 +308,8 @@
             </tr>
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_debt_to_equity_ratio_tooltip | translate">
-                        {{ textService.text_debt_to_equity_ratio | translate }}
+                    <span matTooltip="Indicates the proportion of a company's financing that comes from debt compared to equity. It is calculated by dividing total debt by total equity.">
+                        Debt To Equity Ratio
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -321,8 +317,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_cur_price_to_book_ratio_tooltip | translate">
-                        {{ textService.text_cur_price_to_book_ratio | translate }}
+                    <span matTooltip="Compares a company's current stock price to its book value per share. It is calculated by dividing the current market price per share by the book value per share.">
+                        Cur. Price To Book Ratio
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -330,8 +326,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_debt_to_book_ratio_tooltip | translate">
-                        {{ textService.text_debt_to_book_ratio | translate }}
+                    <span matTooltip="The proportion of a company's long-term debt relative to its book value. It is calculated by dividing long-term debt by book value.">
+                        Long-Term Debt To Book Ratio
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -343,8 +339,8 @@
             </tr>
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_book_value_tooltip | translate">
-                        {{ textService.text_book_value | translate }}
+                    <span matTooltip="Total value of assets minus liabilities, where assets exclude intangibles (e.g. patents, trademarks, copyrights, brand value, etc.)">
+                        Book Value
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -353,8 +349,8 @@
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_book_value_from_cash_flow_tooltip | translate">
-                        {{ textService.company_details_est_next_year_book_value_from_cash_flow | translate }}
+                        matTooltip="The projected next year's book value based on current book value and average cash flow over the past 5 years.">
+                        Est. Next Year Book Value From Cash Flow
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -363,8 +359,8 @@
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_book_value_from_owner_earnings_tooltip | translate">
-                        {{ textService.company_details_est_next_year_book_value_from_owner_earnings | translate}}
+                        matTooltip="The projected next year's book value based on current book value and average owner earnings over the past 5 years.">
+                        Est. Next Year Book Value From Owner Earnings
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -377,8 +373,8 @@
             <tr class="mat-row data-table__row">
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_from_cash_flow_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_from_cash_flow | translate }}
+                        matTooltip="The projected percentage increase in book value over the next year based on 'Estimated Next Year Book From Cash Flow' compared to current Book Value.">
+                        Est. Next Year Total Return From Cash Flow (%)
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -387,8 +383,8 @@
 
                 <th class="mat-header-cell data-table__header">
                     <span
-                        [matTooltip]="textService.company_details_est_next_year_total_return_from_owner_earnings_tooltip | translate">
-                        {{ textService.company_details_est_next_year_total_return_from_owner_earnings | translate }}
+                        matTooltip="The projected percentage increase in book value over the next year based on 'Estimated Next Year Book Value From Owner Earnings' compared to current Book Value.">
+                        Est. Next Year Total Return From Owner Earnings (%)
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--numeric">
@@ -397,8 +393,8 @@
                 </td>
 
                 <th class="mat-header-cell data-table__header">
-                    <span [matTooltip]="textService.company_details_num_annual_reports_tooltip | translate">
-                        {{ textService.company_details_num_annual_reports | translate }}
+                    <span matTooltip="The number of annual reports used to create this report. Never more than 5 (we never look back more than 5 years).">
+                        Num Annual Processed Cash Flow Reports
                     </span>
                 </th>
                 <td class="mat-cell data-table__data data-table__data--score">{{

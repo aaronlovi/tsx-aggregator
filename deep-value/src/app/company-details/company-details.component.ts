@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CompanyService } from '../services/company.service';
 import { CompanyDetails } from '../models/company.details';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-company-details',
@@ -17,7 +16,7 @@ export class CompanyDetailsComponent implements OnInit {
     loading: boolean;
     errorMsg: string;
     
-    constructor(public textService: TextService, private companyService: CompanyService, private route: ActivatedRoute) {
+    constructor(private companyService: CompanyService, private route: ActivatedRoute) {
         this.exchange = '';
         this.instrumentSymbol = '';
         this.companyDetails = undefined;

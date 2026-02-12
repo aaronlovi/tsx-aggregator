@@ -1,8 +1,8 @@
 @use '@angular/material' as mat;
 
 .table-container {
-    @include mat.table-density(-3);
     padding: 10px 20px 20px 20px;
+    @include mat.table-density(-3);
 }
 
 .data-table {

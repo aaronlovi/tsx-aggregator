@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { CompanyService } from '../services/company.service';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-system-controls',
@@ -17,7 +16,6 @@ export class SystemControlsComponent implements OnInit {
     successMsg: string = '';
 
     constructor(
-        public textService: TextService,
         private companyService: CompanyService
     ) { }
 

@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CompanySummary } from '../models/company.summary';
 import { PagingData } from '../models/paging_data';
 import { CompanyService } from '../services/company.service';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-all-companies',
@@ -34,7 +33,6 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
     private static readonly AUTO_REFRESH_MS = 10 * 60 * 1000;
 
     constructor(
-        public textService: TextService,
         private companyService: CompanyService
     ) { }
 

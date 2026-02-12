@@ -1,6 +1,4 @@
 import { Component } from '@angular/core';
-import { TranslateService } from '../services/translate.service';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-header',
@@ -9,9 +7,5 @@ import { TextService } from '../services/text.service';
     standalone: false
 })
 export class HeaderComponent {
-    constructor(public textService: TextService, private translateService: TranslateService) { }
-
-    setLocale(locale: string) {
-        this.translateService.use(locale);
-    }
+    constructor() { }
 }

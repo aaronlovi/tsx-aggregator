@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PagingData } from '../models/paging_data';
 import { CompanyService } from '../services/company.service';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-missing-data',
@@ -18,7 +17,6 @@ export class MissingDataComponent implements OnInit {
     pageSize: number = 30;
 
     constructor(
-        public textService: TextService,
         private companyService: CompanyService
     ) { }
 

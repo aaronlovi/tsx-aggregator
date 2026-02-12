@@ -28,11 +28,7 @@ import { CompanyDetailsComponent } from './company-details/company-details.compo
 import { HeaderComponent } from './header/header.component';
 import { CompactCurrencyPipe } from './pipes/compact-currency.pipe';
 import { RelativeTimePipe } from './pipes/relative-time.pipe';
-import { TranslatePipe } from './pipes/translate.pipe';
 import { QuickSearchComponent } from './quick-search/quick-search.component';
-import { LocalStorageService } from './services/local-storage.service';
-import { TranslateService } from './services/translate.service';
-import { TranslocoRootModule } from './transloco-root.module';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
 import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
@@ -55,8 +51,7 @@ import { MatCardModule } from '@angular/material/card';
         SystemControlsComponent,
         DashboardComponent,
         CompactCurrencyPipe,
-        RelativeTimePipe,
-        TranslatePipe
+        RelativeTimePipe
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         AppRoutingModule,
@@ -76,16 +71,7 @@ import { MatCardModule } from '@angular/material/card';
         MatTooltipModule,
         MatCardModule,
         FormsModule,
-        TranslocoRootModule,
         CommonModule], providers: [
-        LocalStorageService,
-        TranslateService,
-        {
-            provide: APP_INITIALIZER,
-            useFactory: setupTranslateServiceFactory,
-            multi: true,
-            deps: [TranslateService, LocalStorageService]
-        },
         {
             provide: APP_INITIALIZER,
             useFactory: appConfigInit,
@@ -95,10 +81,6 @@ import { MatCardModule } from '@angular/material/card';
         provideHttpClient(withInterceptorsFromDi())
     ] })
 export class AppModule {
-}
-
-export function setupTranslateServiceFactory(translateService: TranslateService, localStorageService: LocalStorageService): Function {
-    return () => translateService.use(`${localStorageService.SiteLocale}`);
 }
 
 export function appConfigInit(appConfigService: AppConfigService) {

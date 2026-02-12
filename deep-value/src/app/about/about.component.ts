@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-about',
@@ -9,5 +8,5 @@ import { TextService } from '../services/text.service';
 })
 export class AboutComponent {
 
-    constructor(public textService: TextService) { }
+    constructor() { }
 }

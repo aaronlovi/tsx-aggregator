@@ -1,10 +1,10 @@
-<h2 class="page-title">{{ textService.system_controls_title | translate }}</h2>
+<h2 class="page-title">System Controls</h2>
 
-<h3>{{ textService.system_controls_priority_heading | translate }}</h3>
+<h3>Priority Companies</h3>
 
 <div class="priority-input-section">
     <mat-form-field appearance="outline" class="priority-input">
-        <mat-label>{{ textService.system_controls_input_label | translate }}</mat-label>
+        <mat-label>Company symbols (comma-separated)</mat-label>
         <input matInput [(ngModel)]="newSymbolsInput" placeholder="CNQ, SU, TD"
                (keyup.enter)="setPriorityCompanies()">
     </mat-form-field>
@@ -12,11 +12,11 @@
     <div class="priority-buttons">
         <button mat-raised-button color="primary" (click)="setPriorityCompanies()"
                 [disabled]="loading || newSymbolsInput.trim().length === 0">
-            {{ textService.system_controls_set_button | translate }}
+            Set Priority
         </button>
         <button mat-button (click)="clearPriorityQueue()"
                 [disabled]="loading || prioritySymbols.length === 0">
-            {{ textService.system_controls_clear_button | translate }}
+            Clear Queue
         </button>
     </div>
 </div>
@@ -28,7 +28,7 @@
 <div class="priority-queue-section">
     <h4>Current Queue</h4>
     <div *ngIf="prioritySymbols.length === 0 && !loading" class="queue-empty">
-        {{ textService.system_controls_queue_empty | translate }}
+        Queue is empty
     </div>
     <div *ngIf="prioritySymbols.length > 0" class="queue-list">
         <span *ngFor="let symbol of prioritySymbols; let last = last" class="queue-symbol">

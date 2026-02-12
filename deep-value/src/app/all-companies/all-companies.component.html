@@ -24,7 +24,7 @@
 
         <!-- Instrument Symbol Column -->
         <ng-container matColumnDef="instrumentSymbol">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header">{{ textService.text_instrument_symbol | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header">Instrument Symbol</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell">
                 <a [routerLink]="['/company-details', 'TSX', company.instrumentSymbol]" class="data-table__detail-link">
                     {{ company.instrumentSymbol }}
@@ -34,25 +34,25 @@
 
         <!-- Company Name Column -->
         <ng-container matColumnDef="companyName">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header">{{ textService.text_company_name | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header">Company Name</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell">{{ company.companyName }}</td>
         </ng-container>
 
         <!-- Price Per Share Column -->
         <ng-container matColumnDef="pricePerShare">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.text_price_per_share | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Price Per Share</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.pricePerShare | currency:'USD':'symbol':'1.2-2' }}</td>
         </ng-container>
 
         <!-- Max Buy Price Column -->
         <ng-container matColumnDef="maxPrice">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.text_max_price | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Max Buy Price</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.maxPrice | currency:'USD':'symbol':'1.2-2' }}</td>
         </ng-container>
 
         <!-- Percentage Upside Column -->
         <ng-container matColumnDef="percentageUpside">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.text_percentage_upside | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">% Upside</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
                 {{ company.percentageUpside / 100.0 | percent:'1.2-2' }}
             </td>
@@ -60,13 +60,13 @@
 
         <!-- Market Cap Column -->
         <ng-container matColumnDef="marketCap">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.text_market_cap | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Market Cap</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.curMarketCap | currency:'USD':'symbol':'1.0-0' }}</td>
         </ng-container>
 
         <!-- Estimated Next Year Total Return (from Cash Flow) Column -->
         <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageFromCashFlow">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.company_list_est_next_year_total_return_from_cash_flow | translate}}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Cash Flow</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
                 {{ company.estimatedNextYearTotalReturnPercentageFromCashFlow / 100.0 | percent:'1.2-2' }}
             </td>
@@ -74,7 +74,7 @@
 
         <!-- Estimated Next Year Total Return (from Owner Earnings) Column -->
         <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageOwnerEarnings">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.company_list_est_next_year_total_return_from_owner_earnings | translate}}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Owner Earnings</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
                 {{ company.estimatedNextYearTotalReturnPercentageOwnerEarnings / 100.0 | percent:'1.2-2' }}
             </td>
@@ -82,7 +82,7 @@
 
         <!-- Overall Score Column -->
         <ng-container matColumnDef="overallScore">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">{{ textService.text_overall_score | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Overall Score</th>
             <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.overallScore }}</td>
         </ng-container>
 

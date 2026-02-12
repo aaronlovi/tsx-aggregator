@@ -3,7 +3,6 @@ import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CompanySummary } from '../models/company.summary';
 import { CompanyService } from '../services/company.service';
-import { TextService } from '../services/text.service';
 
 @Component({
     selector: 'app-company-list',
@@ -36,7 +35,6 @@ export class CompanyListComponent implements OnInit, OnDestroy {
     private static readonly AUTO_REFRESH_MS = 10 * 60 * 1000;
 
     constructor(
-        public textService: TextService,
         private companyService: CompanyService,
         private route: ActivatedRoute
     ) {
