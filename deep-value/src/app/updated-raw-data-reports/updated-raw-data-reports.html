@@ -154,7 +154,7 @@
                     <td *ngFor="let report of instrument.conflictingRawReports"
                         [ngClass]="{'report-table__cell--highlight': isValueDifferent(key, instrument.conflictingRawReports, instrument)}"
                         class="report-table__cell--right-aligned">
-                        {{ report.parseReportJson()[key] | number:'1.2-2' || '&nbsp;' }}
+                        {{ (report.parseReportJson()[key] | number:'1.2-2') ?? '&nbsp;' }}
                     </td>
                     <td [ngClass]="{'report-table__cell--highlight': isValueDifferent(key, instrument.conflictingRawReports, instrument)}">
                         <ng-container *ngIf="isValueDifferent(key, instrument.conflictingRawReports, instrument); else sameValue">

@@ -6,7 +6,8 @@ import { TextService } from '../services/text.service';
 @Component({
     selector: 'app-missing-data',
     templateUrl: './missing-data.component.html',
-    styleUrls: ['./missing-data.component.scss']
+    styleUrls: ['./missing-data.component.scss'],
+    standalone: false
 })
 export class MissingDataComponent implements OnInit {
     displayedColumns: string[] = ['instrumentSymbol', 'companyName', 'instrumentName'];

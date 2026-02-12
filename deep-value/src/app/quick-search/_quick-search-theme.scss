@@ -4,20 +4,20 @@
 @mixin color($theme) {
 
     // Get the color config from the theme.
-    $color-config: mat.get-color-config($theme);
+    $color-config: mat.m2-get-color-config($theme);
 
     // Get the primary color palette from the color-config.
     $primary-palette: map.get($color-config, "primary");
 
     .autocomplete__option {
-        border-bottom: mat.get-color-from-palette($primary-palette) 0.8px solid;
+        border-bottom: mat.m2-get-color-from-palette($primary-palette) 0.8px solid;
     }
 }
 
 @mixin typography($theme) {}
 
 @mixin theme($theme, $typography-config) {
-    $color-config: mat.get-color-config($theme);
+    $color-config: mat.m2-get-color-config($theme);
 
     @if $color-config !=null {
         @include color($theme);

@@ -7,7 +7,8 @@ import { TextService } from '../services/text.service';
 @Component({
     selector: 'app-all-companies',
     templateUrl: './all-companies.component.html',
-    styleUrls: ['./all-companies.component.scss']
+    styleUrls: ['./all-companies.component.scss'],
+    standalone: false
 })
 export class AllCompaniesComponent implements OnInit, OnDestroy {
     displayedColumns: string[] = [
@@ -28,7 +29,9 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
     pageSize: number = 30;
     lastUpdated: Date | null = null;
     now: Date = new Date();
+    nextAutoRefreshTime: Date | null = null;
     private timerInterval: ReturnType<typeof setInterval> | null = null;
+    private static readonly AUTO_REFRESH_MS = 10 * 60 * 1000;
 
     constructor(
         public textService: TextService,
@@ -37,7 +40,10 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.loadPage(1);
-        this.timerInterval = setInterval(() => this.now = new Date(), 1000);
+        this.timerInterval = setInterval(() => {
+            this.now = new Date();
+            this.autoRefreshIfScheduleElapsed();
+        }, 1000);
     }
 
     ngOnDestroy() {
@@ -71,12 +77,24 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
                 ));
                 this.loading = false;
                 this.lastUpdated = new Date();
+                this.scheduleNextAutoRefresh();
             },
             error: (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';
                 this.loading = false;
             }
         });
+    }
+
+    private scheduleNextAutoRefresh() {
+        this.nextAutoRefreshTime = new Date(Date.now() + AllCompaniesComponent.AUTO_REFRESH_MS);
+    }
+
+    private autoRefreshIfScheduleElapsed() {
+        if (!this.nextAutoRefreshTime || this.loading) return;
+        if (this.now.getTime() >= this.nextAutoRefreshTime.getTime()) {
+            this.refreshData();
+        }
     }
 
     refreshData() {

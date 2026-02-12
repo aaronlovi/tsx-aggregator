@@ -5,7 +5,8 @@ import { TextService } from '../services/text.service';
 @Component({
     selector: 'app-header',
     templateUrl: './header.component.html',
-    styleUrls: ['./header.component.scss']
+    styleUrls: ['./header.component.scss'],
+    standalone: false
 })
 export class HeaderComponent {
     constructor(public textService: TextService, private translateService: TranslateService) { }

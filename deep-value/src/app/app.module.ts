@@ -5,7 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CompanyListComponent } from './company-list/company-list.component';
 
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfigService } from './app-config.service';
 
@@ -42,8 +42,7 @@ import { MatCardModule } from '@angular/material/card';
 
 
 
-@NgModule({
-    declarations: [
+@NgModule({ declarations: [
         AppComponent,
         AllCompaniesComponent,
         CompanyListComponent,
@@ -59,10 +58,8 @@ import { MatCardModule } from '@angular/material/card';
         RelativeTimePipe,
         TranslatePipe
     ],
-    imports: [
-        BrowserModule,
+    bootstrap: [AppComponent], imports: [BrowserModule,
         AppRoutingModule,
-        HttpClientModule,
         NoopAnimationsModule,
         BrowserModule,
         BrowserAnimationsModule,
@@ -80,8 +77,7 @@ import { MatCardModule } from '@angular/material/card';
         MatCardModule,
         FormsModule,
         TranslocoRootModule,
-        CommonModule],
-    providers: [
+        CommonModule], providers: [
         LocalStorageService,
         TranslateService,
         {
@@ -95,10 +91,9 @@ import { MatCardModule } from '@angular/material/card';
             useFactory: appConfigInit,
             multi: true,
             deps: [AppConfigService]
-        }
-    ],
-    bootstrap: [AppComponent]
-})
+        },
+        provideHttpClient(withInterceptorsFromDi())
+    ] })
 export class AppModule {
 }
 

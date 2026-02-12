@@ -10,7 +10,8 @@ import { catchError, concatMap, from, Observable, of, Subscription, tap } from "
 @Component({
     selector: 'app-updated-raw-data-reports',
     templateUrl: './updated-raw-data-reports.html',
-    styleUrls: ['./updated-raw-data-reports.scss']
+    styleUrls: ['./updated-raw-data-reports.scss'],
+    standalone: false
 })
 export class UpdatedRawDataReportsComponent implements OnInit {
     data: InstrumentsWithConflictingRawData | null = null;

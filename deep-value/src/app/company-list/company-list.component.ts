@@ -8,7 +8,8 @@ import { TextService } from '../services/text.service';
 @Component({
     selector: 'app-company-list',
     templateUrl: './company-list.component.html',
-    styleUrls: ['./company-list.component.scss']
+    styleUrls: ['./company-list.component.scss'],
+    standalone: false
 })
 export class CompanyListComponent implements OnInit, OnDestroy {
     displayedColumns: string[] = [
@@ -28,9 +29,11 @@ export class CompanyListComponent implements OnInit, OnDestroy {
     pageTitle: string = '';
     lastUpdated: Date | null = null;
     now: Date = new Date();
+    nextAutoRefreshTime: Date | null = null;
     private mode: string = 'top';
     private routeSub: Subscription | null = null;
     private timerInterval: ReturnType<typeof setInterval> | null = null;
+    private static readonly AUTO_REFRESH_MS = 10 * 60 * 1000;
 
     constructor(
         public textService: TextService,
@@ -53,7 +56,10 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 this.loadCompanies();
             }
         });
-        this.timerInterval = setInterval(() => this.now = new Date(), 1000);
+        this.timerInterval = setInterval(() => {
+            this.now = new Date();
+            this.autoRefreshIfScheduleElapsed();
+        }, 1000);
     }
 
     ngOnDestroy() {
@@ -73,6 +79,17 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         }
     }
 
+    private scheduleNextAutoRefresh() {
+        this.nextAutoRefreshTime = new Date(Date.now() + CompanyListComponent.AUTO_REFRESH_MS);
+    }
+
+    private autoRefreshIfScheduleElapsed() {
+        if (!this.nextAutoRefreshTime || this.loading) return;
+        if (this.now.getTime() >= this.nextAutoRefreshTime.getTime()) {
+            this.refreshData();
+        }
+    }
+
     loadCompanies() {
         this.companies = [];
         this.loading = true;
@@ -87,6 +104,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 }
                 this.loading = false;
                 this.lastUpdated = new Date();
+                this.scheduleNextAutoRefresh();
             },
             (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';
@@ -109,6 +127,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 }
                 this.loading = false;
                 this.lastUpdated = new Date();
+                this.scheduleNextAutoRefresh();
             },
             (error: any) => {
                 this.errorMsg = 'An error occurred while fetching companies data';

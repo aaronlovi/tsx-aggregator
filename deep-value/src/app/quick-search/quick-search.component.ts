@@ -7,7 +7,8 @@ import { Router } from '@angular/router';
 @Component({
     selector: 'app-quick-search',
     templateUrl: './quick-search.component.html',
-    styleUrls: ['./quick-search.component.scss']
+    styleUrls: ['./quick-search.component.scss'],
+    standalone: false
 })
 export class QuickSearchComponent implements OnInit, OnDestroy {
     searchTerm: string = '';

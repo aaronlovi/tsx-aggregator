@@ -5,7 +5,8 @@ import { TextService } from '../services/text.service';
 @Component({
     selector: 'app-system-controls',
     templateUrl: './system-controls.component.html',
-    styleUrls: ['./system-controls.component.scss']
+    styleUrls: ['./system-controls.component.scss'],
+    standalone: false
 })
 export class SystemControlsComponent implements OnInit {
     pageTitle = 'System Controls';

@@ -7,6 +7,9 @@
     <span *ngIf="lastUpdated" class="page-header__last-updated">
         {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
     </span>
+    <span *ngIf="nextAutoRefreshTime" class="page-header__next-refresh">
+        Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
+    </span>
 </div>
 
 <div *ngIf="loading" class="dashboard__loading">Loading...</div>

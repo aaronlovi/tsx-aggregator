@@ -5,7 +5,8 @@ import { CompanyService } from '../services/company.service';
 @Component({
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
-    styleUrls: ['./dashboard.component.scss']
+    styleUrls: ['./dashboard.component.scss'],
+    standalone: false
 })
 export class DashboardComponent implements OnInit, OnDestroy {
     loading: boolean = false;
@@ -21,6 +22,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private timerInterval: ReturnType<typeof setInterval> | null = null;
 
     constructor(private companyService: CompanyService) { }
+
+    get nextAutoRefreshTime(): Date | null {
+        if (!this.stats) return null;
+        const times = [
+            this.stats.nextFetchDirectoryTime,
+            this.stats.nextFetchInstrumentDataTime,
+            this.stats.nextFetchQuotesTime,
+            this.stats.nextAggregatorCycleTime
+        ].filter((t): t is Date => t !== null);
+        if (times.length === 0) return null;
+        return times.reduce((earliest, t) => t < earliest ? t : earliest);
+    }
 
     ngOnInit() {
         this.loadStats();

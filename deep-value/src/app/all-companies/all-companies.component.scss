@@ -12,6 +12,12 @@
     white-space: nowrap;
 }
 
+.page-header__next-refresh {
+    font-size: 13px;
+    color: #1976d2;
+    white-space: nowrap;
+}
+
 .table-container {
     @include mat.table-density(-3);
     padding: 10px 20px 20px 20px;

@@ -70,10 +70,10 @@
                     "builder": "@angular-devkit/build-angular:dev-server",
                     "configurations": {
                         "production": {
-                            "browserTarget": "deep-value:build:production"
+                          "buildTarget": "deep-value:build:production"
                         },
                         "development": {
-                            "browserTarget": "deep-value:build:development"
+                          "buildTarget": "deep-value:build:development"
                         }
                     },
                     "defaultConfiguration": "development"
@@ -81,7 +81,7 @@
                 "extract-i18n": {
                     "builder": "@angular-devkit/build-angular:extract-i18n",
                     "options": {
-                        "browserTarget": "deep-value:build"
+                      "buildTarget": "deep-value:build"
                     }
                 },
                 "test": {
@@ -103,61 +103,6 @@
                         ],
                         "scripts": []
                     }
-                },
-                "server": {
-                  "builder": "@angular-devkit/build-angular:server",
-                  "options": {
-                    "outputPath": "dist/deep-value/server",
-                    "main": "server.ts",
-                    "tsConfig": "tsconfig.server.json",
-                    "inlineStyleLanguage": "scss"
-                  },
-                  "configurations": {
-                    "production": {
-                      "outputHashing": "media"
-                    },
-                    "development": {
-                      "buildOptimizer": false,
-                      "optimization": false,
-                      "sourceMap": true,
-                      "extractLicenses": false,
-                      "vendorChunk": true
-                    }
-                  },
-                  "defaultConfiguration": "production"
-                },
-                "serve-ssr": {
-                  "builder": "@nguniversal/builders:ssr-dev-server",
-                  "configurations": {
-                    "development": {
-                      "browserTarget": "deep-value:build:development",
-                      "serverTarget": "deep-value:server:development"
-                    },
-                    "production": {
-                      "browserTarget": "deep-value:build:production",
-                      "serverTarget": "deep-value:server:production"
-                    }
-                  },
-                  "defaultConfiguration": "development"
-                },
-                "prerender": {
-                  "builder": "@nguniversal/builders:prerender",
-                  "options": {
-                    "routes": [
-                      "/"
-                    ]
-                  },
-                  "configurations": {
-                    "production": {
-                      "browserTarget": "deep-value:build:production",
-                      "serverTarget": "deep-value:server:production"
-                    },
-                    "development": {
-                      "browserTarget": "deep-value:build:development",
-                      "serverTarget": "deep-value:server:development"
-                    }
-                  },
-                  "defaultConfiguration": "production"
                 }
             }
         }
