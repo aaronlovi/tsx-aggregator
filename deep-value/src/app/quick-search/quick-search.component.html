@@ -1,14 +1,16 @@
 <mat-form-field>
-    <mat-label>
-        <mat-icon>search</mat-icon>
-    </mat-label>
-    <input matInput type="text" [(ngModel)]="searchTerm" (input)="onSearchInputChange()" [matAutocomplete]="auto">
+  <mat-label>
+    <mat-icon>search</mat-icon>
+  </mat-label>
+  <input matInput type="text" [(ngModel)]="searchTerm" (input)="onSearchInputChange()" [matAutocomplete]="auto">
 </mat-form-field>
 
 <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
-    <mat-option *ngFor="let result of searchResults" [value]="result"
-        (onSelectionChange)="onOptionSelected(result.exchange, result.instrumentSymbol)"
-        class="autocomplete__option">
-        {{ result.exchange }} / {{ result.instrumentSymbol }} / {{ result.companyName }}
+  @for (result of searchResults; track result) {
+    <mat-option [value]="result"
+      (onSelectionChange)="onOptionSelected(result.exchange, result.instrumentSymbol)"
+      class="autocomplete__option">
+      {{ result.exchange }} / {{ result.instrumentSymbol }} / {{ result.companyName }}
     </mat-option>
+  }
 </mat-autocomplete>

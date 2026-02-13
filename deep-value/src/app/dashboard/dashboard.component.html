@@ -1,185 +1,203 @@
 <div class="page-header">
-    <div class="page-header__left">
-        <h2 class="page-title">Dashboard</h2>
-        <div class="page-header__subtitle">
-            <span *ngIf="lastUpdated" class="page-header__last-updated">
-                Last refreshed at: {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
-            </span>
-            <span *ngIf="nextAutoRefreshTime" class="page-header__next-refresh">
-                Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
-            </span>
-        </div>
+  <div class="page-header__left">
+    <h2 class="page-title">Dashboard</h2>
+    <div class="page-header__subtitle">
+      @if (lastUpdated) {
+        <span class="page-header__last-updated">
+          Last refreshed at: {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
+        </span>
+      }
+      @if (nextAutoRefreshTime) {
+        <span class="page-header__next-refresh">
+          Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
+        </span>
+      }
     </div>
-    <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
-        <mat-icon>refresh</mat-icon>
-        Refresh Data
-    </button>
+  </div>
+  <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
+    <mat-icon>refresh</mat-icon>
+    Refresh Data
+  </button>
 </div>
 
-<div *ngIf="loading" class="dashboard__loading">Loading...</div>
-<div *ngIf="errorMsg" class="dashboard__error">{{ errorMsg }}</div>
+@if (loading) {
+  <div class="dashboard__loading">Loading...</div>
+}
+@if (errorMsg) {
+  <div class="dashboard__error">{{ errorMsg }}</div>
+}
 
-<div *ngIf="stats" class="dashboard__grid">
+@if (stats) {
+  <div class="dashboard__grid">
     <mat-card class="dashboard__card">
-        <mat-card-header>
-            <mat-card-title>Instruments</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.totalActiveInstruments | number }}</span>
-                <span class="dashboard__stat-label">Active</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.totalObsoletedInstruments | number }}</span>
-                <span class="dashboard__stat-label">Obsoleted</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.instrumentsWithProcessedReports | number }}</span>
-                <span class="dashboard__stat-label">With Processed Reports</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.instrumentsWithoutProcessedReports | number }}</span>
-                <span class="dashboard__stat-label">Without Processed Reports</span>
-            </div>
-        </mat-card-content>
+      <mat-card-header>
+        <mat-card-title>Instruments</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.totalActiveInstruments | number }}</span>
+          <span class="dashboard__stat-label">Active</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.totalObsoletedInstruments | number }}</span>
+          <span class="dashboard__stat-label">Obsoleted</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.instrumentsWithProcessedReports | number }}</span>
+          <span class="dashboard__stat-label">With Processed Reports</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.instrumentsWithoutProcessedReports | number }}</span>
+          <span class="dashboard__stat-label">Without Processed Reports</span>
+        </div>
+      </mat-card-content>
     </mat-card>
-
     <mat-card class="dashboard__card">
-        <mat-card-header>
-            <mat-card-title>Raw Reports by Type</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div *ngFor="let rc of stats.rawReportCounts" class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ rc.count | number }}</span>
-                <span class="dashboard__stat-label">{{ rc.reportTypeName }}</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.manualReviewCount | number }}</span>
-                <span class="dashboard__stat-label">Pending Manual Review</span>
-            </div>
-        </mat-card-content>
+      <mat-card-header>
+        <mat-card-title>Raw Reports by Type</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @for (rc of stats.rawReportCounts; track rc) {
+          <div class="dashboard__stat">
+            <span class="dashboard__stat-value">{{ rc.count | number }}</span>
+            <span class="dashboard__stat-label">{{ rc.reportTypeName }}</span>
+          </div>
+        }
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.manualReviewCount | number }}</span>
+          <span class="dashboard__stat-label">Pending Manual Review</span>
+        </div>
+      </mat-card-content>
     </mat-card>
-
     <mat-card class="dashboard__card">
-        <mat-card-header>
-            <mat-card-title>Processing</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.mostRecentRawIngestion | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Last Instrument Data Fetch</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.mostRecentAggregation | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Last Aggregation</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.unprocessedEventCount | number }}</span>
-                <span class="dashboard__stat-label">Unprocessed Events</span>
-            </div>
-        </mat-card-content>
+      <mat-card-header>
+        <mat-card-title>Processing</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.mostRecentRawIngestion | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Last Instrument Data Fetch</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.mostRecentAggregation | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Last Aggregation</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.unprocessedEventCount | number }}</span>
+          <span class="dashboard__stat-label">Unprocessed Events</span>
+        </div>
+      </mat-card-content>
     </mat-card>
-
     <mat-card class="dashboard__card">
-        <mat-card-header>
-            <mat-card-title>Schedule</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.nextFetchInstrumentDataTime | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Next Instrument Data Fetch</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.nextFetchDirectoryTime | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Next Directory Fetch</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.nextFetchQuotesTime | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Next Quotes Fetch</span>
-            </div>
-            <div class="dashboard__stat">
-                <span class="dashboard__stat-value">{{ stats.nextAggregatorCycleTime | relativeTime:now }}</span>
-                <span class="dashboard__stat-label">Next Aggregator Cycle</span>
-            </div>
-        </mat-card-content>
+      <mat-card-header>
+        <mat-card-title>Schedule</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.nextFetchInstrumentDataTime | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Next Instrument Data Fetch</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.nextFetchDirectoryTime | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Next Directory Fetch</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.nextFetchQuotesTime | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Next Quotes Fetch</span>
+        </div>
+        <div class="dashboard__stat">
+          <span class="dashboard__stat-value">{{ stats.nextAggregatorCycleTime | relativeTime:now }}</span>
+          <span class="dashboard__stat-label">Next Aggregator Cycle</span>
+        </div>
+      </mat-card-content>
     </mat-card>
-</div>
+  </div>
+}
 
-<div *ngIf="aggregatesLoading" class="dashboard__loading">Loading company aggregates...</div>
-<div *ngIf="aggregatesErrorMsg" class="dashboard__error">{{ aggregatesErrorMsg }}</div>
+@if (aggregatesLoading) {
+  <div class="dashboard__loading">Loading company aggregates...</div>
+}
+@if (aggregatesErrorMsg) {
+  <div class="dashboard__error">{{ aggregatesErrorMsg }}</div>
+}
 
-<div *ngIf="aggregates" class="dashboard__grid">
+@if (aggregates) {
+  <div class="dashboard__grid">
     <mat-card class="dashboard__card dashboard__card--wide">
-        <mat-card-header>
-            <mat-card-title>Company Analysis</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="dashboard__score-grid">
-                <div class="dashboard__score-column">
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.totalCompanies | number }}</span>
-                        <span class="dashboard__stat-label">Total Companies</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.companiesWithPriceData | number }}</span>
-                        <span class="dashboard__stat-label">With Price Data</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.companiesWithoutPriceData | number }}</span>
-                        <span class="dashboard__stat-label">Without Price Data</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.companiesPassingAllChecks | number }}</span>
-                        <span class="dashboard__stat-label">Passing All Checks</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.totalMarketCap | compactCurrency }}</span>
-                        <span class="dashboard__stat-label">Total Market Cap</span>
-                    </div>
-                </div>
-                <div class="dashboard__score-column">
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
-                        <span class="dashboard__stat-label">Avg Return (Cash Flow)</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
-                        <span class="dashboard__stat-label">Median Return (Cash Flow)</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
-                        <span class="dashboard__stat-label">Avg Return (Owner Earnings)</span>
-                    </div>
-                    <div class="dashboard__stat">
-                        <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
-                        <span class="dashboard__stat-label">Median Return (Owner Earnings)</span>
-                    </div>
-                </div>
+      <mat-card-header>
+        <mat-card-title>Company Analysis</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dashboard__score-grid">
+          <div class="dashboard__score-column">
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.totalCompanies | number }}</span>
+              <span class="dashboard__stat-label">Total Companies</span>
             </div>
-        </mat-card-content>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.companiesWithPriceData | number }}</span>
+              <span class="dashboard__stat-label">With Price Data</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.companiesWithoutPriceData | number }}</span>
+              <span class="dashboard__stat-label">Without Price Data</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.companiesPassingAllChecks | number }}</span>
+              <span class="dashboard__stat-label">Passing All Checks</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.totalMarketCap | compactCurrency }}</span>
+              <span class="dashboard__stat-label">Total Market Cap</span>
+            </div>
+          </div>
+          <div class="dashboard__score-column">
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
+              <span class="dashboard__stat-label">Avg Return (Cash Flow)</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromCashFlow | number:'1.2-2' }}%</span>
+              <span class="dashboard__stat-label">Median Return (Cash Flow)</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.averageEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
+              <span class="dashboard__stat-label">Avg Return (Owner Earnings)</span>
+            </div>
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{{ aggregates.medianEstimatedReturn_FromOwnerEarnings | number:'1.2-2' }}%</span>
+              <span class="dashboard__stat-label">Median Return (Owner Earnings)</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
     </mat-card>
-
     <mat-card class="dashboard__card dashboard__card--wide">
-        <mat-card-header>
-            <mat-card-title>Score Distribution</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="dashboard__score-grid">
-                <div class="dashboard__score-column">
-                    <div *ngFor="let sd of scoreDistributionLeft" class="dashboard__stat"
-                        [ngClass]="{'dashboard__stat--score-13': sd.score === 13, 'dashboard__stat--score-12': sd.score === 12}">
-                        <span class="dashboard__stat-value">{{ sd.count | number }}</span>
-                        <span class="dashboard__stat-label">Score {{ sd.score }}</span>
-                    </div>
-                </div>
-                <div class="dashboard__score-column">
-                    <div *ngFor="let sd of scoreDistributionRight" class="dashboard__stat"
-                        [ngClass]="{'dashboard__stat--score-13': sd.score === 13, 'dashboard__stat--score-12': sd.score === 12}">
-                        <span class="dashboard__stat-value">{{ sd.count | number }}</span>
-                        <span class="dashboard__stat-label">Score {{ sd.score }}</span>
-                    </div>
-                </div>
-            </div>
-        </mat-card-content>
+      <mat-card-header>
+        <mat-card-title>Score Distribution</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dashboard__score-grid">
+          <div class="dashboard__score-column">
+            @for (sd of scoreDistributionLeft; track sd) {
+              <div class="dashboard__stat"
+                [ngClass]="{'dashboard__stat--score-13': sd.score === 13, 'dashboard__stat--score-12': sd.score === 12}">
+                <span class="dashboard__stat-value">{{ sd.count | number }}</span>
+                <span class="dashboard__stat-label">Score {{ sd.score }}</span>
+              </div>
+            }
+          </div>
+          <div class="dashboard__score-column">
+            @for (sd of scoreDistributionRight; track sd) {
+              <div class="dashboard__stat"
+                [ngClass]="{'dashboard__stat--score-13': sd.score === 13, 'dashboard__stat--score-12': sd.score === 12}">
+                <span class="dashboard__stat-value">{{ sd.count | number }}</span>
+                <span class="dashboard__stat-label">Score {{ sd.score }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-card-content>
     </mat-card>
-</div>
+  </div>
+}

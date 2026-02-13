@@ -3,36 +3,50 @@
 <h3>Priority Companies</h3>
 
 <div class="priority-input-section">
-    <mat-form-field appearance="outline" class="priority-input">
-        <mat-label>Company symbols (comma-separated)</mat-label>
-        <input matInput [(ngModel)]="newSymbolsInput" placeholder="CNQ, SU, TD"
-               (keyup.enter)="setPriorityCompanies()">
+  <mat-form-field appearance="outline" class="priority-input">
+    <mat-label>Company symbols (comma-separated)</mat-label>
+    <input matInput [(ngModel)]="newSymbolsInput" placeholder="CNQ, SU, TD"
+      (keyup.enter)="setPriorityCompanies()">
     </mat-form-field>
 
     <div class="priority-buttons">
-        <button mat-raised-button color="primary" (click)="setPriorityCompanies()"
-                [disabled]="loading || newSymbolsInput.trim().length === 0">
-            Set Priority
-        </button>
-        <button mat-button (click)="clearPriorityQueue()"
-                [disabled]="loading || prioritySymbols.length === 0">
-            Clear Queue
-        </button>
+      <button mat-raised-button color="primary" (click)="setPriorityCompanies()"
+        [disabled]="loading || newSymbolsInput.trim().length === 0">
+        Set Priority
+      </button>
+      <button mat-button (click)="clearPriorityQueue()"
+        [disabled]="loading || prioritySymbols.length === 0">
+        Clear Queue
+      </button>
     </div>
-</div>
+  </div>
 
-<div *ngIf="loading" class="status-message">Loading...</div>
-<div *ngIf="errorMsg" class="status-message error-message">{{ errorMsg }}</div>
-<div *ngIf="successMsg" class="status-message success-message">{{ successMsg }}</div>
+  @if (loading) {
+    <div class="status-message">Loading...</div>
+  }
+  @if (errorMsg) {
+    <div class="status-message error-message">{{ errorMsg }}</div>
+  }
+  @if (successMsg) {
+    <div class="status-message success-message">{{ successMsg }}</div>
+  }
 
-<div class="priority-queue-section">
+  <div class="priority-queue-section">
     <h4>Current Queue</h4>
-    <div *ngIf="prioritySymbols.length === 0 && !loading" class="queue-empty">
+    @if (prioritySymbols.length === 0 && !loading) {
+      <div class="queue-empty">
         Queue is empty
-    </div>
-    <div *ngIf="prioritySymbols.length > 0" class="queue-list">
-        <span *ngFor="let symbol of prioritySymbols; let last = last" class="queue-symbol">
-            {{ symbol }}<span *ngIf="!last">, </span>
+      </div>
+    }
+    @if (prioritySymbols.length > 0) {
+      <div class="queue-list">
+        @for (symbol of prioritySymbols; track symbol; let last = $last) {
+          <span class="queue-symbol">
+            {{ symbol }}@if (!last) {
+            <span>, </span>
+          }
         </span>
+      }
     </div>
+  }
 </div>

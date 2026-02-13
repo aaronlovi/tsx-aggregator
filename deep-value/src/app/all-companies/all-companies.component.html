@@ -1,113 +1,123 @@
 <div class="page-header">
-    <div class="page-header__left">
-        <h2 class="page-title">All Companies</h2>
-        <div class="page-header__subtitle">
-            <span *ngIf="lastUpdated" class="page-header__last-updated">
-                Last refreshed at: {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
-            </span>
-            <span *ngIf="nextAutoRefreshTime" class="page-header__next-refresh">
-                Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
-            </span>
-        </div>
+  <div class="page-header__left">
+    <h2 class="page-title">All Companies</h2>
+    <div class="page-header__subtitle">
+      @if (lastUpdated) {
+        <span class="page-header__last-updated">
+          Last refreshed at: {{ lastUpdated | date:'yyyy-MM-dd HH:mm:ss' }} ({{ lastUpdated | relativeTime:now }})
+        </span>
+      }
+      @if (nextAutoRefreshTime) {
+        <span class="page-header__next-refresh">
+          Auto-refresh {{ nextAutoRefreshTime | relativeTime:now }}
+        </span>
+      }
     </div>
-    <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
-        <mat-icon>refresh</mat-icon>
-        Refresh Data
-    </button>
+  </div>
+  <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading" class="page-header__refresh">
+    <mat-icon>refresh</mat-icon>
+    Refresh Data
+  </button>
 </div>
 
-<div *ngIf="loading">Loading...</div>
-<div *ngIf="errorMsg">{{ errorMsg }}</div>
+@if (loading) {
+  <div>Loading...</div>
+}
+@if (errorMsg) {
+  <div>{{ errorMsg }}</div>
+}
 
 <div class="table-container">
-    <mat-table [dataSource]="companies" class="data-table" width="95%">
+  <mat-table [dataSource]="companies" class="data-table" width="95%">
 
-        <!-- Instrument Symbol Column -->
-        <ng-container matColumnDef="instrumentSymbol">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header">Instrument Symbol</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell">
-                <a [routerLink]="['/company-details', 'TSX', company.instrumentSymbol]" class="data-table__detail-link">
-                    {{ company.instrumentSymbol }}
-                </a>
-            </td>
-        </ng-container>
+    <!-- Instrument Symbol Column -->
+    <ng-container matColumnDef="instrumentSymbol">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header">Instrument Symbol</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell">
+        <a [routerLink]="['/company-details', 'TSX', company.instrumentSymbol]" class="data-table__detail-link">
+          {{ company.instrumentSymbol }}
+        </a>
+      </td>
+    </ng-container>
 
-        <!-- Company Name Column -->
-        <ng-container matColumnDef="companyName">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header">Company Name</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell">{{ company.companyName }}</td>
-        </ng-container>
+    <!-- Company Name Column -->
+    <ng-container matColumnDef="companyName">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header">Company Name</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell">{{ company.companyName }}</td>
+    </ng-container>
 
-        <!-- Price Per Share Column -->
-        <ng-container matColumnDef="pricePerShare">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Price Per Share</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.pricePerShare | currency:'USD':'symbol':'1.2-2' }}</td>
-        </ng-container>
+    <!-- Price Per Share Column -->
+    <ng-container matColumnDef="pricePerShare">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Price Per Share</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.pricePerShare | currency:'USD':'symbol':'1.2-2' }}</td>
+    </ng-container>
 
-        <!-- Max Buy Price Column -->
-        <ng-container matColumnDef="maxPrice">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Max Buy Price</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.maxPrice | currency:'USD':'symbol':'1.2-2' }}</td>
-        </ng-container>
+    <!-- Max Buy Price Column -->
+    <ng-container matColumnDef="maxPrice">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Max Buy Price</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.maxPrice | currency:'USD':'symbol':'1.2-2' }}</td>
+    </ng-container>
 
-        <!-- Percentage Upside Column -->
-        <ng-container matColumnDef="percentageUpside">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">% Upside</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
-                {{ company.percentageUpside / 100.0 | percent:'1.2-2' }}
-            </td>
-        </ng-container>
+    <!-- Percentage Upside Column -->
+    <ng-container matColumnDef="percentageUpside">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">% Upside</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
+        {{ company.percentageUpside / 100.0 | percent:'1.2-2' }}
+      </td>
+    </ng-container>
 
-        <!-- Market Cap Column -->
-        <ng-container matColumnDef="marketCap">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Market Cap</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.curMarketCap | currency:'USD':'symbol':'1.0-0' }}</td>
-        </ng-container>
+    <!-- Market Cap Column -->
+    <ng-container matColumnDef="marketCap">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Market Cap</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.curMarketCap | currency:'USD':'symbol':'1.0-0' }}</td>
+    </ng-container>
 
-        <!-- Estimated Next Year Total Return (from Cash Flow) Column -->
-        <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageFromCashFlow">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Cash Flow</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
-                {{ company.estimatedNextYearTotalReturnPercentageFromCashFlow / 100.0 | percent:'1.2-2' }}
-            </td>
-        </ng-container>
+    <!-- Estimated Next Year Total Return (from Cash Flow) Column -->
+    <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageFromCashFlow">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Cash Flow</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
+        {{ company.estimatedNextYearTotalReturnPercentageFromCashFlow / 100.0 | percent:'1.2-2' }}
+      </td>
+    </ng-container>
 
-        <!-- Estimated Next Year Total Return (from Owner Earnings) Column -->
-        <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageOwnerEarnings">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Owner Earnings</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
-                {{ company.estimatedNextYearTotalReturnPercentageOwnerEarnings / 100.0 | percent:'1.2-2' }}
-            </td>
-        </ng-container>
+    <!-- Estimated Next Year Total Return (from Owner Earnings) Column -->
+    <ng-container matColumnDef="estimatedNextYearTotalReturnPercentageOwnerEarnings">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Est. Next Year Total Return From Owner Earnings</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">
+        {{ company.estimatedNextYearTotalReturnPercentageOwnerEarnings / 100.0 | percent:'1.2-2' }}
+      </td>
+    </ng-container>
 
-        <!-- Overall Score Column -->
-        <ng-container matColumnDef="overallScore">
-            <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Overall Score</th>
-            <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.overallScore }}</td>
-        </ng-container>
+    <!-- Overall Score Column -->
+    <ng-container matColumnDef="overallScore">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header data-table__header--numeric">Overall Score</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.overallScore }}</td>
+    </ng-container>
 
-        <!-- Table Header Row -->
-        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <!-- Table Header Row -->
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
 
-        <!-- Table Data Rows -->
-        <tr mat-row *matRowDef="let company; columns: displayedColumns;" class="data-table__row"
-            [ngClass]="{'data-table__row--yes': company.overallScore === 13, 'data-table__row--maybe': company.overallScore === 12}">
-        </tr>
-    </mat-table>
+    <!-- Table Data Rows -->
+    <tr mat-row *matRowDef="let company; columns: displayedColumns;" class="data-table__row"
+      [ngClass]="{'data-table__row--yes': company.overallScore === 13, 'data-table__row--maybe': company.overallScore === 12}">
+    </tr>
+  </mat-table>
 </div>
 
-<div class="pagination-controls" *ngIf="pagingData">
+@if (pagingData) {
+  <div class="pagination-controls">
     <button mat-icon-button (click)="goToFirstPage()" [disabled]="pagingData.pageNumber === 1">
-        <mat-icon>first_page</mat-icon>
+      <mat-icon>first_page</mat-icon>
     </button>
     <button mat-icon-button (click)="goToPreviousPage()" [disabled]="pagingData.pageNumber === 1">
-        <mat-icon>chevron_left</mat-icon>
+      <mat-icon>chevron_left</mat-icon>
     </button>
     <span class="pagination-controls__info">Page {{ pagingData.pageNumber }} of {{ pagingData.numPages }} ({{ pagingData.totalItems }} total)</span>
     <button mat-icon-button (click)="goToNextPage()" [disabled]="pagingData.pageNumber >= pagingData.numPages">
-        <mat-icon>chevron_right</mat-icon>
+      <mat-icon>chevron_right</mat-icon>
     </button>
     <button mat-icon-button (click)="goToLastPage()" [disabled]="pagingData.pageNumber >= pagingData.numPages">
-        <mat-icon>last_page</mat-icon>
+      <mat-icon>last_page</mat-icon>
     </button>
-</div>
+  </div>
+}
