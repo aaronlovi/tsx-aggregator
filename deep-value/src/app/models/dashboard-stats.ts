@@ -8,6 +8,40 @@ export class ScoreDistributionItem {
     }
 }
 
+export class ScoreCategoryStats {
+    score: number;
+    count: number;
+    sumMarketCap: number;
+    meanMarketCap: number;
+    medianMarketCap: number;
+    meanReturnFromCashFlow: number;
+    medianReturnFromCashFlow: number;
+    meanReturnFromOwnerEarnings: number;
+    medianReturnFromOwnerEarnings: number;
+
+    constructor(
+        score: number,
+        count: number,
+        sumMarketCap: number,
+        meanMarketCap: number,
+        medianMarketCap: number,
+        meanReturnFromCashFlow: number,
+        medianReturnFromCashFlow: number,
+        meanReturnFromOwnerEarnings: number,
+        medianReturnFromOwnerEarnings: number
+    ) {
+        this.score = score;
+        this.count = count;
+        this.sumMarketCap = sumMarketCap;
+        this.meanMarketCap = meanMarketCap;
+        this.medianMarketCap = medianMarketCap;
+        this.meanReturnFromCashFlow = meanReturnFromCashFlow;
+        this.medianReturnFromCashFlow = medianReturnFromCashFlow;
+        this.meanReturnFromOwnerEarnings = meanReturnFromOwnerEarnings;
+        this.medianReturnFromOwnerEarnings = medianReturnFromOwnerEarnings;
+    }
+}
+
 export class DashboardAggregates {
     totalCompanies: number;
     companiesWithPriceData: number;
@@ -19,6 +53,7 @@ export class DashboardAggregates {
     medianEstimatedReturn_FromOwnerEarnings: number;
     totalMarketCap: number;
     scoreDistribution: ScoreDistributionItem[];
+    scoreCategoryStatistics: ScoreCategoryStats[];
 
     constructor(
         totalCompanies: number,
@@ -30,7 +65,8 @@ export class DashboardAggregates {
         medianEstimatedReturn_FromCashFlow: number,
         medianEstimatedReturn_FromOwnerEarnings: number,
         totalMarketCap: number,
-        scoreDistribution: any[]
+        scoreDistribution: any[],
+        scoreCategoryStatistics: any[]
     ) {
         this.totalCompanies = totalCompanies;
         this.companiesWithPriceData = companiesWithPriceData;
@@ -43,6 +79,12 @@ export class DashboardAggregates {
         this.totalMarketCap = totalMarketCap;
         this.scoreDistribution = scoreDistribution.map(
             sd => new ScoreDistributionItem(sd.score, sd.count)
+        );
+        this.scoreCategoryStatistics = (scoreCategoryStatistics || []).map(
+            s => new ScoreCategoryStats(
+                s.score, s.count, s.sumMarketCap, s.meanMarketCap, s.medianMarketCap,
+                s.meanReturnFromCashFlow, s.medianReturnFromCashFlow, s.meanReturnFromOwnerEarnings, s.medianReturnFromOwnerEarnings
+            )
         );
     }
 }

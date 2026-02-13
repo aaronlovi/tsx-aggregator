@@ -425,6 +425,22 @@ public class CompaniesController : Controller {
                 .OrderByDescending(s => s.Score)
                 .ToList();
 
+            var scoreCategoryStatistics = withPrice
+                .GroupBy(r => r.OverallScore)
+                .Where(g => g.Key >= 1)
+                .Select(g => new ScoreCategoryStats(
+                    Score: g.Key,
+                    Count: g.Count(),
+                    SumMarketCap: Math.Round(g.Sum(r => r.CurMarketCap), 2),
+                    MeanMarketCap: Math.Round(g.Average(r => r.CurMarketCap), 2),
+                    MedianMarketCap: Math.Round(Median(g.Select(r => r.CurMarketCap)), 2),
+                    MeanReturnFromCashFlow: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow), 2),
+                    MedianReturnFromCashFlow: Math.Round(Median(g.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow)), 2),
+                    MeanReturnFromOwnerEarnings: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings), 2),
+                    MedianReturnFromOwnerEarnings: Math.Round(Median(g.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings)), 2)))
+                .OrderByDescending(s => s.Score)
+                .ToList();
+
             var response = new DashboardAggregatesResponse(
                 TotalCompanies: totalCompanies,
                 CompaniesWithPriceData: companiesWithPriceData,
@@ -435,7 +451,8 @@ public class CompaniesController : Controller {
                 MedianEstimatedReturn_FromCashFlow: medianReturnCashFlow,
                 MedianEstimatedReturn_FromOwnerEarnings: medianReturnOwnerEarnings,
                 TotalMarketCap: totalMarketCap,
-                ScoreDistribution: scoreDistribution);
+                ScoreDistribution: scoreDistribution,
+                ScoreCategoryStatistics: scoreCategoryStatistics);
 
             return Ok(response);
         } catch (Exception ex) {

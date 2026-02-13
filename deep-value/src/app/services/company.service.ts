@@ -115,7 +115,8 @@ export class CompanyService {
                 data.medianEstimatedReturn_FromCashFlow,
                 data.medianEstimatedReturn_FromOwnerEarnings,
                 data.totalMarketCap,
-                data.scoreDistribution
+                data.scoreDistribution,
+                data.scoreCategoryStatistics
             ))
         );
     }
