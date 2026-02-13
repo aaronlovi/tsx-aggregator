@@ -183,3 +183,44 @@
         </mat-card-content>
     </mat-card>
 </div>
+
+<div *ngIf="aggregates && aggregates.scoreCategoryStatistics.length > 0" class="dashboard__table-section">
+    <mat-card class="dashboard__card dashboard__card--full">
+        <mat-card-header>
+            <mat-card-title>Score Category Statistics</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="dashboard__table-wrapper">
+                <table class="dashboard__table">
+                    <thead>
+                        <tr>
+                            <th>Score</th>
+                            <th>Count</th>
+                            <th class="dashboard__table-cell--right">Sum Mkt Cap</th>
+                            <th class="dashboard__table-cell--right">Mean Mkt Cap</th>
+                            <th class="dashboard__table-cell--right">Median Mkt Cap</th>
+                            <th class="dashboard__table-cell--right">Mean Return (CF)</th>
+                            <th class="dashboard__table-cell--right">Median Return (CF)</th>
+                            <th class="dashboard__table-cell--right">Mean Return (OE)</th>
+                            <th class="dashboard__table-cell--right">Median Return (OE)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let s of aggregates.scoreCategoryStatistics"
+                            [ngClass]="{'dashboard__table-row--score-13': s.score === 13, 'dashboard__table-row--score-12': s.score === 12}">
+                            <td class="dashboard__table-cell--center">{{ s.score }}</td>
+                            <td class="dashboard__table-cell--center">{{ s.count | number }}</td>
+                            <td class="dashboard__table-cell--right">{{ s.sumMarketCap | compactCurrency }}</td>
+                            <td class="dashboard__table-cell--right">{{ s.meanMarketCap | compactCurrency }}</td>
+                            <td class="dashboard__table-cell--right">{{ s.medianMarketCap | compactCurrency }}</td>
+                            <td class="dashboard__table-cell--right">{{ s.meanReturnFromCashFlow | number:'1.2-2' }}%</td>
+                            <td class="dashboard__table-cell--right">{{ s.medianReturnFromCashFlow | number:'1.2-2' }}%</td>
+                            <td class="dashboard__table-cell--right">{{ s.meanReturnFromOwnerEarnings | number:'1.2-2' }}%</td>
+                            <td class="dashboard__table-cell--right">{{ s.medianReturnFromOwnerEarnings | number:'1.2-2' }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

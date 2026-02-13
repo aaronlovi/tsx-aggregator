@@ -14,6 +14,14 @@
     .dashboard__stat--score-12 {
         background-color: mat.m2-get-color-from-palette($warn-palette, 50);
     }
+
+    .dashboard__table-row--score-13 {
+        background-color: mat.m2-get-color-from-palette($accent-palette, 50);
+    }
+
+    .dashboard__table-row--score-12 {
+        background-color: mat.m2-get-color-from-palette($warn-palette, 50);
+    }
 }
 
 @mixin typography($theme) {

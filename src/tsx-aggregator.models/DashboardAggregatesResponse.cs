@@ -12,6 +12,18 @@ public record DashboardAggregatesResponse(
     decimal MedianEstimatedReturn_FromCashFlow,
     decimal MedianEstimatedReturn_FromOwnerEarnings,
     decimal TotalMarketCap,
-    IReadOnlyList<ScoreDistributionItem> ScoreDistribution);
+    IReadOnlyList<ScoreDistributionItem> ScoreDistribution,
+    IReadOnlyList<ScoreCategoryStats> ScoreCategoryStatistics);
 
 public record ScoreDistributionItem(int Score, int Count);
+
+public record ScoreCategoryStats(
+    int Score,
+    int Count,
+    decimal SumMarketCap,
+    decimal MeanMarketCap,
+    decimal MedianMarketCap,
+    decimal MeanReturnFromCashFlow,
+    decimal MedianReturnFromCashFlow,
+    decimal MeanReturnFromOwnerEarnings,
+    decimal MedianReturnFromOwnerEarnings);
