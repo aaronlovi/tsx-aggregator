@@ -26,6 +26,59 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsx-aggregator.tests", "tsx-aggregator.tests\tsx-aggregator.tests.csproj", "{F7159888-A9B7-405B-85E7-EDBA4E289166}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Prompts", "Prompts", "{A1B2C3D4-0001-0001-0001-000000000001}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "override-raw-collector-priority-research", "override-raw-collector-priority-research", "{A1B2C3D4-0002-0001-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\override-raw-collector-priority-research\prompt.md = ..\.prompts\override-raw-collector-priority-research\prompt.md
+		..\.prompts\override-raw-collector-priority-research\research.md = ..\.prompts\override-raw-collector-priority-research\research.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "override-raw-collector-priority-plan", "override-raw-collector-priority-plan", "{A1B2C3D4-0002-0002-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\override-raw-collector-priority-plan\prompt.md = ..\.prompts\override-raw-collector-priority-plan\prompt.md
+		..\.prompts\override-raw-collector-priority-plan\plan.md = ..\.prompts\override-raw-collector-priority-plan\plan.md
+		..\.prompts\override-raw-collector-priority-plan\progress.md = ..\.prompts\override-raw-collector-priority-plan\progress.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboard-stats-research", "dashboard-stats-research", "{A1B2C3D4-0002-0003-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\dashboard-stats-research\prompt.md = ..\.prompts\dashboard-stats-research\prompt.md
+		..\.prompts\dashboard-stats-research\research.md = ..\.prompts\dashboard-stats-research\research.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboard-stats-plan", "dashboard-stats-plan", "{A1B2C3D4-0002-0004-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\dashboard-stats-plan\prompt.md = ..\.prompts\dashboard-stats-plan\prompt.md
+		..\.prompts\dashboard-stats-plan\plan.md = ..\.prompts\dashboard-stats-plan\plan.md
+		..\.prompts\dashboard-stats-plan\progress.md = ..\.prompts\dashboard-stats-plan\progress.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "simplify-report-versioning-research", "simplify-report-versioning-research", "{A1B2C3D4-0002-0005-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\simplify-report-versioning-research\prompt.md = ..\.prompts\simplify-report-versioning-research\prompt.md
+		..\.prompts\simplify-report-versioning-research\research.md = ..\.prompts\simplify-report-versioning-research\research.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "simplify-report-versioning-plan", "simplify-report-versioning-plan", "{A1B2C3D4-0002-0006-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\simplify-report-versioning-plan\prompt.md = ..\.prompts\simplify-report-versioning-plan\prompt.md
+		..\.prompts\simplify-report-versioning-plan\plan.md = ..\.prompts\simplify-report-versioning-plan\plan.md
+		..\.prompts\simplify-report-versioning-plan\progress.md = ..\.prompts\simplify-report-versioning-plan\progress.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "metrics-monitoring-alerts-research", "metrics-monitoring-alerts-research", "{A1B2C3D4-0002-0007-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\metrics-monitoring-alerts-research\prompt.md = ..\.prompts\metrics-monitoring-alerts-research\prompt.md
+		..\.prompts\metrics-monitoring-alerts-research\research.md = ..\.prompts\metrics-monitoring-alerts-research\research.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "score13-email-alerts-plan", "score13-email-alerts-plan", "{A1B2C3D4-0002-0008-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		..\.prompts\score13-email-alerts-plan\prompt.md = ..\.prompts\score13-email-alerts-plan\prompt.md
+		..\.prompts\score13-email-alerts-plan\plan.md = ..\.prompts\score13-email-alerts-plan\plan.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +112,16 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A1B2C3D4-0002-0001-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0002-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0003-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0004-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0005-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0006-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0007-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
+		{A1B2C3D4-0002-0008-0001-000000000001} = {A1B2C3D4-0001-0001-0001-000000000001}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {62A3612C-5A6E-4CF4-9269-605D90BD4326}

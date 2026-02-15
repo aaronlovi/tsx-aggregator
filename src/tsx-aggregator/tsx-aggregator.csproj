@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="MailKit" />
         <PackageReference Include="Google.Apis.Sheets.v4" />
         <PackageReference Include="PuppeteerSharp" />
         <PackageReference Include="Serilog" />

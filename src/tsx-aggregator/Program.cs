@@ -53,7 +53,8 @@ public class Program {
                         opt.AllowAlternateSchemes = true;
                     })
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
-                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices));
+                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices))
+                    .Configure<AlertSettingsOptions>(context.Configuration.GetSection(AlertSettingsOptions.AlertSettings));
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
@@ -129,6 +130,7 @@ public class Program {
         logger.LogInformation("==========BEGIN CRITICAL CONFIGURATION==========");
         LogConfigSection(config, logger, GoogleCredentialsOptions.GoogleCredentials);
         LogConfigSection(config, logger, HostedServicesOptions.HostedServices);
+        LogConfigSection(config, logger, AlertSettingsOptions.AlertSettings);
         logger.LogInformation("==========END CRITICAL CONFIGURATION==========");
     }
 
