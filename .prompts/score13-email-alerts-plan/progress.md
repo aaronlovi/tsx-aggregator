@@ -1,7 +1,9 @@
 # Progress
 
-- [ ] Checkpoint 1: Configuration & Options Classes
-  - (pending)
+- [x] Checkpoint 1: Configuration & Options Classes
+  - Files: AlertSettingsOptions.cs, HostedServicesOptions.cs, appsettings.json, Program.cs, Directory.Packages.props, tsx-aggregator.csproj
+  - Tests: AlertSettingsOptionsTests.cs (6 tests)
+  - Committed: yes
 
 - [ ] Checkpoint 2: Score-13 Diff Computation Logic
   - (pending)
