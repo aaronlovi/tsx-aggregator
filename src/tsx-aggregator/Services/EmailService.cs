@@ -20,6 +20,10 @@ internal class EmailService : IEmailService {
     }
 
     public async Task<bool> SendEmailAsync(string subject, string body, CancellationToken ct) {
+        return await SendEmailAsync(subject, body, htmlBody: null, ct);
+    }
+
+    public async Task<bool> SendEmailAsync(string subject, string plainBody, string? htmlBody, CancellationToken ct) {
         try {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(_settings.SenderEmail, _settings.SenderEmail));
@@ -28,7 +32,16 @@ internal class EmailService : IEmailService {
                 message.To.Add(new MailboxAddress(recipient, recipient));
 
             message.Subject = subject;
-            message.Body = new TextPart("plain") { Text = body };
+
+            if (htmlBody is not null) {
+                var multipart = new MultipartAlternative {
+                    new TextPart("plain") { Text = plainBody },
+                    new TextPart("html") { Text = htmlBody }
+                };
+                message.Body = multipart;
+            } else {
+                message.Body = new TextPart("plain") { Text = plainBody };
+            }
 
             using var client = new SmtpClient();
             await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls, ct);

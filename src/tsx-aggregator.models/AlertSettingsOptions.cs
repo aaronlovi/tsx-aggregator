@@ -27,4 +27,6 @@ public class AlertSettingsOptions {
 
     [Required(ErrorMessage = "CheckIntervalMinutes is required in the AlertSettings section of the configuration")]
     public int CheckIntervalMinutes { get; set; } = 60;
+
+    public bool SendTestEmailOnStartup { get; set; }
 }

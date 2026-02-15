@@ -143,8 +143,18 @@ internal class Score13AlertService : BackgroundService {
 
         _logger.LogInformation("Score13AlertService - Found {Count} score-13 companies", currentList.Count);
 
-        // Step 6: First run establishes baseline
+        // Step 6: First run establishes baseline (or sends test email if configured)
         if (_previousList is null) {
+            if (_settings.SendTestEmailOnStartup && currentList.Count > 0) {
+                _logger.LogInformation("Score13AlertService - SendTestEmailOnStartup enabled, sending initial list as test email");
+                var testDiff = Score13DiffComputer.ComputeDiff([], currentList);
+                if (testDiff is not null) {
+                    string testSubject = Score13DiffComputer.FormatAlertSubject(testDiff);
+                    string testPlainBody = Score13DiffComputer.FormatAlertBody(testDiff);
+                    string testHtmlBody = Score13DiffComputer.FormatAlertBodyHtml(testDiff);
+                    _ = await _emailService.SendEmailAsync(testSubject, testPlainBody, testHtmlBody, ct);
+                }
+            }
             _previousList = currentList;
             _logger.LogInformation("Score13AlertService - Baseline established with {Count} score-13 companies", currentList.Count);
             return;
@@ -160,12 +170,13 @@ internal class Score13AlertService : BackgroundService {
 
         // Step 8: Send email alert
         string subject = Score13DiffComputer.FormatAlertSubject(diff);
-        string body = Score13DiffComputer.FormatAlertBody(diff);
+        string plainBody = Score13DiffComputer.FormatAlertBody(diff);
+        string htmlBody = Score13DiffComputer.FormatAlertBodyHtml(diff);
 
         _logger.LogInformation("Score13AlertService - Score-13 list changed: {Added} added, {Removed} removed. Sending alert.",
             diff.Added.Count, diff.Removed.Count);
 
-        _ = await _emailService.SendEmailAsync(subject, body, ct);
+        _ = await _emailService.SendEmailAsync(subject, plainBody, htmlBody, ct);
 
         // Update previous list regardless of email success to avoid repeat alerts
         _previousList = currentList;

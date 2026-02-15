@@ -110,7 +110,7 @@ public class Score13AlertServiceTests {
         await service.StopAsync(CancellationToken.None);
 
         // Assert - no email should be sent, no crash
-        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class Score13AlertServiceTests {
         await service.StopAsync(CancellationToken.None);
 
         // Assert - first run is baseline, no email
-        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class Score13AlertServiceTests {
 
         // Assert - should have at least 2 calls but no email since list didn't change
         _ = callCount.Should().BeGreaterThanOrEqualTo(2);
-        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class Score13AlertServiceTests {
         var prices = new Dictionary<string, decimal> { ["ABC.TO"] = 50M, ["DEF.TO"] = 50M };
         var quotesService = SetupQuoteService(prices);
         var emailService = new Mock<IEmailService>();
-        _ = emailService.Setup(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _ = emailService.Setup(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var settings = CreateValidSettings();
         settings.CheckIntervalMinutes = 0;
@@ -213,7 +213,8 @@ public class Score13AlertServiceTests {
         // Assert
         emailService.Verify(m => m.SendEmailAsync(
             It.Is<string>(s => s.Contains("1 added") && s.Contains("0 removed")),
-            It.Is<string>(b => b.Contains("DEF.TO") && b.Contains("Added")),
+            It.Is<string>(b => b.Contains("DEF.TO")),
+            It.Is<string?>(h => h != null && h.Contains("DEF.TO") && h.Contains("<table")),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
@@ -243,6 +244,6 @@ public class Score13AlertServiceTests {
         await service.StopAsync(CancellationToken.None);
 
         // Assert - no email, no crash
-        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

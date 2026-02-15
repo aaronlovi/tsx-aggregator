@@ -39,6 +39,38 @@ Responsible for serving requests from the outside world. Its operations include:
 - GetStocksDetail: For a given instrument symbol and exchange, gets the processed aggregated data for the specific instrument
 - GetStockSearchResults: For a given search term (a string), uses the search service to do the trie searches and returns up to 5 results
 
+### 7. Score-13 Alert Service
+
+Periodically checks whether the list of companies passing all 13 scoring checks has changed. When a change is detected, sends an email alert containing the previous list, the new list, and the diff (added/removed tickers).
+
+**Setup:**
+
+1. Enable the service in `src/tsx-aggregator/appsettings.json`:
+   ```json
+   "HostedServices": {
+       "RunScore13AlertService": true
+   }
+   ```
+
+2. Configure recipients in `src/tsx-aggregator/appsettings.json`:
+   ```json
+   "AlertSettings": {
+       "Recipients": ["your-email@example.com"]
+   }
+   ```
+
+3. Set SMTP credentials using .NET User Secrets (from the `src/tsx-aggregator` directory):
+   ```bash
+   cd src/tsx-aggregator
+   dotnet user-secrets set "AlertSettings:SmtpUsername" "your-email@hotmail.com"
+   dotnet user-secrets set "AlertSettings:SmtpPassword" "your-app-password"
+   dotnet user-secrets set "AlertSettings:SenderEmail" "your-email@hotmail.com"
+   ```
+
+   The default SMTP host is `smtp-mail.outlook.com` (port 587, STARTTLS). To use a different provider, update `SmtpHost` and `SmtpPort` in `appsettings.json`.
+
+   **Note:** If your Microsoft account has two-factor authentication enabled, you must create an app password at https://account.microsoft.com/security instead of using your regular password.
+
 ## Web API
 
 The Web API provides the following operations:
