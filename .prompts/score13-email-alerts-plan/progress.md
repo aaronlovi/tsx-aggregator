@@ -10,8 +10,10 @@
   - Tests: Score13DiffComputerTests.cs (19 tests)
   - Committed: yes
 
-- [ ] Checkpoint 3: Email Sending Service
-  - (pending)
+- [x] Checkpoint 3: Email Sending Service
+  - Files: IEmailService.cs, EmailService.cs, Program.cs, AssemblyInfo.cs
+  - Tests: EmailServiceTests.cs (3 tests)
+  - Committed: yes
 
 - [ ] Checkpoint 4: Score13AlertService BackgroundService
   - (pending)
