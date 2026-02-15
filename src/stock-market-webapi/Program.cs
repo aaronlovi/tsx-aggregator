@@ -23,7 +23,9 @@ public class Program {
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         _ = builder.Services.AddEndpointsApiExplorer();
-        _ = builder.Services.AddSwaggerGen();
+        _ = builder.Services.AddSwaggerGen(c => {
+            c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo { Title = "Stock Market API", Version = "v1" });
+        });
 
         _ = builder.Services.AddGrpc();
         _ = builder.Services.AddGrpcReflection();
@@ -36,7 +38,9 @@ public class Program {
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment()) {
             _ = app.UseSwagger();
-            _ = app.UseSwaggerUI();
+            _ = app.UseSwaggerUI(c => {
+                c.SwaggerEndpoint("v1/swagger.json", "Stock Market API V1");
+            });
         }
 
         _ = app.UseCors(x => x

@@ -53,15 +53,13 @@ public class Program {
                         opt.AllowAlternateSchemes = true;
                     })
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
-                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices))
-                    .Configure<FeatureFlagsOptions>(context.Configuration.GetSection(FeatureFlagsOptions.FeatureFlags));
+                    .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices));
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
                 _ = services
                     .AddValidatedOptions<GoogleCredentialsOptions>(context.Configuration, GoogleCredentialsOptions.GoogleCredentials)
-                    .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices)
-                    .AddValidatedOptions<FeatureFlagsOptions>(context.Configuration, FeatureFlagsOptions.FeatureFlags);
+                    .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices);
 
                 _ = services
                     .AddHttpClient()
@@ -131,7 +129,6 @@ public class Program {
         logger.LogInformation("==========BEGIN CRITICAL CONFIGURATION==========");
         LogConfigSection(config, logger, GoogleCredentialsOptions.GoogleCredentials);
         LogConfigSection(config, logger, HostedServicesOptions.HostedServices);
-        LogConfigSection(config, logger, FeatureFlagsOptions.FeatureFlags);
         logger.LogInformation("==========END CRITICAL CONFIGURATION==========");
     }
 

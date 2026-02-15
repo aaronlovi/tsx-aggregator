@@ -4,24 +4,14 @@ using FluentAssertions;
 using tsx_aggregator.models;
 using tsx_aggregator.Raw;
 
+
 namespace tsx_aggregator.tests;
 
 public class RegistryPriorityTests {
-    private static Registry CreateRegistryWithInstruments(params (string CompanySymbol, string InstrumentSymbol, string Exchange)[] instruments) {
-        var registry = new Registry();
-        var list = new List<InstrumentDto>();
-        long id = 1;
-        foreach (var (cs, ins, ex) in instruments) {
-            list.Add(new InstrumentDto(id++, ex, cs, cs + " Inc.", ins, ins + " Common", DateTimeOffset.UtcNow, null));
-        }
-        registry.InitializeDirectory(list);
-        return registry;
-    }
-
     [Fact]
     public void SetPriorityCompanies_PopulatesQueue() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
@@ -37,7 +27,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void SetPriorityCompanies_DeduplicatesSymbols() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
 
@@ -52,7 +42,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void TryDequeueNextPriorityInstrumentKey_ReturnsCorrectKey() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
@@ -72,7 +62,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void TryDequeueNextPriorityInstrumentKey_SkipsUnknownSymbols() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("CCC", "CCC", "TSX"));
         _ = registry.SetPriorityCompanies(new[] { "UNKNOWN", "CCC" });
@@ -88,7 +78,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void TryDequeueNextPriorityInstrumentKey_ReturnsFalseWhenEmpty() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
+        var registry = TestDataFactory.CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
 
         // Act
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
@@ -101,7 +91,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void TryDequeueNextPriorityInstrumentKey_ReturnsFalseWhenAllSymbolsUnknown() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
+        var registry = TestDataFactory.CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
         _ = registry.SetPriorityCompanies(new[] { "UNKNOWN1", "UNKNOWN2" });
 
         // Act
@@ -115,7 +105,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void GetPriorityCompanySymbols_ReturnsSnapshotWithoutConsuming() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
         _ = registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
@@ -132,7 +122,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void ClearPriorityCompanies_EmptiesQueue() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
         _ = registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
@@ -147,7 +137,7 @@ public class RegistryPriorityTests {
     [Fact]
     public void SetPriorityCompanies_ReplacesOldQueue() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));

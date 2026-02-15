@@ -11,14 +11,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tsx-aggregator.shared", "ts
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tsx-aggregator.models", "tsx-aggregator.models\tsx-aggregator.models.csproj", "{4BC8FFBD-83A0-4D21-BC13-CF6DA0CA56AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "puppeteer-prototype", "puppeteer-prototype\puppeteer-prototype.csproj", "{AFC6F768-6D56-446D-994C-987225BBAA01}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "stock-market.webapi", "stock-market-webapi\stock-market.webapi.csproj", "{C1723AFF-0C01-4D01-A19C-EE20BB77505F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{61DFDBE1-02A4-4D57-8094-83475138FE52}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		global.json = global.json
 		docker-compose.yml = docker-compose.yml
 		init.sql = init.sql
 		README.md = README.md
@@ -48,10 +48,6 @@ Global
 		{4BC8FFBD-83A0-4D21-BC13-CF6DA0CA56AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4BC8FFBD-83A0-4D21-BC13-CF6DA0CA56AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4BC8FFBD-83A0-4D21-BC13-CF6DA0CA56AC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AFC6F768-6D56-446D-994C-987225BBAA01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AFC6F768-6D56-446D-994C-987225BBAA01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AFC6F768-6D56-446D-994C-987225BBAA01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AFC6F768-6D56-446D-994C-987225BBAA01}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1723AFF-0C01-4D01-A19C-EE20BB77505F}.Release|Any CPU.ActiveCfg = Release|Any CPU

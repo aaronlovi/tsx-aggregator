@@ -57,12 +57,10 @@ public static class Extensions {
     }
 
     public static DateTime EnsureUtc(this DateTime dt) {
-        ArgumentNullException.ThrowIfNull(dt);
         return dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
     }
 
     public static DateTime ToDateTimeUtc(this DateOnly dateOnly) {
-        ArgumentNullException.ThrowIfNull(dateOnly);
         return dateOnly.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
     }
 
@@ -87,7 +85,6 @@ public static class Extensions {
     }
 
     public static Timestamp ToTimestamp(this DateOnly dateOnly) {
-        ArgumentNullException.ThrowIfNull(dateOnly);
         return Timestamp.FromDateTime(dateOnly.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
     }
 

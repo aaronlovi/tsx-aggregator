@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>dbm_persistence</RootNamespace>
@@ -13,12 +13,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\tsx-aggregator.models\tsx-aggregator.models.csproj" />
-    <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
+    <PackageReference Include="Evolve" />
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="PuppeteerSharp" Version="20.2.2" />
+    <ProjectReference Include="..\tsx-aggregator.models\tsx-aggregator.models.csproj" />
+    <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
   </ItemGroup>
 
 </Project>

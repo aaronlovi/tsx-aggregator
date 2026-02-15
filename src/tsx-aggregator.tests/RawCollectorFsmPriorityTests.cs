@@ -10,17 +10,6 @@ using tsx_aggregator.Raw;
 namespace tsx_aggregator.tests;
 
 public class RawCollectorFsmPriorityTests {
-    private static Registry CreateRegistryWithInstruments(params (string CompanySymbol, string InstrumentSymbol, string Exchange)[] instruments) {
-        var registry = new Registry();
-        var list = new List<InstrumentDto>();
-        long id = 1;
-        foreach (var (cs, ins, ex) in instruments) {
-            list.Add(new InstrumentDto(id++, ex, cs, cs + " Inc.", ins, ins + " Common", DateTimeOffset.UtcNow, null));
-        }
-        registry.InitializeDirectory(list);
-        return registry;
-    }
-
     private static RawCollectorFsm CreateFsm(Registry registry, DateTime? curTime = null) {
         var logger = NullLoggerFactory.Instance.CreateLogger("RawCollectorFsm");
         return new RawCollectorFsm(logger, curTime ?? DateTime.UtcNow, registry);
@@ -29,7 +18,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void ProcessUpdateTime_UsesPriorityKeyInsteadOfRoundRobin() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
@@ -53,7 +42,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void ProcessUpdateTime_DoesNotUpdatePrevInstrumentKeyForPriorityFetch() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
@@ -81,7 +70,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void ProcessUpdateTime_ResumesRoundRobinWhenPriorityQueueEmpty() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
@@ -107,7 +96,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void ProcessUpdateTime_SkipsUnknownPrioritySymbolAndUsesNextValid() {
         // Arrange
-        var registry = CreateRegistryWithInstruments(
+        var registry = TestDataFactory.CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
         var fsm = CreateFsm(registry);
@@ -129,7 +118,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void Update_HandlesPriorityInputTypeWithoutWarning() {
         // Arrange: Verify that SetPriorityCompaniesInput falls through to ProcessUpdateTime
-        var registry = CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
+        var registry = TestDataFactory.CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
         var fsm = CreateFsm(registry);
 
         fsm.NextFetchInstrumentDataTime = null;
@@ -146,7 +135,7 @@ public class RawCollectorFsmPriorityTests {
     [Fact]
     public void Update_HandlesGetPriorityInputTypeWithoutWarning() {
         // Arrange: Verify that GetPriorityCompaniesInput falls through to ProcessUpdateTime
-        var registry = CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
+        var registry = TestDataFactory.CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
         var fsm = CreateFsm(registry);
 
         fsm.NextFetchInstrumentDataTime = null;

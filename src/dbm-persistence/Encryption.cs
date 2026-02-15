@@ -11,7 +11,7 @@ public static class Encryption {
             throw new ArgumentOutOfRangeException(nameof(password));
         if (salt == 0)
             throw new ArgumentOutOfRangeException(nameof(salt), "Salt cannot be 0");
-        ArgumentNullException.ThrowIfNull(nameof(payload));
+        ArgumentNullException.ThrowIfNull(payload);
         if (payload.Length == 0)
             throw new ArgumentOutOfRangeException(nameof(payload), "Payload cannot be empty");
 
@@ -37,7 +37,7 @@ public static class Encryption {
             throw new ArgumentOutOfRangeException(nameof(password));
         if (salt == 0)
             throw new ArgumentOutOfRangeException(nameof(salt), "Salt cannot be 0");
-        ArgumentNullException.ThrowIfNull(nameof(encrypted));
+        ArgumentNullException.ThrowIfNull(encrypted);
         if (encrypted.Length == 0)
             throw new ArgumentOutOfRangeException(nameof(encrypted), "Encrypted bytes cannot be empty");
 

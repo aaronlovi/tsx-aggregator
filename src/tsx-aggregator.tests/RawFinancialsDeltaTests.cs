@@ -32,5 +32,14 @@ public class RawFinancialsDeltaTests {
         _ = copy.InstrumentReportsToInsert.Count.Should().Be(1);
         _ = copy.InstrumentReportsToObsolete.Count.Should().Be(1);
         _ = copy.InstrumentReportsToUpdate.Count.Should().Be(1);
+
+        // Verify lists are independent
+        original.InstrumentReportsToInsert.Clear();
+        original.InstrumentReportsToObsolete.Clear();
+        original.InstrumentReportsToUpdate.Clear();
+
+        _ = copy.InstrumentReportsToInsert.Count.Should().Be(1, "because copy should be independent of original");
+        _ = copy.InstrumentReportsToObsolete.Count.Should().Be(1, "because copy should be independent of original");
+        _ = copy.InstrumentReportsToUpdate.Count.Should().Be(1, "because copy should be independent of original");
     }
 }

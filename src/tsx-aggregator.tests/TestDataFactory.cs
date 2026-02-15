@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using FluentAssertions;
 using tsx_aggregator.models;
+using tsx_aggregator.Raw;
 
 using Constants = tsx_aggregator.shared.Constants;
 
@@ -14,6 +18,7 @@ public static class TestDataFactory {
     public static readonly DateOnly Year2020AsDate = DateOnly.FromDateTime(Year2020Utc);
     public static readonly DateTime Year2021Utc = new(2021, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
     public static readonly DateOnly Year2021AsDate = DateOnly.FromDateTime(Year2021Utc);
+
     public static CurrentInstrumentRawDataReportDto CreateCurrentInstrumentReportDto(
         long? instrumentReportId = null,
         long? instrumentId = null,
@@ -22,19 +27,53 @@ public static class TestDataFactory {
         string reportJson = "{}",
         DateOnly? reportDate = null) {
 
-        // Providing default values if null is passed for nullable parameters
-        var instrumentReportId_ = instrumentReportId ?? DefaultInstrumentReportId;
-        var instrumentId_ = instrumentId ?? DefaultInstrumentId;
-        var reportType_ = reportType ?? DefaultReportType;
-        var reportPeriodType_ = reportPeriodType ?? DefaultReportPeriodType;
-        var reportDate_ = reportDate ?? Year2020AsDate;
-
         return new CurrentInstrumentRawDataReportDto(
-            instrumentReportId_,
-            instrumentId_,
-            reportType_,
-            reportPeriodType_,
+            instrumentReportId ?? DefaultInstrumentReportId,
+            instrumentId ?? DefaultInstrumentId,
+            reportType ?? DefaultReportType,
+            reportPeriodType ?? DefaultReportPeriodType,
             reportJson,
-            reportDate_);
+            reportDate ?? Year2020AsDate);
+    }
+
+    public static DashboardStatsDto CreateDashboardStatsDto(
+        long totalActiveInstruments = 0,
+        long totalObsoletedInstruments = 0,
+        long instrumentsWithProcessedReports = 0,
+        DateTimeOffset? mostRecentRawIngestion = null,
+        DateTimeOffset? mostRecentAggregation = null,
+        long unprocessedEventCount = 0,
+        IReadOnlyList<RawReportCountByTypeDto>? rawReportCountsByType = null) {
+
+        return new DashboardStatsDto(
+            totalActiveInstruments,
+            totalObsoletedInstruments,
+            instrumentsWithProcessedReports,
+            mostRecentRawIngestion,
+            mostRecentAggregation,
+            unprocessedEventCount,
+            rawReportCountsByType ?? []);
+    }
+
+    internal static Registry CreateRegistryWithInstruments(
+        params (string CompanySymbol, string InstrumentSymbol, string Exchange)[] instruments) {
+        var registry = new Registry();
+        var list = new List<InstrumentDto>();
+        long id = 1;
+        foreach (var (cs, ins, ex) in instruments) {
+            list.Add(new InstrumentDto(id++, ex, cs, cs + " Inc.", ins, ins + " Common", DateTimeOffset.UtcNow, null));
+        }
+        registry.InitializeDirectory(list);
+        return registry;
+    }
+
+    public static void AssertMergedJsonContains(
+        string mergedJson, params (string Key, decimal Value)[] expectedFields) {
+        using var doc = JsonDocument.Parse(mergedJson);
+        var root = doc.RootElement;
+        foreach (var (key, value) in expectedFields) {
+            _ = root.GetProperty(key).GetDecimal().Should().Be(value,
+                $"because merged JSON should contain {key}={value}");
+        }
     }
 }

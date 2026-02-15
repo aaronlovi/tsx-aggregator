@@ -6,23 +6,17 @@ using tsx_aggregator.models;
 namespace tsx_aggregator.tests;
 
 public class DashboardStatsResponseTests {
-    [Fact]
-    public void RawReportCountItem_FromTypeAndCount_KnownType_ShouldMapName() {
+    [Theory]
+    [InlineData(1, "Cash Flow")]
+    [InlineData(2, "Income Statement")]
+    [InlineData(3, "Balance Sheet")]
+    public void RawReportCountItem_FromTypeAndCount_KnownType_ShouldMapCorrectName(
+        int reportType, string expectedName) {
         // Act
-        var item = RawReportCountItem.FromTypeAndCount(1, 500);
+        var item = RawReportCountItem.FromTypeAndCount(reportType, 10);
 
         // Assert
-        _ = item.ReportType.Should().Be(1);
-        _ = item.ReportTypeName.Should().Be("Cash Flow");
-        _ = item.Count.Should().Be(500);
-    }
-
-    [Fact]
-    public void RawReportCountItem_FromTypeAndCount_AllKnownTypes_ShouldMapCorrectly() {
-        // Act & Assert
-        _ = RawReportCountItem.FromTypeAndCount(1, 10).ReportTypeName.Should().Be("Cash Flow");
-        _ = RawReportCountItem.FromTypeAndCount(2, 20).ReportTypeName.Should().Be("Income Statement");
-        _ = RawReportCountItem.FromTypeAndCount(3, 30).ReportTypeName.Should().Be("Balance Sheet");
+        _ = item.ReportTypeName.Should().Be(expectedName);
     }
 
     [Fact]

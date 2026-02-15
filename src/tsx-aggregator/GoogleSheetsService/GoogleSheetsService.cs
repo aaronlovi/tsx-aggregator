@@ -66,9 +66,11 @@ public class GoogleSheetsService : IGoogleSheetsService {
         _httpClient = httpClientFactory.CreateClient();
 
         // Create the Google credential object
+#pragma warning disable CS0618 // GoogleCredential.FromFile is obsolete but replacement API (CredentialFactory) is not yet public
         var credential = GoogleCredential
             .FromFile(_googleCredentials.CredentialFilePath)
             .CreateScoped([SheetsService.Scope.Spreadsheets]);
+#pragma warning restore CS0618
 
         // Initialize the SheetsService instance
         _sheetService = new SheetsService(new BaseClientService.Initializer() {

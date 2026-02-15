@@ -6,36 +6,19 @@ using tsx_aggregator.models;
 namespace tsx_aggregator.tests;
 
 public class DashboardStatsDtoTests {
-    [Fact]
-    public void InstrumentsWithoutProcessedReports_ShouldComputeCorrectly() {
+    [Theory]
+    [InlineData(100, 75, 25)]
+    [InlineData(50, 50, 0)]
+    [InlineData(0, 0, 0)]
+    public void InstrumentsWithoutProcessedReports_ShouldComputeCorrectly(
+        long totalActive, long withProcessed, long expected) {
         // Arrange
-        var dto = new DashboardStatsDto(
-            TotalActiveInstruments: 100,
-            TotalObsoletedInstruments: 20,
-            InstrumentsWithProcessedReports: 75,
-            MostRecentRawIngestion: DateTimeOffset.UtcNow,
-            MostRecentAggregation: DateTimeOffset.UtcNow,
-            UnprocessedEventCount: 5,
-            RawReportCountsByType: []);
+        var dto = TestDataFactory.CreateDashboardStatsDto(
+            totalActiveInstruments: totalActive,
+            instrumentsWithProcessedReports: withProcessed);
 
         // Act & Assert
-        _ = dto.InstrumentsWithoutProcessedReports.Should().Be(25);
-    }
-
-    [Fact]
-    public void InstrumentsWithoutProcessedReports_WhenAllProcessed_ShouldBeZero() {
-        // Arrange
-        var dto = new DashboardStatsDto(
-            TotalActiveInstruments: 50,
-            TotalObsoletedInstruments: 10,
-            InstrumentsWithProcessedReports: 50,
-            MostRecentRawIngestion: null,
-            MostRecentAggregation: null,
-            UnprocessedEventCount: 0,
-            RawReportCountsByType: []);
-
-        // Act & Assert
-        _ = dto.InstrumentsWithoutProcessedReports.Should().Be(0);
+        _ = dto.InstrumentsWithoutProcessedReports.Should().Be(expected);
     }
 
     [Fact]
@@ -47,14 +30,10 @@ public class DashboardStatsDtoTests {
             new(ReportType: 3, Count: 400)
         };
 
-        var dto = new DashboardStatsDto(
-            TotalActiveInstruments: 100,
-            TotalObsoletedInstruments: 0,
-            InstrumentsWithProcessedReports: 80,
-            MostRecentRawIngestion: null,
-            MostRecentAggregation: null,
-            UnprocessedEventCount: 0,
-            RawReportCountsByType: counts);
+        var dto = TestDataFactory.CreateDashboardStatsDto(
+            totalActiveInstruments: 100,
+            instrumentsWithProcessedReports: 80,
+            rawReportCountsByType: counts);
 
         // Act & Assert
         _ = dto.RawReportCountsByType.Should().HaveCount(3);
@@ -67,14 +46,7 @@ public class DashboardStatsDtoTests {
     [Fact]
     public void NullableDates_ShouldBeHandled() {
         // Arrange
-        var dto = new DashboardStatsDto(
-            TotalActiveInstruments: 0,
-            TotalObsoletedInstruments: 0,
-            InstrumentsWithProcessedReports: 0,
-            MostRecentRawIngestion: null,
-            MostRecentAggregation: null,
-            UnprocessedEventCount: 0,
-            RawReportCountsByType: []);
+        var dto = TestDataFactory.CreateDashboardStatsDto();
 
         // Act & Assert
         _ = dto.MostRecentRawIngestion.Should().BeNull();

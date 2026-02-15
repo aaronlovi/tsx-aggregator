@@ -128,6 +128,7 @@ message GetDashboardStatsReply {
     google.protobuf.Timestamp most_recent_raw_ingestion = 7;
     google.protobuf.Timestamp most_recent_aggregation = 8;
     int64 unprocessed_event_count = 9;
+    reserved 10;
     repeated DashboardRawReportCount raw_report_counts = 11;
     google.protobuf.Timestamp next_fetch_directory_time = 12;
     google.protobuf.Timestamp next_fetch_instrument_data_time = 13;

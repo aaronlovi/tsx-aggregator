@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
         <UserSecretsId>dotnet-tsx_aggregator-ffe2094c-2348-47b9-95cf-db0da49d08c9</UserSecretsId>
@@ -6,12 +6,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\dbm-persistence\dbm-persistence.csproj" />
-        <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
+        <PackageReference Include="Google.Apis.Sheets.v4" />
+        <PackageReference Include="PuppeteerSharp" />
+        <PackageReference Include="Serilog" />
+        <PackageReference Include="Serilog.Extensions.Hosting" />
+        <PackageReference Include="Serilog.Formatting.Compact" />
+        <PackageReference Include="Serilog.Settings.Configuration" />
+        <PackageReference Include="Serilog.Sinks.Async" />
+        <PackageReference Include="Serilog.Sinks.Console" />
+        <PackageReference Include="Serilog.Sinks.File" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="PuppeteerSharp" Version="20.2.2" />
+        <ProjectReference Include="..\dbm-persistence\dbm-persistence.csproj" />
+        <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
     </ItemGroup>
 
 </Project>

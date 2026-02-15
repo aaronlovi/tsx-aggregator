@@ -8,7 +8,7 @@ TSX stock market data aggregation platform. Scrapes Toronto Stock Exchange finan
 
 ## Tech Stack
 
-- **Backend:** C# / .NET 8.0, ASP.NET Core, gRPC, PostgreSQL (Npgsql), PuppeteerSharp (web scraping), Serilog
+- **Backend:** C# / .NET 10.0, ASP.NET Core, gRPC, PostgreSQL (Npgsql), PuppeteerSharp (web scraping), Serilog
 - **Frontend:** Angular 16, TypeScript, Angular Material, RxJS
 - **Testing:** xUnit, FluentAssertions, Moq (backend); Karma + Jasmine (frontend)
 - **Infrastructure:** Docker Compose (PostgreSQL 17.4 + pgAdmin), Evolve (DB migrations)

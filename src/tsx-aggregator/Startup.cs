@@ -28,7 +28,6 @@ public class Startup {
         _ = services.AddGrpc();
         _ = services.Configure<GoogleCredentialsOptions>(_config.GetSection(GoogleCredentialsOptions.GoogleCredentials));
         _ = services.Configure<HostedServicesOptions>(_config.GetSection(HostedServicesOptions.HostedServices));
-        _ = services.Configure<FeatureFlagsOptions>(_config.GetSection(FeatureFlagsOptions.FeatureFlags));
 
         VerifyCriticalConfiguration();
     }
@@ -56,7 +55,6 @@ public class Startup {
 
         VerifyConfigurationSection(GoogleCredentialsOptions.GoogleCredentials);
         VerifyConfigurationSection(HostedServicesOptions.HostedServices);
-        VerifyConfigurationSection(FeatureFlagsOptions.FeatureFlags);
     }
 
     private void VerifyConfigurationItem(string key, string? section = null) {
