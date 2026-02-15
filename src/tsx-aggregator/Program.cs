@@ -74,7 +74,8 @@ public class Program {
                     .AddSingleton<IStocksDataRequestsProcessor, StocksDataRequestsProcessor>()
                     .AddSingleton<IQuoteService, QuoteService>()
                     .AddSingleton<ISearchService, SearchService>()
-                    .AddSingleton<IGoogleSheetsService, GoogleSheetsService>();
+                    .AddSingleton<IGoogleSheetsService, GoogleSheetsService>()
+                    .AddSingleton<IEmailService, EmailService>();
 
                 if (DoesConfigContainConnectionString(context.Configuration))
                     _ = services.AddSingleton<IDbmService, DbmService>();

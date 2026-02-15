@@ -5,8 +5,10 @@
   - Tests: AlertSettingsOptionsTests.cs (6 tests)
   - Committed: yes
 
-- [ ] Checkpoint 2: Score-13 Diff Computation Logic
-  - (pending)
+- [x] Checkpoint 2: Score-13 Diff Computation Logic
+  - Files: Score13AlertData.cs, Score13DiffComputerTests.cs
+  - Tests: Score13DiffComputerTests.cs (19 tests)
+  - Committed: yes
 
 - [ ] Checkpoint 3: Email Sending Service
   - (pending)
