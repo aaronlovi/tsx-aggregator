@@ -34,7 +34,7 @@ public class RawCollectorFsmPriorityTests {
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
         var fsm = CreateFsm(registry);
-        registry.SetPriorityCompanies(new[] { "CCC" });
+        _ = registry.SetPriorityCompanies(new[] { "CCC" });
 
         // Trigger: set NextFetchInstrumentDataTime to the past
         fsm.NextFetchInstrumentDataTime = null;
@@ -47,7 +47,7 @@ public class RawCollectorFsmPriorityTests {
 
         // Assert
         var fetchOutput = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Single();
-        fetchOutput.CompanySymbol.Should().Be("CCC");
+        _ = fetchOutput.CompanySymbol.Should().Be("CCC");
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class RawCollectorFsmPriorityTests {
 
         // Set PrevInstrumentKey to AAA (so round-robin would go to BBB next)
         fsm.PrevInstrumentKey = new InstrumentKey("AAA", "AAA", "TSX");
-        registry.SetPriorityCompanies(new[] { "CCC" });
+        _ = registry.SetPriorityCompanies(new[] { "CCC" });
 
         fsm.NextFetchInstrumentDataTime = null;
         var output = new RawCollectorFsmOutputs();
@@ -71,11 +71,11 @@ public class RawCollectorFsmPriorityTests {
         fsm.Update(input, DateTime.UtcNow, output);
 
         // Assert: PrevInstrumentKey should still be AAA, not CCC
-        fsm.PrevInstrumentKey.CompanySymbol.Should().Be("AAA");
+        _ = fsm.PrevInstrumentKey.CompanySymbol.Should().Be("AAA");
 
         // And the output should be for CCC (priority)
         var fetchOutput = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Single();
-        fetchOutput.CompanySymbol.Should().Be("CCC");
+        _ = fetchOutput.CompanySymbol.Should().Be("CCC");
     }
 
     [Fact]
@@ -100,8 +100,8 @@ public class RawCollectorFsmPriorityTests {
 
         // Assert: should use round-robin (BBB)
         var fetchOutput = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Single();
-        fetchOutput.CompanySymbol.Should().Be("BBB");
-        fsm.PrevInstrumentKey.CompanySymbol.Should().Be("BBB");
+        _ = fetchOutput.CompanySymbol.Should().Be("BBB");
+        _ = fsm.PrevInstrumentKey.CompanySymbol.Should().Be("BBB");
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class RawCollectorFsmPriorityTests {
             ("BBB", "BBB", "TSX"));
         var fsm = CreateFsm(registry);
 
-        registry.SetPriorityCompanies(new[] { "UNKNOWN", "BBB" });
+        _ = registry.SetPriorityCompanies(new[] { "UNKNOWN", "BBB" });
 
         fsm.NextFetchInstrumentDataTime = null;
         var output = new RawCollectorFsmOutputs();
@@ -123,7 +123,7 @@ public class RawCollectorFsmPriorityTests {
 
         // Assert
         var fetchOutput = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Single();
-        fetchOutput.CompanySymbol.Should().Be("BBB");
+        _ = fetchOutput.CompanySymbol.Should().Be("BBB");
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class RawCollectorFsmPriorityTests {
         fsm.Update(input, DateTime.UtcNow, output);
 
         // Assert: Should produce a fetch output (ProcessUpdateTime was called)
-        output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Should().HaveCount(1);
+        _ = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Should().HaveCount(1);
     }
 
     [Fact]
@@ -157,6 +157,6 @@ public class RawCollectorFsmPriorityTests {
         fsm.Update(input, DateTime.UtcNow, output);
 
         // Assert: Should produce a fetch output (ProcessUpdateTime was called)
-        output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Should().HaveCount(1);
+        _ = output.OutputList.OfType<FetchRawCollectorInstrumentDataOutput>().Should().HaveCount(1);
     }
 }

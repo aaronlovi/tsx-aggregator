@@ -28,31 +28,8 @@ public interface IDbmService {
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
-    
-    /// <summary>
-    /// Get the list of instruments that have updated data reports.
-    /// These either have:
-    /// - 'check_manually' set to true, and also 'ignore' set to false.
-    /// - obsoleted date set to false (i.e., the original report)
-    /// </summary>
-    ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
 
     ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
-
-    /// <summary>
-    /// Operation to ignore updated raw data reports.
-    /// This may be necessary if the incoming data is bad, missing a lot of values, etc.
-    /// </summary>
-    ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct);
-
-    /// <summary>
-    /// Insert or update a current instrument report.
-    /// For example, when updating the 'ignore' flag.
-    /// Written as 'upsert' rather than 'update' just in case there is no such record (for example, missed in replication).
-    /// </summary>
-    ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct);
-
-    ValueTask<(Result res, bool existsMatching)> ExistsMatchingRawReport(CurrentInstrumentRawDataReportDto rawReportDto, CancellationToken ct);
 
     // Data Requests
     ValueTask<Result<IReadOnlyList<ProcessedFullInstrumentReportDto>>> GetProcessedStockDataByExchange(string exchange, CancellationToken ct);

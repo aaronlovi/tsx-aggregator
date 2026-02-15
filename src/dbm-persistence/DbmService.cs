@@ -161,27 +161,12 @@ public sealed class DbmService : IDisposable, IDbmService {
         var stmt = new UpdateInstrumentReportsStmt(rawFinancialsDelta);
         var res = await _exec.ExecuteWithRetry(stmt, ct);
         if (res.Success) {
-            _logger.LogInformation("UpdateInstrumentReports success - Inserted: {NumInserted}, Obsoleted: {NumObsoleted}, To Check Manually: {NumToCheckManually}",
-                stmt.NumReportsToInsert, stmt.NumReportsToObsolete, stmt.NumReportsToCheckManually);
+            _logger.LogInformation("UpdateInstrumentReports success - Inserted: {NumInserted}, Obsoleted: {NumObsoleted}, Updated: {NumUpdated}",
+                stmt.NumReportsToInsert, stmt.NumReportsToObsolete, stmt.NumReportsToUpdate);
         } else {
             _logger.LogWarning("UpdateInstrumentReports failed with error {Error}", res.ErrMsg);
         }
         return res;
-    }
-
-    public async ValueTask<Result<PagedInstrumentsWithRawDataReportUpdatesDto>> GetRawInstrumentsWithUpdatedDataReports(
-        string exchange, int pageNumber, int pageSize, CancellationToken ct) {
-        var stmt = new GetRawInstrumentsWithUpdatedDataReportsStmt(exchange, pageNumber, pageSize);
-        var res = await _exec.ExecuteWithRetry(stmt, ct);
-        if (res.Success) {
-            _logger.LogInformation("GetRawInstrumentsWithUpdatedDataReports success - Page: {PageNumber}, Size: {PageSize}, Total: {Total}",
-                pageNumber, pageSize, stmt.PagedInstrumentsWithRawDataReportUpdates.TotalInstruments);
-        }
-        else {
-            _logger.LogWarning("GetRawInstrumentsWithUpdatedDataReports failed with error {Error}", res.ErrMsg);
-        }
-        return new Result<PagedInstrumentsWithRawDataReportUpdatesDto>(
-            res.Success, res.ErrMsg, stmt.PagedInstrumentsWithRawDataReportUpdates);
     }
 
     public async ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(
@@ -195,82 +180,6 @@ public sealed class DbmService : IDisposable, IDbmService {
             _logger.LogWarning("GetInstrumentsWithNoRawReports failed with error {Error}", res.ErrMsg);
         }
         return new Result<PagedInstrumentInfoDto>(res.Success, res.ErrMsg, stmt.PagedInstrumentInfo);
-    }
-
-    public async ValueTask<Result> IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto, CancellationToken ct) {
-        var getInstrumentReportsStmt = new GetInstrumentReportsStmt(dto.InstrumentId);
-        var res = await _exec.ExecuteWithRetry(getInstrumentReportsStmt, ct);
-        if (!res.Success) {
-            _logger.LogWarning("IgnoreRawUpdatedDataReport failed while getting raw instrument reports with error {Error}", res.ErrMsg);
-            return res;
-        }
-
-        var consistencyMap = new RawReportConsistencyMap();
-        RawReportConsistencyMapKey? mainKey = consistencyMap.BuildMap(dto, getInstrumentReportsStmt.InstrumentReports);
-
-        if (mainKey is null) {
-            _logger.LogWarning("IgnoreRawUpdatedDataReport failed - report to keep not found");
-            return Result.SetFailure("Report to keep not found");
-        }
-
-        Result result = consistencyMap.EnsureRequestIsConsistent(dto, mainKey);
-        if (!result.Success) {
-            _logger.LogWarning("IgnoreRawUpdatedDataReport failed - consistency check failed with error {Error}", result.ErrMsg);
-            return DbStmtResult.StatementFailure(result.ErrMsg);
-        }
-
-        // If we got here, then the request is valid, so ignore the reports
-        var stmt = new IgnoreRawDataReportStmt(dto.InstrumentId, dto.ReportIdToKeep, dto.ReportIdsToIgnore);
-        res = await _exec.ExecuteWithRetry(stmt, ct);
-        if (res.Success) {
-            _logger.LogInformation("IgnoreRawUpdatedDataReport - ignore statement success");
-        } else {
-            _logger.LogWarning("IgnoreRawUpdatedDataReport - ignore statement failed with error {Error}", res.ErrMsg);
-        }
-
-        return res;
-    }
-
-    public ValueTask<Result> UpsertRawCurrentInstrumentReport(CurrentInstrumentRawDataReportDto rawReportData, CancellationToken ct)
-        => throw new NotImplementedException();
-
-    public async ValueTask<(Result res, bool existsMatching)> ExistsMatchingRawReport(
-        CurrentInstrumentRawDataReportDto rawReportDto, CancellationToken ct) {
-        var getInstrumentReportsStmt = new GetInstrumentReportsStmt(rawReportDto.InstrumentId);
-
-        var res = await _exec.ExecuteWithRetry(getInstrumentReportsStmt, ct);
-        if (!res.Success) {
-            _logger.LogWarning("ExistsMatchingRawReport failed while getting raw instrument reports with error {Error}", res.ErrMsg);
-            return Failure("Failed getting raw instrument reports: " + res.ErrMsg);
-        }
-
-        var newReportData = RawReportDataMap.FromJsonString(rawReportDto.ReportJson);
-
-        foreach (var existingReport in getInstrumentReportsStmt.InstrumentReports) {
-            if (existingReport.ObsoletedDate is not null)
-                continue;
-            if (existingReport.ReportType != rawReportDto.ReportType)
-                continue;
-            if (existingReport.ReportPeriodType != rawReportDto.ReportPeriodType)
-                continue;
-            if (existingReport.ReportDate != rawReportDto.ReportDate)
-                continue;
-
-            using JsonDocument existingReportData = JsonDocument.Parse(existingReport.ReportJson);
-
-            if (newReportData.IsEqual(existingReportData))
-                return FoundMatch();
-        }
-
-        return FoundNoMatch();
-
-        // Local helper methods
-
-        (Result res, bool existsMatching) Failure(string errMsg) => (new Result(false, errMsg), false);
-
-        (Result res, bool existsMatching) FoundMatch() => (Result.SUCCESS, true);
-        
-        (Result res, bool existsMatching) FoundNoMatch() => (Result.SUCCESS, false);
     }
 
     #endregion
@@ -311,7 +220,6 @@ public sealed class DbmService : IDisposable, IDbmService {
             MostRecentRawIngestion: statsStmt.MostRecentRawIngestion,
             MostRecentAggregation: statsStmt.MostRecentAggregation,
             UnprocessedEventCount: statsStmt.UnprocessedEventCount,
-            ManualReviewCount: statsStmt.ManualReviewCount,
             RawReportCountsByType: countsStmt.Counts);
 
         return (Result.SUCCESS, dto);

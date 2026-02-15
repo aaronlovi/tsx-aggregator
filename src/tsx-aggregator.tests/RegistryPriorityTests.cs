@@ -30,8 +30,8 @@ public class RegistryPriorityTests {
         int validCount = registry.SetPriorityCompanies(new[] { "CCC", "AAA" });
 
         // Assert
-        validCount.Should().Be(2);
-        registry.GetPriorityCompanySymbols().Should().Equal("CCC", "AAA");
+        _ = validCount.Should().Be(2);
+        _ = registry.GetPriorityCompanySymbols().Should().Equal("CCC", "AAA");
     }
 
     [Fact]
@@ -45,8 +45,8 @@ public class RegistryPriorityTests {
         int validCount = registry.SetPriorityCompanies(new[] { "AAA", "BBB", "AAA", "BBB" });
 
         // Assert
-        validCount.Should().Be(2);
-        registry.GetPriorityCompanySymbols().Should().Equal("AAA", "BBB");
+        _ = validCount.Should().Be(2);
+        _ = registry.GetPriorityCompanySymbols().Should().Equal("AAA", "BBB");
     }
 
     [Fact]
@@ -56,17 +56,17 @@ public class RegistryPriorityTests {
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
-        registry.SetPriorityCompanies(new[] { "BBB" });
+        _ = registry.SetPriorityCompanies(new[] { "BBB" });
 
         // Act
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
 
         // Assert
-        found.Should().BeTrue();
-        key.Should().NotBeNull();
-        key!.CompanySymbol.Should().Be("BBB");
-        key.InstrumentSymbol.Should().Be("BBB");
-        key.Exchange.Should().Be("TSX");
+        _ = found.Should().BeTrue();
+        _ = key.Should().NotBeNull();
+        _ = key!.CompanySymbol.Should().Be("BBB");
+        _ = key.InstrumentSymbol.Should().Be("BBB");
+        _ = key.Exchange.Should().Be("TSX");
     }
 
     [Fact]
@@ -75,14 +75,14 @@ public class RegistryPriorityTests {
         var registry = CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("CCC", "CCC", "TSX"));
-        registry.SetPriorityCompanies(new[] { "UNKNOWN", "CCC" });
+        _ = registry.SetPriorityCompanies(new[] { "UNKNOWN", "CCC" });
 
         // Act
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
 
         // Assert
-        found.Should().BeTrue();
-        key!.CompanySymbol.Should().Be("CCC");
+        _ = found.Should().BeTrue();
+        _ = key!.CompanySymbol.Should().Be("CCC");
     }
 
     [Fact]
@@ -94,22 +94,22 @@ public class RegistryPriorityTests {
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
 
         // Assert
-        found.Should().BeFalse();
-        key.Should().BeNull();
+        _ = found.Should().BeFalse();
+        _ = key.Should().BeNull();
     }
 
     [Fact]
     public void TryDequeueNextPriorityInstrumentKey_ReturnsFalseWhenAllSymbolsUnknown() {
         // Arrange
         var registry = CreateRegistryWithInstruments(("AAA", "AAA", "TSX"));
-        registry.SetPriorityCompanies(new[] { "UNKNOWN1", "UNKNOWN2" });
+        _ = registry.SetPriorityCompanies(new[] { "UNKNOWN1", "UNKNOWN2" });
 
         // Act
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
 
         // Assert
-        found.Should().BeFalse();
-        key.Should().BeNull();
+        _ = found.Should().BeFalse();
+        _ = key.Should().BeNull();
     }
 
     [Fact]
@@ -118,15 +118,15 @@ public class RegistryPriorityTests {
         var registry = CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
-        registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
+        _ = registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
 
         // Act
         var snapshot1 = registry.GetPriorityCompanySymbols();
         var snapshot2 = registry.GetPriorityCompanySymbols();
 
         // Assert
-        snapshot1.Should().Equal("AAA", "BBB");
-        snapshot2.Should().Equal("AAA", "BBB");
+        _ = snapshot1.Should().Equal("AAA", "BBB");
+        _ = snapshot2.Should().Equal("AAA", "BBB");
     }
 
     [Fact]
@@ -135,13 +135,13 @@ public class RegistryPriorityTests {
         var registry = CreateRegistryWithInstruments(
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"));
-        registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
+        _ = registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
 
         // Act
         registry.ClearPriorityCompanies();
 
         // Assert
-        registry.GetPriorityCompanySymbols().Should().BeEmpty();
+        _ = registry.GetPriorityCompanySymbols().Should().BeEmpty();
     }
 
     [Fact]
@@ -151,13 +151,13 @@ public class RegistryPriorityTests {
             ("AAA", "AAA", "TSX"),
             ("BBB", "BBB", "TSX"),
             ("CCC", "CCC", "TSX"));
-        registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
+        _ = registry.SetPriorityCompanies(new[] { "AAA", "BBB" });
 
         // Act
-        registry.SetPriorityCompanies(new[] { "CCC" });
+        _ = registry.SetPriorityCompanies(new[] { "CCC" });
 
         // Assert
-        registry.GetPriorityCompanySymbols().Should().Equal("CCC");
+        _ = registry.GetPriorityCompanySymbols().Should().Equal("CCC");
     }
 
     [Fact]
@@ -169,14 +169,14 @@ public class RegistryPriorityTests {
             new(2, "TSX", "AAA", "AAA Inc.", "AAA.PR.A", "Preferred A", DateTimeOffset.UtcNow, null),
         };
         registry.InitializeDirectory(instruments);
-        registry.SetPriorityCompanies(new[] { "AAA" });
+        _ = registry.SetPriorityCompanies(new[] { "AAA" });
 
         // Act
         bool found = registry.TryDequeueNextPriorityInstrumentKey(out var key);
 
         // Assert
-        found.Should().BeTrue();
-        key!.CompanySymbol.Should().Be("AAA");
-        key.InstrumentSymbol.Should().Be("AAA"); // First instrument (sorted)
+        _ = found.Should().BeTrue();
+        _ = key!.CompanySymbol.Should().Be("AAA");
+        _ = key.InstrumentSymbol.Should().Be("AAA"); // First instrument (sorted)
     }
 }

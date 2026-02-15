@@ -109,7 +109,6 @@ export class DashboardStats {
     mostRecentRawIngestion: Date | null;
     mostRecentAggregation: Date | null;
     unprocessedEventCount: number;
-    manualReviewCount: number;
     rawReportCounts: RawReportCount[];
     nextFetchDirectoryTime: Date | null;
     nextFetchInstrumentDataTime: Date | null;
@@ -124,7 +123,6 @@ export class DashboardStats {
         mostRecentRawIngestion: string | null,
         mostRecentAggregation: string | null,
         unprocessedEventCount: number,
-        manualReviewCount: number,
         rawReportCounts: any[],
         nextFetchDirectoryTime: string | null,
         nextFetchInstrumentDataTime: string | null,
@@ -138,7 +136,6 @@ export class DashboardStats {
         this.mostRecentRawIngestion = mostRecentRawIngestion ? new Date(mostRecentRawIngestion) : null;
         this.mostRecentAggregation = mostRecentAggregation ? new Date(mostRecentAggregation) : null;
         this.unprocessedEventCount = unprocessedEventCount;
-        this.manualReviewCount = manualReviewCount;
         this.rawReportCounts = rawReportCounts.map(
             rc => new RawReportCount(rc.reportType, rc.reportTypeName, rc.count)
         );

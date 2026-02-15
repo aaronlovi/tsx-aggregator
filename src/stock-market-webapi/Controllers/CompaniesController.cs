@@ -216,51 +216,6 @@ public class CompaniesController : Controller {
         return Ok(searchResult);
     }
 
-    [HttpGet("companies/updated_raw_data_reports")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<InstrumentWithConflictingRawData>> GetUpdatedRawDataReports(
-        [FromQuery] string exchange, [FromQuery] int pageNumber, [FromQuery] int pageSize) {
-        try {
-            var request = new GetStocksWithUpdatedRawDataReportsRequest {
-                Exchange = exchange,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
-
-            GetStocksWithUpdatedRawDataReportsReply response = await _client.GetStocksWithUpdatedRawDataReportsAsync(request);
-            if (!response.Success)
-                return BadRequest(new { error = response.ErrorMessage });
-
-            var pagingData = new PagingData(response.TotalItems, response.PageNumber, response.PageSize);
-            var instruments = new List<InstrumentWithConflictingRawData>();
-            foreach (var i in response.InstrumentRawReportsWithUpdates) {
-                var conflictingReports = new List<InstrumentRawReportData>();
-                foreach (InstrumentWithUpdatedRawDataItem r in i.RawReportAndUpdates) {
-                    var rawReport = new InstrumentRawReportData((long)r.InstrumentReportId, r.CreatedDate.ToDateTime(), r.IsCurrent, r.CheckManually, r.IgnoreReport, r.ReportJson);
-                    conflictingReports.Add(rawReport);
-                }
-                instruments.Add(new InstrumentWithConflictingRawData(
-                    (long)i.InstrumentId,
-                    i.Exchange,
-                    i.CompanySymbol,
-                    i.InstrumentSymbol,
-                    i.CompanyName,
-                    i.InstrumentName,
-                    (int)i.ReportType,
-                    (int)i.ReportPeriodType,
-                    i.ReportDate.ToDateOnly(),
-                    conflictingReports));
-            }
-            var reply = new InstrumentsWithConflictingRawData(pagingData, instruments);
-
-            return Ok(reply);
-        } catch (Exception ex) {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
-        }
-    }
-
     [HttpGet("companies/missing_data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -356,7 +311,6 @@ public class CompaniesController : Controller {
                 MostRecentRawIngestion: reply.MostRecentRawIngestion?.ToDateTimeOffset(),
                 MostRecentAggregation: reply.MostRecentAggregation?.ToDateTimeOffset(),
                 UnprocessedEventCount: reply.UnprocessedEventCount,
-                ManualReviewCount: reply.ManualReviewCount,
                 RawReportCounts: rawReportCounts,
                 NextFetchDirectoryTime: reply.NextFetchDirectoryTime?.ToDateTimeOffset(),
                 NextFetchInstrumentDataTime: reply.NextFetchInstrumentDataTime?.ToDateTimeOffset(),
@@ -457,35 +411,6 @@ public class CompaniesController : Controller {
             return Ok(response);
         } catch (Exception ex) {
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
-        }
-    }
-
-    [HttpPost("companies/ignore_raw_report/{instrumentId}/{instrumentReportIdToKeep}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> IgnoreRawReport(
-        ulong instrumentId, ulong instrumentReportIdToKeep, [FromBody] List<ulong> instrumentReportIdsToIgnore) {
-        try {
-            if (!ModelState.IsValid || instrumentReportIdsToIgnore == null || instrumentReportIdsToIgnore.Count == 0)
-                return BadRequest(ModelState);
-
-            var request = new IgnoreRawDataReportRequest() {
-                InstrumentId = instrumentId,
-                InstrumentReportIdToKeep = instrumentReportIdToKeep,
-                InstrumentReportIdsToIgnore = { instrumentReportIdsToIgnore }
-            };
-
-            StockDataServiceReply reply = await _client.IgnoreRawDataReportAsync(request);
-            if (!reply.Success)
-                return UnprocessableEntity(new { error = reply.ErrorMessage });
-
-            return Ok();
-        } catch (Exception) {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new { error = "An unexpected error occurred." });
         }
     }
 

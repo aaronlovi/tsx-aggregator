@@ -11,7 +11,6 @@ public record DashboardStatsResponse(
     DateTimeOffset? MostRecentRawIngestion,
     DateTimeOffset? MostRecentAggregation,
     long UnprocessedEventCount,
-    long ManualReviewCount,
     IReadOnlyList<RawReportCountItem> RawReportCounts,
     DateTimeOffset? NextFetchDirectoryTime,
     DateTimeOffset? NextFetchInstrumentDataTime,

@@ -49,7 +49,7 @@ internal partial class RawCollector : BackgroundService {
         }
 
         // Signal that the directory is available for downstream services (e.g. QuoteService)
-        _registry.DirectoryInitialized.TrySetResult();
+        _ = _registry.DirectoryInitialized.TrySetResult();
 
         _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}", res.Success);
     }

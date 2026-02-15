@@ -1,14 +1,10 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, map, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, throwError } from 'rxjs';
 import { AppConfigService } from '../app-config.service';
 import { CompanySummary } from '../models/company.summary';
 import { CompanyDetails } from '../models/company.details';
 import { DashboardAggregates, DashboardStats } from '../models/dashboard-stats';
-import { InstrumentsWithConflictingRawData } from '../models/instruments_with_conflicting_raw_data';
-import { PagingData } from '../models/paging_data';
-import { InstrumentRawReportData } from '../models/instrument_raw_report_data';
-import { InstrumentWithConflictingRawData } from '../models/instrument_with_conflicting_raw_data';
 
 @Injectable({
     providedIn: 'root'
@@ -93,7 +89,6 @@ export class CompanyService {
                 data.mostRecentRawIngestion,
                 data.mostRecentAggregation,
                 data.unprocessedEventCount,
-                data.manualReviewCount,
                 data.rawReportCounts,
                 data.nextFetchDirectoryTime,
                 data.nextFetchInstrumentDataTime,
@@ -127,39 +122,6 @@ export class CompanyService {
         );
     }
 
-    getUpdatedRawDataReports(exchange: string, pageNumber: number, pageSize: number): Observable<any> {
-        return this.http.get<any>(`${this.config.apiEndpoint}/companies/updated_raw_data_reports?exchange=${exchange}&pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
-            map(data => {
-                const pagingData = new PagingData(data.pagingData.totalItems, data.pagingData.pageNumber, data.pagingData.pageSize);
-                const instruments = data.instrumentWithConflictingRawData.map((instrument: any) => {
-                    const conflictingRawReports = instrument.conflictingRawReports.map((report: any) =>
-                        new InstrumentRawReportData(
-                            report.instrumentReportId,
-                            new Date(report.reportCreatedDate),
-                            report.isCurrent,
-                            report.checkManually,
-                            report.ignoreReport,
-                            report.reportJson
-                        )
-                    );
-                    return new InstrumentWithConflictingRawData(
-                        instrument.instrumentId,
-                        instrument.exchange,
-                        instrument.companySymbol,
-                        instrument.instrumentSymbol,
-                        instrument.companyName,
-                        instrument.instrumentName,
-                        instrument.reportType,
-                        instrument.reportPeriodType,
-                        new Date(instrument.reportDate),
-                        conflictingRawReports
-                    );
-                });
-                return new InstrumentsWithConflictingRawData(pagingData, instruments);
-            })
-        );
-    }
-
     setPriorityCompanies(symbols: string[]): Observable<any> {
         const url = `${this.config.apiEndpoint}/companies/priority`;
         const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -170,16 +132,6 @@ export class CompanyService {
 
     getPriorityCompanies(): Observable<string[]> {
         return this.http.get<string[]>(`${this.config.apiEndpoint}/companies/priority`);
-    }
-
-    ignoreRawDataReports(instrumentId: number, instrumentReportIdToKeep: number, instrumentReportIdsToIgnore: number[]): Observable<any> {
-        const url = `${this.config.apiEndpoint}/companies/ignore_raw_report/${instrumentId}/${instrumentReportIdToKeep}`;
-        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-
-        return this.http.post<void>(url, instrumentReportIdsToIgnore, { headers }).pipe(
-            tap(() => console.log(`POST request to ${url} successful`)),
-            catchError(this.handleError)
-        );
     }
 
     private handleError(error: HttpErrorResponse): Observable<never> {

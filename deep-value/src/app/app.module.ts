@@ -30,7 +30,6 @@ import { CompactCurrencyPipe } from './pipes/compact-currency.pipe';
 import { RelativeTimePipe } from './pipes/relative-time.pipe';
 import { QuickSearchComponent } from './quick-search/quick-search.component';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
-import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
 import { SystemControlsComponent } from './system-controls/system-controls.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -46,7 +45,6 @@ import { MatCardModule } from '@angular/material/card';
         AboutComponent,
         CompanyDetailsComponent,
         QuickSearchComponent,
-        UpdatedRawDataReportsComponent,
         MissingDataComponent,
         SystemControlsComponent,
         DashboardComponent,

@@ -187,7 +187,7 @@ public class Aggregator : BackgroundService, INamedService {
             _logger);
 
         foreach (CurrentInstrumentRawDataReportDto rpt in rawReports)
-            companyReportBuilder.AddRawReport(rpt);
+            _ = companyReportBuilder.AddRawReport(rpt);
 
         CompanyReport companyReport = companyReportBuilder.Build();
 
@@ -213,13 +213,13 @@ public class Aggregator : BackgroundService, INamedService {
             _logger.LogInformation("ProcessPersistCommonServiceState success");
 
             // Indicate to any listeners that the pause/resume operation completed successfully
-            input.Completed.TrySetResult(null);
+            _ = input.Completed.TrySetResult(null);
         }
         else {
             _logger.LogInformation("ProcessPersistCommonServiceState failed with error: {ErrMsg}", res.ErrMsg);
 
             // Indicate to any listeners that the pause/resume operation failed
-            input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
+            _ = input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
         }
     }
 

@@ -42,9 +42,9 @@ internal class Registry {
                 _instruments.Add(instrument);
 
             _instruments.Sort(InstrumentKey.CompareBySymbols);
-            
+
             // Notify subscribers that the list of instruments has been initialized
-            DirectoryInitialized.TrySetResult();
+            _ = DirectoryInitialized.TrySetResult();
         }
     }
 

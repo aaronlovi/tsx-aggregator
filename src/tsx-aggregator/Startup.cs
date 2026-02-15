@@ -25,10 +25,10 @@ public class Startup {
     /// </summary>
     /// <param name="services"></param>
     public void ConfigureServices(IServiceCollection services) {
-        services.AddGrpc();
-        services.Configure<GoogleCredentialsOptions>(_config.GetSection(GoogleCredentialsOptions.GoogleCredentials));
-        services.Configure<HostedServicesOptions>(_config.GetSection(HostedServicesOptions.HostedServices));
-        services.Configure<FeatureFlagsOptions>(_config.GetSection(FeatureFlagsOptions.FeatureFlags));
+        _ = services.AddGrpc();
+        _ = services.Configure<GoogleCredentialsOptions>(_config.GetSection(GoogleCredentialsOptions.GoogleCredentials));
+        _ = services.Configure<HostedServicesOptions>(_config.GetSection(HostedServicesOptions.HostedServices));
+        _ = services.Configure<FeatureFlagsOptions>(_config.GetSection(FeatureFlagsOptions.FeatureFlags));
 
         VerifyCriticalConfiguration();
     }
@@ -39,10 +39,9 @@ public class Startup {
     /// This method defines how the application will respond to HTTP requests.
     /// </summary>
     public static void Configure(IApplicationBuilder app) {
-        app.
+        _ = app.
             UseRouting().
-            UseEndpoints(endpoints =>
-            {
+            UseEndpoints(endpoints => {
                 // In this case, incoming HTTP requests are routed to gRPC endpoints,
                 // which are configured in ReportingHostConfig.ConfigureEndpoints
                 var builders = new List<GrpcServiceEndpointConventionBuilder>();

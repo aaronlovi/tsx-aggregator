@@ -38,9 +38,10 @@ public class RawFinancialDeltaToolTests {
         var result = await rawFinancialDeltaTool.TakeDelta(instrumentId, existingRawFinancials, newRawCompanyData, cancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.InstrumentReportsToInsert.Count.Should().Be(0);
-        result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.Should().NotBeNull();
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(0);
     }
 
     [Fact]
@@ -80,20 +81,16 @@ public class RawFinancialDeltaToolTests {
             cancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.InstrumentReportsToInsert.Count.Should().Be(0);
-        result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.Should().NotBeNull();
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(0);
     }
 
-    [Theory]
-    [InlineData(true, 1, 0)] // Feature flag on: Insert new report to check manually. No reports to obsolete.
-    [InlineData(false, 1, 1)] // Feature flag off: Insert new report and obsolete the existing report.
-    public async Task TakeDelta_OneChangedProperty_ReturnsExpectedDelta(
-        bool checkExistingRawReportUpdates,
-        int numExpectedReportsToInsert,
-        int numExpectedReportsToDelete) {
+    [Fact]
+    public async Task TakeDelta_OneChangedProperty_ReturnsMergedUpdate() {
         // Arrange
-        SetupDI(checkExistingRawReportUpdates);
+        SetupDI();
         var rawFinancialDeltaTool = new RawFinancialDeltaTool(ServiceProvider);
 
         long instrumentReportId = TestDataFactory.DefaultInstrumentReportId;
@@ -110,44 +107,103 @@ public class RawFinancialDeltaToolTests {
                 ReportJson = "{\"DATA_POINT\": 2}" }
         };
 
-        // Set up incoming new data (same as the already existing data)
+        // Set up incoming new data - 2021 report has changed value
         var newRawCompanyData = new TsxCompanyData();
         newRawCompanyData.AnnualRawCashFlowReports.Add(
             new RawReportDataMap { ReportDate = TestDataFactory.Year2020AsDate, ["DATA_POINT"] = 1 });
         newRawCompanyData.AnnualRawCashFlowReports.Add(
             new RawReportDataMap { ReportDate = TestDataFactory.Year2021AsDate, ["DATA_POINT"] = 3 });
 
-        // Note: In existing 2021 Cash flow, data point is '2'. In new 2021 Cash flow, data point is '3'.
+        // Act
+        var result = await rawFinancialDeltaTool.TakeDelta(
+            TestDataFactory.DefaultInstrumentId,
+            existingRawFinancials,
+            newRawCompanyData,
+            CancellationToken.None);
 
-        var cancellationToken = CancellationToken.None;
+        // Assert - merge produces an update, not insert+obsolete
+        _ = result.Should().NotBeNull();
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(1);
+        _ = result.InstrumentReportsToUpdate[0].MergedReportJson.Should().Contain("3");
+    }
+
+    [Fact]
+    public async Task TakeDelta_NewFieldAdded_ReturnsMergedUpdate() {
+        // Arrange
+        SetupDI();
+        var rawFinancialDeltaTool = new RawFinancialDeltaTool(ServiceProvider);
+
+        // Existing report has {A=1}
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto>() {
+            CreateCurrentInstrumentReportDto(reportJson: "{\"A\": 1}")
+        };
+
+        // New report has {A=1, B=2}
+        var newRawCompanyData = new TsxCompanyData();
+        newRawCompanyData.AnnualRawCashFlowReports.Add(
+            new RawReportDataMap { ReportDate = TestDataFactory.Year2020AsDate, ["A"] = 1, ["B"] = 2 });
 
         // Act
         var result = await rawFinancialDeltaTool.TakeDelta(
             TestDataFactory.DefaultInstrumentId,
             existingRawFinancials,
             newRawCompanyData,
-            cancellationToken);
+            CancellationToken.None);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.InstrumentReportsToInsert.Count.Should().Be(numExpectedReportsToInsert);
-        result.InstrumentReportsToObsolete.Count.Should().Be(numExpectedReportsToDelete);
-        result.InstrumentReportsToInsert.Should().OnlyContain(
-            report => report.CheckManually == checkExistingRawReportUpdates,
-            checkExistingRawReportUpdates
-                ? "because delta tool mode is: inserting new reports to check manually"
-                : "because delta tool mode is: inserting new report and obsoleting existing report");
+        // Assert - new field added triggers merge update
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(1);
+
+        // Verify merged JSON contains both A and B
+        using var mergedDoc = System.Text.Json.JsonDocument.Parse(result.InstrumentReportsToUpdate[0].MergedReportJson);
+        var root = mergedDoc.RootElement;
+        _ = root.GetProperty("A").GetDecimal().Should().Be(1);
+        _ = root.GetProperty("B").GetDecimal().Should().Be(2);
     }
 
-    private void SetupDI(bool checkExistingRawReportUpdates = true) {
+    [Fact]
+    public async Task TakeDelta_MissingFieldPreserved_ReturnsMergedUpdate() {
+        // Arrange
+        SetupDI();
+        var rawFinancialDeltaTool = new RawFinancialDeltaTool(ServiceProvider);
+
+        // Existing report has {A=1, B=2}
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto>() {
+            CreateCurrentInstrumentReportDto(reportJson: "{\"A\": 1, \"B\": 2}")
+        };
+
+        // New report has only {A=1} - B is missing from new scrape
+        var newRawCompanyData = new TsxCompanyData();
+        newRawCompanyData.AnnualRawCashFlowReports.Add(
+            new RawReportDataMap { ReportDate = TestDataFactory.Year2020AsDate, ["A"] = 1 });
+
+        // Act
+        var result = await rawFinancialDeltaTool.TakeDelta(
+            TestDataFactory.DefaultInstrumentId,
+            existingRawFinancials,
+            newRawCompanyData,
+            CancellationToken.None);
+
+        // Assert - missing field B is preserved in merged result
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(1);
+
+        // Verify merged JSON preserves B from existing
+        using var mergedDoc = System.Text.Json.JsonDocument.Parse(result.InstrumentReportsToUpdate[0].MergedReportJson);
+        var root = mergedDoc.RootElement;
+        _ = root.GetProperty("A").GetDecimal().Should().Be(1);
+        _ = root.GetProperty("B").GetDecimal().Should().Be(2);
+    }
+
+    private void SetupDI() {
         var services = new ServiceCollection();
-        services.Configure<FeatureFlagsOptions>(options =>
-        {
-            options.CheckExistingRawReportUpdates = checkExistingRawReportUpdates;
-        });
-        services.AddSingleton<ILogger<RawFinancialDeltaTool>>(new NullLogger<RawFinancialDeltaTool>());
-        services.AddSingleton<ILogger<DbmInMemory>>(new NullLogger<DbmInMemory>());
-        services.AddSingleton<IDbmService, DbmInMemory>();
+        _ = services.AddSingleton<ILogger<RawFinancialDeltaTool>>(new NullLogger<RawFinancialDeltaTool>());
+        _ = services.AddSingleton<ILogger<DbmInMemory>>(new NullLogger<DbmInMemory>());
+        _ = services.AddSingleton<IDbmService, DbmInMemory>();
         _svp = services.BuildServiceProvider();
     }
 
@@ -157,7 +213,6 @@ public class RawFinancialDeltaToolTests {
         int? reportType = null,
         int? reportPeriodType = null,
         string reportJson = "{}",
-        DateOnly? reportDate = null,
-        bool? checkManually = null)
-        => TestDataFactory.CreateCurrentInstrumentReportDto(instrumentReportId, instrumentId, reportType, reportPeriodType, reportJson, reportDate, checkManually);
+        DateOnly? reportDate = null)
+        => TestDataFactory.CreateCurrentInstrumentReportDto(instrumentReportId, instrumentId, reportType, reportPeriodType, reportJson, reportDate);
 }

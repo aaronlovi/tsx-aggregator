@@ -91,18 +91,13 @@ internal class DbmInMemoryData {
             if (!instrumentReport.IsCurrent)
                 continue;
 
-            if (instrumentReport.CheckManually)
-                continue;
-
             var currentReport = new CurrentInstrumentRawDataReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
-                instrumentReport.ReportDate,
-                instrumentReport.CheckManually,
-                instrumentReport.IgnoreReport);
+                instrumentReport.ReportDate);
             reports.Add(currentReport);
         }
 
@@ -151,18 +146,13 @@ internal class DbmInMemoryData {
             if (!instrumentReport.IsCurrent)
                 continue;
 
-            if (instrumentReport.CheckManually)
-                continue;
-
             var currentReport = new CurrentInstrumentRawDataReportDto(
                 instrumentReport.InstrumentReportId,
                 instrumentId,
                 instrumentReport.ReportType,
                 instrumentReport.ReportPeriodType,
                 instrumentReport.ReportJson,
-                instrumentReport.ReportDate,
-                instrumentReport.CheckManually,
-                instrumentReport.IgnoreReport);
+                instrumentReport.ReportDate);
             retVal.Add(currentReport);
         }
 
@@ -194,8 +184,7 @@ internal class DbmInMemoryData {
                 foreach (InstrumentRawDataReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)ReportTypes.CashFlow
                         || ir.ReportPeriodType != (int)ReportPeriodTypes.Annual
-                        || !ir.IsCurrent
-                        || ir.CheckManually)
+                        || !ir.IsCurrent)
                         continue;
 
                     // Instrument report is fixed
@@ -214,7 +203,7 @@ internal class DbmInMemoryData {
                         NumAnnualCashFlowReports: 0); // Don't know yet
                     retVal.Add(processedFullInstrumentReport);
 
-                    numAnnualCashFlowReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out int numAnnualCashFlowReports);
+                    _ = numAnnualCashFlowReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out int numAnnualCashFlowReports);
                     numAnnualCashFlowReportsByInstrumentId[instrument.InstrumentId] = numAnnualCashFlowReports + 1;
                 }
             }
@@ -270,8 +259,7 @@ internal class DbmInMemoryData {
                 foreach (InstrumentRawDataReportDto ir in instrumentReports) {
                     if (ir.ReportType != (int)ReportTypes.CashFlow
                         || ir.ReportPeriodType != (int)ReportPeriodTypes.Annual
-                        || !ir.IsCurrent
-                        || ir.CheckManually)
+                        || !ir.IsCurrent)
                         continue;
 
                     // Instrument report is fixed
@@ -291,120 +279,6 @@ internal class DbmInMemoryData {
         if (!_serviceIsPausedByName.TryGetValue(serviceName, out bool isPaused))
             return false; // Not paused by default
         return isPaused;
-    }
-
-    public PagedInstrumentsWithRawDataReportUpdatesDto GetRawInstrumentsWithUpdatedDataReports(
-        string exchange, int pageNumber, int pageSize) {
-
-        int totalItems = 0;
-        var instrumentsWithUpdatedRawData = new List<InstrumentWithUpdatedRawDataDto>();
-        int numToSkip = (pageNumber - 1) * pageSize;
-        int numSkipped = 0;
-
-        foreach (var entry in _rawDataReportsByInstrumentId) {
-            long instrumentId = entry.Key;
-
-            if (!_instrumentsByInstrumentId.TryGetValue(instrumentId, out InstrumentDto? instrument))
-                continue;
-            if (!instrument.Exchange.EqualsOrdinal(exchange))
-                continue;
-
-            // Instrument is fixed at this point
-
-            List<InstrumentRawDataReportDto> rawDataReports = entry.Value;
-            var rawDataReportsMap = new Dictionary<(DateOnly, ReportPeriodTypes), List<InstrumentRawDataReportDto>>();
-            
-            foreach (InstrumentRawDataReportDto rawDataReport in rawDataReports) {
-                if (rawDataReport.ObsoletedDate is not null)
-                    continue;
-                if (rawDataReport.IgnoreReport)
-                    continue;
-
-                var key = (rawDataReport.ReportDate, (ReportPeriodTypes)rawDataReport.ReportPeriodType);
-                if (!rawDataReportsMap.TryGetValue(key, out List<InstrumentRawDataReportDto>? reports))
-                    rawDataReportsMap[key] = reports = [];
-                reports.Add(rawDataReport);
-            }
-
-            foreach (var entry2 in rawDataReportsMap) {
-                DateOnly reportDate = entry2.Key.Item1;
-                ReportPeriodTypes reportPeriodType = entry2.Key.Item2;
-                List<InstrumentRawDataReportDto> reports = entry2.Value;
-                
-                // Raw instrument data report does not have an update, skip
-                if (reports.Count < 2)
-                    continue;
-
-                ++totalItems;
-
-                // Skip until we reach the page we want
-                if (numSkipped < numToSkip) {
-                    ++numSkipped;
-                    continue;
-                }
-
-                // Skip if we have reached the end of the page
-                if (instrumentsWithUpdatedRawData.Count >= pageSize)
-                    continue;
-
-                // Instrument has updated data reports, and we are on the page we want
-
-                var rawReportAndUpdates = new List<InstrumentWithUpdatedRawDataItemDto>();
-
-                foreach (InstrumentRawDataReportDto report in reports) {
-                    rawReportAndUpdates.Add(new InstrumentWithUpdatedRawDataItemDto(
-                        InstrumentReportId: report.InstrumentReportId,
-                        CreatedDate: report.CreatedDate,
-                        IsCurrent: report.IsCurrent,
-                        CheckManually: report.CheckManually,
-                        IgnoreReport: report.IgnoreReport,
-                        SerializedReport: report.ReportJson));
-                }
-
-                instrumentsWithUpdatedRawData.Add(new InstrumentWithUpdatedRawDataDto(
-                    InstrumentId: instrumentId,
-                    Exchange: instrument.Exchange,
-                    CompanySymbol: instrument.CompanySymbol,
-                    CompanyName: instrument.CompanyName,
-                    InstrumentSymbol: instrument.InstrumentSymbol,
-                    InstrumentName: instrument.InstrumentName,
-                    ReportType: reports[0].ReportType,
-                    ReportPeriodType: reports[0].ReportPeriodType,
-                    ReportDate: reportDate,
-                    RawReportAndUpdates: rawReportAndUpdates));
-            }
-        }
-
-        return new PagedInstrumentsWithRawDataReportUpdatesDto(
-            PageNumber: pageNumber,
-            PageSize: pageSize,
-            TotalInstruments: totalItems,
-            InstrumentsWithUpdates: instrumentsWithUpdatedRawData);
-    }
-
-    public bool ExistsMatchingRawReport(CurrentInstrumentRawDataReportDto rawReportDto) {
-        if (!_rawDataReportsByInstrumentId.TryGetValue(rawReportDto.InstrumentId, out List<InstrumentRawDataReportDto>? existingReports))
-            return false;
-
-        var newReportData = RawReportDataMap.FromJsonString(rawReportDto.ReportJson);
-
-        foreach (InstrumentRawDataReportDto existingReport in existingReports) {
-            if (existingReport.ObsoletedDate is not null)
-                continue;
-            if (existingReport.ReportType != rawReportDto.ReportType)
-                continue;
-            if (existingReport.ReportPeriodType != rawReportDto.ReportPeriodType)
-                continue;
-            if (existingReport.ReportDate != rawReportDto.ReportDate)
-                continue;
-
-            using JsonDocument existingReportData = JsonDocument.Parse(existingReport.ReportJson);
-            
-            if (newReportData.IsEqual(existingReportData))
-                return true;
-        }
-
-        return false;
     }
 
     public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType) {
@@ -467,40 +341,6 @@ internal class DbmInMemoryData {
         instrumentEvents.Add(dto);
     }
 
-    public Result IgnoreRawUpdatedDataReport(RawInstrumentReportsToKeepAndIgnoreDto dto) {
-        if (!_rawDataReportsByInstrumentId.TryGetValue(dto.InstrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
-            return Result.SetFailure("Instrument not found");
-
-        var consistencyMap = new RawReportConsistencyMap();
-        RawReportConsistencyMapKey? mainKey = consistencyMap.BuildMap(dto, instrumentReports);
-
-        if (mainKey is null)
-            return Result.SetFailure("Report to keep not found");
-
-        Result res = consistencyMap.EnsureRequestIsConsistent(dto, mainKey);
-        if (!res.Success)
-            return res;
-
-        // If we got here, then the request is valid, so ignore the reports
-
-        MarkReportsAsIgnored();
-
-        return res;
-
-        // Local helper methods
-
-        void MarkReportsAsIgnored() {
-            var instrumentReportIdsToIgnore = new HashSet<long>(dto.ReportIdsToIgnore);
-            for (int i = 0; i < instrumentReports.Count; ++i) {
-                InstrumentRawDataReportDto rawDataReport = instrumentReports[i];
-                if (!instrumentReportIdsToIgnore.Contains(rawDataReport.InstrumentReportId))
-                    continue;
-
-                instrumentReports[i] = rawDataReport with { IgnoreReport = true, IsCurrent = false, CheckManually = false };
-            }
-        }
-    }
-
     public void SetStateFsmState(ApplicationCommonState stateFsmState) => _stateFsmState = new ApplicationCommonState(stateFsmState);
 
     public void UpdateNextTimeToFetchQuote(DateTime nextTimeToFetchQuotes) {
@@ -532,9 +372,6 @@ internal class DbmInMemoryData {
             }
         }
 
-        var numReportsToInsert = 0;
-        var numReportsToCheckManually = 0;
-
         // Insert new instrument reports
         foreach (var newReport in instrumentReportsToInsert) {
             if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
@@ -550,16 +387,25 @@ internal class DbmInMemoryData {
                 newReport.ReportDate,
                 CreatedDate: utcNow,
                 ObsoletedDate: null,
-                IsCurrent: true,
-                CheckManually: newReport.CheckManually,
-                IgnoreReport: newReport.IgnoreReport));
+                IsCurrent: true));
+        }
 
-            numReportsToInsert += newReport.CheckManually ? 0 : 1;
-            numReportsToCheckManually += newReport.CheckManually ? 1 : 0;
+        // Update existing instrument reports with merged JSON
+        foreach (var reportUpdate in rawFinancialsDelta.InstrumentReportsToUpdate) {
+            if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
+                continue;
+
+            for (int i = 0; i < instrumentReports.Count; i++) {
+                if (instrumentReports[i].InstrumentReportId != reportUpdate.InstrumentReportId)
+                    continue;
+
+                instrumentReports[i] = instrumentReports[i] with { ReportJson = reportUpdate.MergedReportJson, CreatedDate = utcNow };
+            }
         }
 
         // Insert raw data changed event, if needed
-        if (numReportsToInsert > 0 || instrumentReportsToObsolete.Count > 0) {
+        if (instrumentReportsToInsert.Count > 0 || instrumentReportsToObsolete.Count > 0
+            || rawFinancialsDelta.InstrumentReportsToUpdate.Count > 0) {
             var instrumentEventDto = new InstrumentEventDto(
                 instrumentId,
                 utcNow,
@@ -643,18 +489,14 @@ internal class DbmInMemoryData {
         }
 
         DateTimeOffset? latestRaw = null;
-        long manualReview = 0;
         var reportCountsByType = new Dictionary<int, long>();
         foreach (var entry in _rawDataReportsByInstrumentId) {
             foreach (InstrumentRawDataReportDto report in entry.Value) {
                 if (latestRaw is null || report.CreatedDate > latestRaw)
                     latestRaw = report.CreatedDate;
 
-                if (report.IsCurrent && report.CheckManually)
-                    ++manualReview;
-
-                if (report.IsCurrent && !report.IgnoreReport) {
-                    reportCountsByType.TryGetValue(report.ReportType, out long cnt);
+                if (report.IsCurrent) {
+                    _ = reportCountsByType.TryGetValue(report.ReportType, out long cnt);
                     reportCountsByType[report.ReportType] = cnt + 1;
                 }
             }
@@ -688,7 +530,6 @@ internal class DbmInMemoryData {
             MostRecentRawIngestion: latestRaw,
             MostRecentAggregation: latestProcessed,
             UnprocessedEventCount: unprocessedEvents,
-            ManualReviewCount: manualReview,
             RawReportCountsByType: rawReportCounts);
     }
 

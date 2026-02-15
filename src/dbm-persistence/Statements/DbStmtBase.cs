@@ -66,7 +66,7 @@ internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
         try {
             using var cmd = new NpgsqlCommand(_sql, conn);
             foreach (NpgsqlParameter boundParam in GetBoundParameters())
-                cmd.Parameters.Add(boundParam);
+                _ = cmd.Parameters.Add(boundParam);
             await cmd.PrepareAsync(ct);
             using var reader = await cmd.ExecuteReaderAsync(ct);
 
@@ -192,7 +192,7 @@ internal abstract class NonQueryBatchedDbStmtBase : IPostgresStatement {
     protected void AddCommandToBatch(string sql, IReadOnlyCollection<NpgsqlParameter> boundParams) {
         var cmd = new NpgsqlBatchCommand(sql);
         foreach (NpgsqlParameter boundParam in boundParams)
-            cmd.Parameters.Add(boundParam);
+            _ = cmd.Parameters.Add(boundParam);
         _commands.Add(cmd);
     }
 }

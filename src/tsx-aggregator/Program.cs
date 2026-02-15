@@ -43,13 +43,12 @@ public class Program {
     private static IHost BuildHost<TStartup>(string[] args) where TStartup : class {
 
         var host = Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); })
+            .ConfigureWebHostDefaults(webBuilder => { _ = webBuilder.UseStartup<TStartup>(); })
             .ConfigureServices((context, services) => {
 
                 var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"] ?? DefaultPortStr, CultureInfo.InvariantCulture);
-                services
-                    .Configure<KestrelServerOptions>(opt =>
-                    {
+                _ = services
+                    .Configure<KestrelServerOptions>(opt => {
                         opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
                         opt.AllowAlternateSchemes = true;
                     })
@@ -59,12 +58,12 @@ public class Program {
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
-                services
+                _ = services
                     .AddValidatedOptions<GoogleCredentialsOptions>(context.Configuration, GoogleCredentialsOptions.GoogleCredentials)
                     .AddValidatedOptions<HostedServicesOptions>(context.Configuration, HostedServicesOptions.HostedServices)
                     .AddValidatedOptions<FeatureFlagsOptions>(context.Configuration, FeatureFlagsOptions.FeatureFlags);
 
-                services
+                _ = services
                     .AddHttpClient()
                     .AddSingleton<IValidateOptions<GoogleCredentialsOptions>, GoogleCredentialsOptionsValidator>()
                     .AddSingleton<PostgresExecutor>()
@@ -79,29 +78,29 @@ public class Program {
                     .AddSingleton<IGoogleSheetsService, GoogleSheetsService>();
 
                 if (DoesConfigContainConnectionString(context.Configuration))
-                    services.AddSingleton<IDbmService, DbmService>();
+                    _ = services.AddSingleton<IDbmService, DbmService>();
                 else
-                    services.AddSingleton<IDbmService, DbmInMemory>();
+                    _ = services.AddSingleton<IDbmService, DbmInMemory>();
 
                 var serviceProvider = services.BuildServiceProvider();
                 var hostedServicesOptions = serviceProvider.GetRequiredService<IOptions<HostedServicesOptions>>().Value;
 
                 if (hostedServicesOptions.RunAggregator ?? false)
-                    services.AddHostedService(p => p.GetRequiredService<Aggregator>());
+                    _ = services.AddHostedService(p => p.GetRequiredService<Aggregator>());
 
                 if (hostedServicesOptions.RunRawCollector ?? false)
-                    services.AddHostedService(p => p.GetRequiredService<RawCollector>());
+                    _ = services.AddHostedService(p => p.GetRequiredService<RawCollector>());
 
                 if (hostedServicesOptions.RunStocksDataRequestsProcessor ?? false)
-                    services.AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>());
+                    _ = services.AddHostedService(p => p.GetRequiredService<IStocksDataRequestsProcessor>());
 
                 if (hostedServicesOptions.RunQuoteService ?? false)
-                    services.AddHostedService(p => p.GetRequiredService<IQuoteService>());
+                    _ = services.AddHostedService(p => p.GetRequiredService<IQuoteService>());
 
                 if (hostedServicesOptions.RunSearchService ?? false)
-                    services.AddHostedService(p => p.GetRequiredService<ISearchService>());
+                    _ = services.AddHostedService(p => p.GetRequiredService<ISearchService>());
 
-                services.AddGrpc();
+                _ = services.AddGrpc();
             })
             .ConfigureLogging(builder => {
 

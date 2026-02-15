@@ -9,9 +9,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
     private const string sql = "SELECT instrument_report_id, report_type, report_period_type, report_json, report_date"
         + " FROM instrument_reports"
         + " WHERE is_current = true"
-        + " AND instrument_id = @instrumentId"
-        + " AND check_manually = false"
-        + " AND ignore_report = false";
+        + " AND instrument_id = @instrumentId";
 
     private readonly long _instrumentId;
     private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReports;
@@ -59,9 +57,7 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
             reader.GetInt32(_reportTypeIndex),
             reader.GetInt32(_reportPeriodTypeIndex),
             reader.GetString(_reportJsonIndex),
-            reportDate,
-            CheckManually: false,
-            IgnoreReport: false);
+            reportDate);
         _instrumentReports.Add(report);
 
         return true;

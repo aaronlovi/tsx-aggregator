@@ -10,9 +10,6 @@ service StockDataService {
     rpc GetStocksDetail(GetStocksDetailRequest) returns (GetStocksDetailReply);
     rpc GetStockSearchResults(GetStockSearchResultsRequest) returns (GetStockSearchResultsReply);
 
-    rpc GetStocksWithUpdatedRawDataReports(GetStocksWithUpdatedRawDataReportsRequest) returns (GetStocksWithUpdatedRawDataReportsReply);
-    // Raw data report to be ignored must be one that has the 'check manually' flag set to true
-    rpc IgnoreRawDataReport(IgnoreRawDataReportRequest) returns (StockDataServiceReply);
     rpc GetInstrumentsWithNoRawReports(GetInstrumentsWithNoRawReportsRequest) returns (GetInstrumentsWithNoRawReportsReply);
     rpc SetPriorityCompanies(SetPriorityCompaniesRequest) returns (StockDataServiceReply);
     rpc GetPriorityCompanies(GetPriorityCompaniesRequest) returns (GetPriorityCompaniesReply);
@@ -78,57 +75,6 @@ message GetStockSearchResultsReplyItem {
     string company_name = 3;
 }
 
-message GetStocksWithUpdatedRawDataReportsRequest {
-    string exchange = 1;
-    int32 page_number = 2;
-    int32 page_size = 3;
-}
-
-message GetStocksWithUpdatedRawDataReportsReply {
-    bool success = 1;
-    string error_message = 2;
-    int32 total_items = 3;
-    int32 page_number = 4;
-    int32 page_size = 5;
-    repeated InstrumentWithUpdatedRawData instrumentRawReportsWithUpdates = 6;
-}
-
-message InstrumentWithUpdatedRawData {
-    uint64 instrument_id = 1;
-    string exchange = 2;
-    string company_symbol = 3;
-    string instrument_symbol = 4;
-    string company_name = 5;
-    string instrument_name = 6;
-    uint32 report_type = 7;
-    uint32 report_period_type = 8;
-    google.protobuf.Timestamp report_date = 9;
-    repeated InstrumentWithUpdatedRawDataItem rawReportAndUpdates = 10;
-}
-
-message InstrumentWithUpdatedRawDataItem {
-    uint64 instrument_report_id = 1;
-    google.protobuf.Timestamp created_date = 2;
-    bool is_current = 3;
-    bool check_manually = 4;
-    bool ignore_report = 5;
-    string report_json = 6;
-}
-
-// Raw collector must find the below to be consistent
-// The instrument report ids should all either:
-// - have the "is_current" flag set
-// - have the "check_manually" flag set
-// - none of the reports should already be obsoleted
-// In addition, there should be no other current reports with the same "report_date", "report_type",
-//              and "report_period_type" that are not yet ignored
-// If the conditions are not met, then an error is returned
-message IgnoreRawDataReportRequest {
-    uint64 instrument_id = 1;
-    uint64 instrument_report_id_to_keep = 2;
-    repeated uint64 instrument_report_ids_to_ignore = 3;
-}
-
 message StockDataServiceReply {
     bool success = 1;
     string error_message = 2;
@@ -182,7 +128,6 @@ message GetDashboardStatsReply {
     google.protobuf.Timestamp most_recent_raw_ingestion = 7;
     google.protobuf.Timestamp most_recent_aggregation = 8;
     int64 unprocessed_event_count = 9;
-    int64 manual_review_count = 10;
     repeated DashboardRawReportCount raw_report_counts = 11;
     google.protobuf.Timestamp next_fetch_directory_time = 12;
     google.protobuf.Timestamp next_fetch_instrument_data_time = 13;

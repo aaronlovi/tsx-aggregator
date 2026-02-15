@@ -86,7 +86,7 @@ public class SearchService : BackgroundService, ISearchService {
             InitializeSearchTrie();
 
             // Mark the Search service as ready to accept search requests
-            SearchServiceReady.TrySetResult();
+            _ = SearchServiceReady.TrySetResult();
 
         } catch (OperationCanceledException) {
             _logger.LogInformation("HandleTimeout - Operation cancelled");
@@ -118,7 +118,7 @@ public class SearchService : BackgroundService, ISearchService {
                 return;
             } else {
                 _logger.LogInformation("SetupTimeoutTask - Timeout reached, posting timeout message");
-                _inputChannel.Writer.TryWrite(new SearchServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
+                _ = _inputChannel.Writer.TryWrite(new SearchServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
             }
         }, ct);
     }
@@ -149,7 +149,7 @@ public class SearchService : BackgroundService, ISearchService {
                 node.Children[c] = new();
             node = node.Children[c];
         }
-        node.Keys.Add(new InstrumentKey(companySymbol, instrumentSymbol, exchange));
+        _ = node.Keys.Add(new InstrumentKey(companySymbol, instrumentSymbol, exchange));
     }
 
     private void HandleQuickSearch(SearchServiceQuickSearchRequestInput inp, CancellationToken token) {
@@ -178,10 +178,10 @@ public class SearchService : BackgroundService, ISearchService {
                     break;
             }
 
-            inp.Completed.TrySetResult(results);
+            _ = inp.Completed.TrySetResult(results);
         } catch (Exception ex) {
             _logger.LogError(ex, "HandleQuickSearch - general fault");
-            inp.Completed.TrySetException(ex);
+            _ = inp.Completed.TrySetException(ex);
         }
     }
 
@@ -206,7 +206,7 @@ public class SearchService : BackgroundService, ISearchService {
             return;
 
         foreach (InstrumentKey k in node.Keys) {
-            results.Add(k);
+            _ = results.Add(k);
         }
 
         foreach (TrieNode<InstrumentKey> child in node.Children.Values.Cast<TrieNode<InstrumentKey>>()) {

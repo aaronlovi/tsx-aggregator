@@ -10,7 +10,6 @@ public record DashboardStatsDto(
     DateTimeOffset? MostRecentRawIngestion,
     DateTimeOffset? MostRecentAggregation,
     long UnprocessedEventCount,
-    long ManualReviewCount,
     IReadOnlyList<RawReportCountByTypeDto> RawReportCountsByType) {
 
     public long InstrumentsWithoutProcessedReports =>

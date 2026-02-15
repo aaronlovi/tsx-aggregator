@@ -37,6 +37,27 @@ public class RawReportDataMap : NormalizedStringKeysHashMap<decimal> {
         return true;
     }
 
+    public string MergeWith(JsonDocument existingReportJson) {
+        // Start with all existing fields (normalize keys to uppercase to match NormalizedStringKeysHashMap)
+        var merged = new Dictionary<string, object>();
+        foreach (JsonProperty prop in existingReportJson.RootElement.EnumerateObject()) {
+            string normalizedKey = prop.Name.ToUpperInvariant();
+            if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetDecimal(out decimal val))
+                merged[normalizedKey] = val;
+            else if (prop.Value.ValueKind == JsonValueKind.String)
+                merged[normalizedKey] = prop.Value.GetString()!;
+        }
+        // Overlay new numeric fields (add new keys, overwrite changed values)
+        // Keys from NormalizedStringKeysHashMap are already uppercase
+        foreach (string key in Keys) {
+            merged[key] = this[key]!;
+        }
+        // Set REPORTDATE from this report if available
+        if (ReportDate is not null)
+            merged["REPORTDATE"] = ReportDate.Value.ToString("yyyy-MM-dd") + "T00:00:00Z";
+        return JsonSerializer.Serialize(merged);
+    }
+
     public string AsJsonString() {
         var map = new Dictionary<string, object>();
         foreach (string x in Keys) {            

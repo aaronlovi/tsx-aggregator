@@ -55,10 +55,6 @@ internal class RawCollectorFsm {
                 ProcessPauseServiceInput(pauseInput, output);
                 ProcessUpdateTime(output);
                 break;
-            case RawCollectorIgnoreRawReportInput rawCollectorIgnoreRawReportInput:
-                _logger.LogInformation("RawCollectorFsm received an ignore raw report input: {Input}", rawCollectorIgnoreRawReportInput);
-                ProcessUpdateTime(output);
-                break;
             case RawCollectorSetPriorityCompaniesInput:
             case RawCollectorGetPriorityCompaniesInput:
                 ProcessUpdateTime(output);

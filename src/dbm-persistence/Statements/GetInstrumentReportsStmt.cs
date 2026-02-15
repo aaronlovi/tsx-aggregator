@@ -7,8 +7,7 @@ namespace dbm_persistence;
 
 internal sealed class GetInstrumentReportsStmt : QueryDbStmtBase {
     private const string sql = "SELECT instrument_report_id, instrument_id, report_type, report_period_type, report_json,"
-        + " report_date, created_date, obsoleted_date, check_manually,"
-        + " ignore_report"
+        + " report_date, created_date, obsoleted_date"
         + " FROM instrument_reports"
         + " WHERE instrument_id = @instrumentId"
         + " AND is_current = true";
@@ -24,8 +23,6 @@ internal sealed class GetInstrumentReportsStmt : QueryDbStmtBase {
     private static int _reportDateIndex = -1;
     private static int _createdDateIndex = -1;
     private static int _obsoletedDateIndex = -1;
-    private static int _checkManuallyIndex = -1;
-    private static int _ignoreReportIndex = -1;
 
     public GetInstrumentReportsStmt(long instrumentId)
         : base(sql, nameof(GetInstrumentReportsStmt)) {
@@ -54,8 +51,6 @@ internal sealed class GetInstrumentReportsStmt : QueryDbStmtBase {
         _reportDateIndex = reader.GetOrdinal("report_date");
         _createdDateIndex = reader.GetOrdinal("created_date");
         _obsoletedDateIndex = reader.GetOrdinal("obsoleted_date");
-        _checkManuallyIndex = reader.GetOrdinal("check_manually");
-        _ignoreReportIndex = reader.GetOrdinal("ignore_report");
     }
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
@@ -74,9 +69,7 @@ internal sealed class GetInstrumentReportsStmt : QueryDbStmtBase {
             reportDate,
             createdDate,
             obsoletedDate,
-            IsCurrent: true,
-            reader.GetBoolean(_checkManuallyIndex),
-            reader.GetBoolean(_ignoreReportIndex));
+            IsCurrent: true);
         _instrumentReports.Add(report);
 
         return true;

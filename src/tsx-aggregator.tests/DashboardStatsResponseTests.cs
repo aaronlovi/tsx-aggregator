@@ -57,7 +57,6 @@ public class DashboardStatsResponseTests {
             MostRecentRawIngestion: now,
             MostRecentAggregation: now,
             UnprocessedEventCount: 15,
-            ManualReviewCount: 7,
             RawReportCounts: counts,
             NextFetchDirectoryTime: nextDir,
             NextFetchInstrumentDataTime: nextInst,
@@ -72,7 +71,6 @@ public class DashboardStatsResponseTests {
         _ = response.MostRecentRawIngestion.Should().Be(now);
         _ = response.MostRecentAggregation.Should().Be(now);
         _ = response.UnprocessedEventCount.Should().Be(15);
-        _ = response.ManualReviewCount.Should().Be(7);
         _ = response.RawReportCounts.Should().HaveCount(2);
         _ = response.NextFetchDirectoryTime.Should().Be(nextDir);
         _ = response.NextFetchInstrumentDataTime.Should().Be(nextInst);

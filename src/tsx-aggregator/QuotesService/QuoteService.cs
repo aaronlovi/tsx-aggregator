@@ -104,7 +104,7 @@ public class QuoteService : BackgroundService, IQuoteService {
             _pricesByInstrumentSymbol = oldPrices;
 
             // Mark the Quote service as ready to accept price requests
-            QuoteServiceReady.TrySetResult();
+            _ = QuoteServiceReady.TrySetResult();
 
             if (ti.CurTimeUtc < _nextFetchQuotesTime) {
                 _logger.LogInformation("Not time to fetch new quotes yet, skipping");
@@ -124,7 +124,7 @@ public class QuoteService : BackgroundService, IQuoteService {
 
             // Update the next time to get stock quotes
             _nextFetchQuotesTime = ti.CurTimeUtc + Constants.TwoHours;
-            await _dbm.UpdateNextTimeToFetchQuotes(_nextFetchQuotesTime.Value, ct);
+            _ = await _dbm.UpdateNextTimeToFetchQuotes(_nextFetchQuotesTime.Value, ct);
 
             await _sheetsService.FetchQuoteOverrides(ct);
 
@@ -178,7 +178,7 @@ public class QuoteService : BackgroundService, IQuoteService {
                 return;
             } else {
                 _logger.LogInformation("QuoteService - Timeout reached, posting timeout message");
-                _inputChannel.Writer.TryWrite(new QuoteServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
+                _ = _inputChannel.Writer.TryWrite(new QuoteServiceTimeoutInput(reqId: 0, cancellationTokenSource: null, curTimeUtc: DateTime.UtcNow));
             }
         }, ct);
     }
@@ -197,11 +197,11 @@ public class QuoteService : BackgroundService, IQuoteService {
                 }
             }
 
-            inp.Completed.TrySetResult(prices);
+            _ = inp.Completed.TrySetResult(prices);
 
         } catch (Exception ex) {
             _logger.LogError(ex, "ProcessQuoteServiceFillPricesForSymbolsInput - general fault");
-            inp.Completed.TrySetException(ex);
+            _ = inp.Completed.TrySetException(ex);
         }
     }
 

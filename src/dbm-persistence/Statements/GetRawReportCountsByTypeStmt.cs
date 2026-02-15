@@ -9,7 +9,7 @@ internal sealed class GetRawReportCountsByTypeStmt : QueryDbStmtBase {
     private const string sql =
         "SELECT report_type, COUNT(*) AS cnt"
         + " FROM instrument_reports"
-        + " WHERE is_current = true AND ignore_report = false"
+        + " WHERE is_current = true"
         + " GROUP BY report_type"
         + " ORDER BY report_type";
 

@@ -32,20 +32,20 @@ public abstract class LogUtils {
             return "[]";
 
         var sb = new StringBuilder();
-        sb.Append('[');
+        _ = sb.Append('[');
 
         int i = 0;
         foreach (var item in list) {
             if (i >= maxItems) {
-                sb.Append($", and {list.Count - maxItems} more...");
+                _ = sb.Append($", and {list.Count - maxItems} more...");
                 break;
             }
             if (i > 0)
-                sb.Append(',');
-            sb.Append(item?.ToString() ?? "null");
+                _ = sb.Append(',');
+            _ = sb.Append(item?.ToString() ?? "null");
             ++i;
         }
-        sb.Append(']');
+        _ = sb.Append(']');
 
         return sb.ToString();
     }

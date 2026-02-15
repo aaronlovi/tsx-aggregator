@@ -81,7 +81,7 @@ public class GoogleSheetsService : IGoogleSheetsService {
 
     public void ClearColumns() {
         var request = new ClearValuesRequest();
-        _sheetService.Spreadsheets.Values
+        _ = _sheetService.Spreadsheets.Values
             .Clear(request, _googleCredentials.SpreadsheetId, _googleCredentials.SpreadsheetName)
             .Execute();
     }

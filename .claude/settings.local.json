@@ -11,7 +11,11 @@
       "Bash(findstr:*)",
       "Bash(powershell:*)",
       "Bash(dotnet add package:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nMerge origin/master: resolve conflict, migrate score category table to @if/@for\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(echo:*)"
     ]
   }
 }

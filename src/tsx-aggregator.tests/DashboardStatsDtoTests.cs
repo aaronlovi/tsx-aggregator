@@ -16,7 +16,6 @@ public class DashboardStatsDtoTests {
             MostRecentRawIngestion: DateTimeOffset.UtcNow,
             MostRecentAggregation: DateTimeOffset.UtcNow,
             UnprocessedEventCount: 5,
-            ManualReviewCount: 3,
             RawReportCountsByType: []);
 
         // Act & Assert
@@ -33,7 +32,6 @@ public class DashboardStatsDtoTests {
             MostRecentRawIngestion: null,
             MostRecentAggregation: null,
             UnprocessedEventCount: 0,
-            ManualReviewCount: 0,
             RawReportCountsByType: []);
 
         // Act & Assert
@@ -56,7 +54,6 @@ public class DashboardStatsDtoTests {
             MostRecentRawIngestion: null,
             MostRecentAggregation: null,
             UnprocessedEventCount: 0,
-            ManualReviewCount: 0,
             RawReportCountsByType: counts);
 
         // Act & Assert
@@ -77,7 +74,6 @@ public class DashboardStatsDtoTests {
             MostRecentRawIngestion: null,
             MostRecentAggregation: null,
             UnprocessedEventCount: 0,
-            ManualReviewCount: 0,
             RawReportCountsByType: []);
 
         // Act & Assert

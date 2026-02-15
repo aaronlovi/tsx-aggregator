@@ -95,7 +95,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             AddCompanyItem(request.Exchange, dto, reply, _logger);
         }
 
-        request.Completed.TrySetResult(reply);
+        _ = request.Completed.TrySetResult(reply);
 
         // Local helper methods
 
@@ -185,7 +185,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             reply.StockDetail = TransformCompanyItem(request.Exchange, res.Data, _logger);
         }
 
-        request.Completed.TrySetResult(reply);
+        _ = request.Completed.TrySetResult(reply);
 
         // Local helper methods
 
@@ -268,7 +268,6 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             reply.MostRecentAggregation = dto.MostRecentAggregation.HasValue
                 ? Timestamp.FromDateTimeOffset(dto.MostRecentAggregation.Value) : null;
             reply.UnprocessedEventCount = dto.UnprocessedEventCount;
-            reply.ManualReviewCount = dto.ManualReviewCount;
 
             foreach (models.RawReportCountByTypeDto countDto in dto.RawReportCountsByType) {
                 reply.RawReportCounts.Add(new DashboardRawReportCount {
@@ -296,7 +295,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             _logger.LogWarning("ProcessGetDashboardStatsRequest Failed - {Error}", res.ErrMsg);
         }
 
-        request.Completed.TrySetResult(reply);
+        _ = request.Completed.TrySetResult(reply);
     }
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {

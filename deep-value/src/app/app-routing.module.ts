@@ -4,7 +4,6 @@ import { AboutComponent } from './about/about.component';
 import { CompanyDetailsComponent } from './company-details/company-details.component';
 import { CompanyListComponent } from './company-list/company-list.component';
 import { AllCompaniesComponent } from './all-companies/all-companies.component';
-import { UpdatedRawDataReportsComponent } from './updated-raw-data-reports/updated-raw-data-reports';
 import { MissingDataComponent } from './missing-data/missing-data.component';
 import { SystemControlsComponent } from './system-controls/system-controls.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -17,7 +16,6 @@ const routes: Routes = [
     { path: 'companies/all', component: AllCompaniesComponent },
     { path: 'companies/missing_data', component: MissingDataComponent },
     { path: 'company-details/:exchange/:instrumentSymbol', component: CompanyDetailsComponent },
-    { path: 'companies/updated_raw_data_reports', component: UpdatedRawDataReportsComponent },
     { path: 'system-controls', component: SystemControlsComponent },
     { path: '**', redirectTo: '/' }
 ];

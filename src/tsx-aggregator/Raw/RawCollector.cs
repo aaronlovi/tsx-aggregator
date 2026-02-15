@@ -151,12 +151,6 @@ internal partial class RawCollector : BackgroundService, INamedService {
     }
 
     private Task PreprocessInputs(RawCollectorInputBase inputs, CancellationToken ct) {
-        if (inputs is RawCollectorIgnoreRawReportInput ignoreRawReportInput)
-            return ProcessIgnoreRawReport(ignoreRawReportInput, ct);
-
-        if (inputs is RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput getUpdatedReportsInput)
-            return ProcessGetStocksWithUpdatedRawDataReportsRequest(getUpdatedReportsInput, ct);
-
         if (inputs is RawCollectorGetInstrumentsWithNoRawReportsInput noRawReportsInput)
             return ProcessGetInstrumentsWithNoRawReportsRequest(noRawReportsInput, ct);
 
@@ -177,44 +171,14 @@ internal partial class RawCollector : BackgroundService, INamedService {
         // Trigger immediate fetch by resetting the timer
         _stateFsm.NextFetchInstrumentDataTime = DateTime.UtcNow;
 
-        input.Completed.TrySetResult(validCount);
+        _ = input.Completed.TrySetResult(validCount);
         return Task.CompletedTask;
     }
 
     private Task ProcessGetPriorityCompanies(RawCollectorGetPriorityCompaniesInput input) {
         var symbols = _registry.GetPriorityCompanySymbols();
-        input.Completed.TrySetResult(symbols);
+        _ = input.Completed.TrySetResult(symbols);
         return Task.CompletedTask;
-    }
-
-    private async Task ProcessIgnoreRawReport(RawCollectorIgnoreRawReportInput inputs, CancellationToken ct) {
-        var instrumentReportIdsToIgnore = new List<long>();
-        foreach (var id in inputs.InstrumentReportIdsToIgnore)
-            instrumentReportIdsToIgnore.Add((long)id);
-
-        var dto = new RawInstrumentReportsToKeepAndIgnoreDto(
-            (long)inputs.InstrumentId,
-            (long)inputs.InstrumentReportIdToKeep,
-            instrumentReportIdsToIgnore);
-
-        var res = await _dbm.IgnoreRawUpdatedDataReport(dto, ct);
-
-        if (res.Success)
-            _logger.LogInformation("PreprocessInputs - IgnoreRawUpdatedDataReport success");
-        else
-            _logger.LogWarning("PreprocessInputs - IgnoreRawUpdatedDataReport failed with error: {ErrMsg}", res.ErrMsg);
-
-        inputs.Completed.TrySetResult(res);
-    }
-
-    private async Task ProcessGetStocksWithUpdatedRawDataReportsRequest(RawCollectorGetStocksWithUpdatedRawDataReportsRequestInput inputs, CancellationToken ct) {
-        Result<PagedInstrumentsWithRawDataReportUpdatesDto> res = await _dbm.GetRawInstrumentsWithUpdatedDataReports(inputs.Exchange, inputs.PageNumber, inputs.PageSize, ct);
-        if (res.Success)
-            _logger.LogInformation("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports success");
-        else
-            _logger.LogWarning("PreprocessInputs - GetRawInstrumentsWithUpdatedDataReports failed with error: {ErrMsg}", res.ErrMsg);
-
-        inputs.Completed.TrySetResult(res);
     }
 
     private async Task ProcessGetInstrumentsWithNoRawReportsRequest(
@@ -225,7 +189,7 @@ internal partial class RawCollector : BackgroundService, INamedService {
         else
             _logger.LogWarning("PreprocessInputs - GetInstrumentsWithNoRawReports failed with error: {ErrMsg}", res.ErrMsg);
 
-        inputs.Completed.TrySetResult(res);
+        _ = inputs.Completed.TrySetResult(res);
     }
 
     private async Task ProcessOutput(
@@ -270,13 +234,13 @@ internal partial class RawCollector : BackgroundService, INamedService {
             _logger.LogInformation("ProcessPersistCommonServiceState success");
 
             // Indicate to any listeners that the pause/resume operation completed successfully
-            input.Completed.TrySetResult(null);
+            _ = input.Completed.TrySetResult(null);
         }
         else {
             _logger.LogInformation("ProcessPersistCommonServiceState failed with error: {ErrMsg}", res.ErrMsg);
 
             // Indicate to any listeners that the pause/resume operation failed
-            input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
+            _ = input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
         }
     }
 

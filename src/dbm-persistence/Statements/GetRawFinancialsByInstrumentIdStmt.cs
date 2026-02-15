@@ -7,12 +7,10 @@ namespace dbm_persistence;
 
 internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     private const string sql = "SELECT ir.instrument_report_id, ir.instrument_id, ir.report_type, ir.report_period_type, ir.report_json, ir.report_date,"
-        + " ir.created_date, ir.obsoleted_date, ir.is_current, ir.check_manually"
+        + " ir.created_date, ir.obsoleted_date, ir.is_current"
         + " FROM instrument_reports ir"
         + " WHERE ir.instrument_id = @instrument_id"
-        + " AND ir.is_current = true"
-        + " AND ir.check_manually = false"
-        + " AND ir.ignore_report = false";
+        + " AND ir.is_current = true";
 
     // Inputs
     private readonly long _instrumentId;
@@ -26,7 +24,6 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
     private static int _createdDateIndex = -1;
     private static int _obsoletedDateIndex = -1;
     private static int _isCurrentIndex = -1;
-    private static int _checkManuallyIndex = -1;
 
     // Results
     private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReportDtoList; // Array of type InstrumentRawDataReportDto
@@ -58,7 +55,6 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
         _createdDateIndex = reader.GetOrdinal("created_date");
         _obsoletedDateIndex = reader.GetOrdinal("obsoleted_date");
         _isCurrentIndex = reader.GetOrdinal("is_current");
-        _checkManuallyIndex = reader.GetOrdinal("check_manually");
     }
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
@@ -70,9 +66,7 @@ internal sealed class GetRawFinancialsByInstrumentIdStmt : QueryDbStmtBase {
             reader.GetInt32(_reportTypeIndex),
             reader.GetInt32(_reportPeriodTypeIndex),
             reader.GetString(_reportJsonIndex),
-            reportDate,
-            reader.GetBoolean(_checkManuallyIndex),
-            IgnoreReport: false);
+            reportDate);
         _instrumentReportDtoList.Add(i);
         return true;
     }
