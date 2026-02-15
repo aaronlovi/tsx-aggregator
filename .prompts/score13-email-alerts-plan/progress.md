@@ -15,5 +15,7 @@
   - Tests: EmailServiceTests.cs (3 tests)
   - Committed: yes
 
-- [ ] Checkpoint 4: Score13AlertService BackgroundService
-  - (pending)
+- [x] Checkpoint 4: Score13AlertService BackgroundService
+  - Files: Score13AlertService.cs, Program.cs, AssemblyInfo.cs
+  - Tests: Score13AlertServiceTests.cs (6 tests)
+  - Committed: yes
