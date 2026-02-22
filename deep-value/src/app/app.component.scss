@@ -4,9 +4,26 @@ mat-sidenav-container {
 
 mat-sidenav {
   width: 220px;
+  background-color: #1a1a2e;
+
+  ::ng-deep .mat-mdc-list-item {
+    color: #b0b0c0 !important;
+
+    .mdc-list-item__primary-text {
+      color: #b0b0c0 !important;
+    }
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
 }
 
 .active {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.12) !important;
   font-weight: 500;
+
+  ::ng-deep .mdc-list-item__primary-text {
+    color: #ffffff !important;
+  }
 }

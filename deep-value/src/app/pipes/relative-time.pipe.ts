@@ -13,12 +13,14 @@ export class RelativeTimePipe implements PipeTransform {
         const isPast = diffMs < 0;
 
         const days = Math.floor(absDiffSec / 86400);
-        const minutes = Math.floor((absDiffSec % 86400) / 60);
+        const hours = Math.floor((absDiffSec % 86400) / 3600);
+        const minutes = Math.floor((absDiffSec % 3600) / 60);
         const seconds = absDiffSec % 60;
 
         let parts: string[] = [];
         if (days > 0) parts.push(`${days}d`);
-        if (days > 0 || minutes > 0) parts.push(`${minutes}m`);
+        if (days > 0 || hours > 0) parts.push(`${hours}h`);
+        if (days > 0 || hours > 0 || minutes > 0) parts.push(`${minutes}m`);
         parts.push(`${seconds}s`);
 
         const timeStr = parts.join(' ');
