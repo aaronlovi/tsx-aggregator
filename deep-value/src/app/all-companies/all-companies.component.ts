@@ -19,6 +19,8 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
         'marketCap',
         'estimatedNextYearTotalReturnPercentageFromCashFlow',
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',
+        'roeFromCashFlow',
+        'roeFromOwnerEarnings',
         'overallScore'
     ];
     companies: CompanySummary[] = [];
@@ -71,7 +73,9 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
                     item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
                     item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
                     item.overallScore,
-                    item.maxPrice
+                    item.maxPrice,
+                    item.returnOnEquity_FromCashFlow,
+                    item.returnOnEquity_FromOwnerEarnings
                 ));
                 this.loading = false;
                 this.lastUpdated = new Date();

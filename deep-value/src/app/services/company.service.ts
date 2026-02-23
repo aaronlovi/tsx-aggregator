@@ -25,7 +25,9 @@ export class CompanyService {
                     item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
                     item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
                     item.overallScore,
-                    item.maxPrice
+                    item.maxPrice,
+                    item.returnOnEquity_FromCashFlow,
+                    item.returnOnEquity_FromOwnerEarnings
                 ));
             })
         );
@@ -43,7 +45,9 @@ export class CompanyService {
                     item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
                     item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
                     item.overallScore,
-                    item.maxPrice
+                    item.maxPrice,
+                    item.returnOnEquity_FromCashFlow,
+                    item.returnOnEquity_FromOwnerEarnings
                 ));
             })
         );

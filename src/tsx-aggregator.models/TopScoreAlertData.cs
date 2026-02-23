@@ -6,7 +6,7 @@ using System.Text;
 
 namespace tsx_aggregator.models;
 
-public record Score13Company(
+public record TopScoreCompany(
     string InstrumentSymbol,
     string CompanyName,
     decimal PricePerShare,
@@ -15,16 +15,16 @@ public record Score13Company(
     decimal CurMarketCap,
     decimal EstReturnCashFlow,
     decimal EstReturnOwnerEarnings,
-    int OverallScore) : IComparable<Score13Company> {
+    int OverallScore) : IComparable<TopScoreCompany> {
 
-    public int CompareTo(Score13Company? other) {
+    public int CompareTo(TopScoreCompany? other) {
         if (other is null)
             return 1;
         return string.Compare(InstrumentSymbol, other.InstrumentSymbol, StringComparison.OrdinalIgnoreCase);
     }
 
     // Equality based on InstrumentSymbol only, so diff comparison ignores changing financial data
-    public virtual bool Equals(Score13Company? other) {
+    public virtual bool Equals(TopScoreCompany? other) {
         if (other is null)
             return false;
         return string.Equals(InstrumentSymbol, other.InstrumentSymbol, StringComparison.OrdinalIgnoreCase);
@@ -33,18 +33,18 @@ public record Score13Company(
     public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(InstrumentSymbol);
 }
 
-public record Score13Diff(
-    IReadOnlyList<Score13Company> PreviousList,
-    IReadOnlyList<Score13Company> NewList,
-    IReadOnlyList<Score13Company> Added,
-    IReadOnlyList<Score13Company> Removed);
+public record TopScoreDiff(
+    IReadOnlyList<TopScoreCompany> PreviousList,
+    IReadOnlyList<TopScoreCompany> NewList,
+    IReadOnlyList<TopScoreCompany> Added,
+    IReadOnlyList<TopScoreCompany> Removed);
 
-public static class Score13DiffComputer {
+public static class TopScoreDiffComputer {
 
-    public static IReadOnlyList<Score13Company> ComputeScore13List(IReadOnlyList<CompanyFullDetailReport> reports) {
+    public static IReadOnlyList<TopScoreCompany> ComputeTopScoreList(IReadOnlyList<CompanyFullDetailReport> reports) {
         return reports
-            .Where(r => r.OverallScore == 13)
-            .Select(r => new Score13Company(
+            .Where(r => r.OverallScore >= 13)
+            .Select(r => new TopScoreCompany(
                 r.InstrumentSymbol,
                 r.CompanyName,
                 r.PricePerShare,
@@ -58,9 +58,9 @@ public static class Score13DiffComputer {
             .ToList();
     }
 
-    public static Score13Diff? ComputeDiff(IReadOnlyList<Score13Company> previous, IReadOnlyList<Score13Company> current) {
-        var previousSet = new HashSet<Score13Company>(previous);
-        var currentSet = new HashSet<Score13Company>(current);
+    public static TopScoreDiff? ComputeDiff(IReadOnlyList<TopScoreCompany> previous, IReadOnlyList<TopScoreCompany> current) {
+        var previousSet = new HashSet<TopScoreCompany>(previous);
+        var currentSet = new HashSet<TopScoreCompany>(current);
 
         var added = current.Where(c => !previousSet.Contains(c)).OrderBy(c => c).ToList();
         var removed = previous.Where(c => !currentSet.Contains(c)).OrderBy(c => c).ToList();
@@ -68,17 +68,17 @@ public static class Score13DiffComputer {
         if (added.Count == 0 && removed.Count == 0)
             return null;
 
-        return new Score13Diff(previous, current, added, removed);
+        return new TopScoreDiff(previous, current, added, removed);
     }
 
-    public static string FormatAlertSubject(Score13Diff diff) {
-        return $"TSX Score-13 Alert: {diff.Added.Count} added, {diff.Removed.Count} removed";
+    public static string FormatAlertSubject(TopScoreDiff diff) {
+        return $"TSX Top-Score Alert: {diff.Added.Count} added, {diff.Removed.Count} removed";
     }
 
-    public static string FormatAlertBody(Score13Diff diff) {
+    public static string FormatAlertBody(TopScoreDiff diff) {
         var sb = new StringBuilder();
 
-        _ = sb.AppendLine("Score-13 Companies Changed")
+        _ = sb.AppendLine("Top-Score Companies Changed")
               .AppendLine("==========================")
               .AppendLine()
               .AppendLine($"New List ({diff.NewList.Count} {(diff.NewList.Count == 1 ? "company" : "companies")}):");
@@ -107,7 +107,7 @@ public static class Score13DiffComputer {
         return sb.ToString();
     }
 
-    public static string FormatAlertBodyHtml(Score13Diff diff) {
+    public static string FormatAlertBodyHtml(TopScoreDiff diff) {
         var addedSet = new HashSet<string>(diff.Added.Select(c => c.InstrumentSymbol), StringComparer.OrdinalIgnoreCase);
         var sb = new StringBuilder();
 
@@ -116,7 +116,7 @@ public static class Score13DiffComputer {
               .AppendLine("<body style=\"font-family:Arial,Helvetica,sans-serif;color:#333;margin:0;padding:20px;\">");
 
         // Header
-        _ = sb.AppendLine("<h2 style=\"color:#1a1a1a;margin-bottom:4px;\">Score-13 Companies Changed</h2>")
+        _ = sb.AppendLine("<h2 style=\"color:#1a1a1a;margin-bottom:4px;\">Top-Score Companies Changed</h2>")
               .AppendLine($"<p style=\"font-size:16px;\"><strong>{diff.Added.Count}</strong> added, <strong>{diff.Removed.Count}</strong> removed</p>");
 
         // Added tickers
@@ -149,8 +149,8 @@ public static class Score13DiffComputer {
         return sb.ToString();
     }
 
-    private static List<Score13Company> SortByAvgReturn(IReadOnlyList<Score13Company> companies) {
-        var sorted = new List<Score13Company>(companies);
+    private static List<TopScoreCompany> SortByAvgReturn(IReadOnlyList<TopScoreCompany> companies) {
+        var sorted = new List<TopScoreCompany>(companies);
         sorted.Sort((a, b) => {
             int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
             if (scoreCompare != 0)
@@ -162,7 +162,7 @@ public static class Score13DiffComputer {
         return sorted;
     }
 
-    private static void AppendCompanyTable(StringBuilder sb, IReadOnlyList<Score13Company> companies, HashSet<string>? highlightSymbols) {
+    private static void AppendCompanyTable(StringBuilder sb, IReadOnlyList<TopScoreCompany> companies, HashSet<string>? highlightSymbols) {
         const string tableCss = "border-collapse:collapse;width:100%;font-size:14px;";
         const string thCss = "background:#f5f5f5;border:1px solid #ddd;padding:8px 12px;text-align:left;white-space:nowrap;";
         const string tdCss = "border:1px solid #ddd;padding:6px 12px;";
@@ -181,8 +181,17 @@ public static class Score13DiffComputer {
               .AppendLine("</tr></thead><tbody>");
 
         foreach (var c in companies) {
-            bool highlight = highlightSymbols is not null && highlightSymbols.Contains(c.InstrumentSymbol);
-            string rowStyle = highlight ? " style=\"background:#e8f5e9;\"" : "";
+            bool isAdded = highlightSymbols is not null && highlightSymbols.Contains(c.InstrumentSymbol);
+            string scoreBg = c.OverallScore switch {
+                15 => "background:#e1f2f3;",
+                14 => "background:#ffe5ad;",
+                13 => "background:#fcebee;",
+                _ => ""
+            };
+            string addedBorder = isAdded ? "border-left:4px solid #2e7d32;" : "";
+            string rowStyle = (scoreBg.Length > 0 || addedBorder.Length > 0)
+                ? $" style=\"{scoreBg}{addedBorder}\""
+                : "";
 
             _ = sb.AppendLine($"<tr{rowStyle}>")
                   .AppendLine($"<td style=\"{tdCss}font-weight:bold;\">{Esc(c.InstrumentSymbol)}</td>")

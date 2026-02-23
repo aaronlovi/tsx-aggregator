@@ -22,6 +22,6 @@ public class HostedServicesOptions {
     [Required(ErrorMessage = "RunSearchService is required in the HostedServices section of the configuration")]
     public bool? RunSearchService { get; set; }
 
-    [Required(ErrorMessage = "RunScore13AlertService is required in the HostedServices section of the configuration")]
-    public bool? RunScore13AlertService { get; set; }
+    [Required(ErrorMessage = "RunTopScoreAlertService is required in the HostedServices section of the configuration")]
+    public bool? RunTopScoreAlertService { get; set; }
 }

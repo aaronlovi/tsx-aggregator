@@ -12,7 +12,7 @@ using tsx_aggregator.shared;
 
 namespace tsx_aggregator.tests;
 
-public class Score13AlertServiceTests {
+public class TopScoreAlertServiceTests {
 
     private static AlertSettingsOptions CreateValidSettings() => new() {
         SmtpHost = "smtp.example.com",
@@ -37,8 +37,8 @@ public class Score13AlertServiceTests {
                 CurrentTotalShareholdersEquity = 500_000_000,
                 CurrentBookValue = 200_000_000,
                 CurrentNumShares = 10_000_000,
-                AverageNetCashFlow = 40_000_000,
-                AverageOwnerEarnings = 35_000_000,
+                AverageNetCashFlow = 60_000_000,
+                AverageOwnerEarnings = 55_000_000,
                 CurrentDividendsPaid = 5_000_000,
                 CurrentAdjustedRetainedEarnings = 50_000_000,
                 OldestRetainedEarnings = 30_000_000,
@@ -80,10 +80,10 @@ public class Score13AlertServiceTests {
         _ = quotesService.Setup(m => m.QuoteServiceReady).Returns(new TaskCompletionSource());
         var emailService = new Mock<IEmailService>();
         var options = Options.Create(CreateValidSettings());
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
         // Act & Assert
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
         _ = service.Should().NotBeNull();
     }
@@ -98,9 +98,9 @@ public class Score13AlertServiceTests {
         var settings = CreateValidSettings();
         settings.SmtpHost = "";
         var options = Options.Create(settings);
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
 
         // Act
@@ -123,9 +123,9 @@ public class Score13AlertServiceTests {
         var quotesService = SetupQuoteService(prices);
         var emailService = new Mock<IEmailService>();
         var options = Options.Create(CreateValidSettings());
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
 
         // Act
@@ -160,9 +160,9 @@ public class Score13AlertServiceTests {
         var settings = CreateValidSettings();
         settings.CheckIntervalMinutes = 0; // No delay between checks for testing
         var options = Options.Create(settings);
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
 
         // Act - run long enough for at least 2 cycles
@@ -199,9 +199,9 @@ public class Score13AlertServiceTests {
         var settings = CreateValidSettings();
         settings.CheckIntervalMinutes = 0;
         var options = Options.Create(settings);
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
 
         // Act
@@ -232,9 +232,9 @@ public class Score13AlertServiceTests {
         var settings = CreateValidSettings();
         settings.CheckIntervalMinutes = 0;
         var options = Options.Create(settings);
-        var logger = new Mock<ILogger<Score13AlertService>>();
+        var logger = new Mock<ILogger<TopScoreAlertService>>();
 
-        var service = new Score13AlertService(
+        var service = new TopScoreAlertService(
             requestProcessor.Object, quotesService.Object, emailService.Object, options, logger.Object);
 
         // Act - should not throw

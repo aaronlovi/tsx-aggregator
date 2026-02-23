@@ -4,23 +4,32 @@
 @mixin color($theme) {
     $color-config: mat.m2-get-color-config($theme);
 
+    $primary-palette: map.get($color-config, "primary");
     $accent-palette: map.get($color-config, "accent");
     $warn-palette: map.get($color-config, "warn");
 
-    .dashboard__stat--score-13 {
+    .dashboard__stat--top-score {
         background-color: mat.m2-get-color-from-palette($accent-palette, 50);
     }
 
-    .dashboard__stat--score-12 {
+    .dashboard__stat--near-top-score {
         background-color: mat.m2-get-color-from-palette($warn-palette, 50);
     }
 
-    .dashboard__table-row--score-13 {
+    .dashboard__table-row--top-score {
         background-color: mat.m2-get-color-from-palette($accent-palette, 50);
     }
 
-    .dashboard__table-row--score-12 {
+    .dashboard__table-row--near-top-score {
         background-color: mat.m2-get-color-from-palette($warn-palette, 50);
+    }
+
+    .dashboard__stat--close-to-top-score {
+        background-color: mat.m2-get-color-from-palette($primary-palette, 50);
+    }
+
+    .dashboard__table-row--close-to-top-score {
+        background-color: mat.m2-get-color-from-palette($primary-palette, 50);
     }
 }
 

@@ -49,10 +49,10 @@ internal class EmailService : IEmailService {
             _ = await client.SendAsync(message, ct);
             await client.DisconnectAsync(quit: true, ct);
 
-            _logger.LogInformation("Score-13 alert email sent successfully to {RecipientCount} recipients", _settings.Recipients.Length);
+            _logger.LogInformation("Top-Score alert email sent successfully to {RecipientCount} recipients", _settings.Recipients.Length);
             return true;
         } catch (Exception ex) {
-            _logger.LogError(ex, "Failed to send score-13 alert email");
+            _logger.LogError(ex, "Failed to send top-score alert email");
             return false;
         }
     }

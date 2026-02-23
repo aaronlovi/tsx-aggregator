@@ -11,21 +11,21 @@ using tsx_aggregator.shared;
 
 namespace tsx_aggregator.Services;
 
-internal class Score13AlertService : BackgroundService {
+internal class TopScoreAlertService : BackgroundService {
     private long _reqId;
     private readonly IStocksDataRequestsProcessor _requestProcessor;
     private readonly IQuoteService _quotesService;
     private readonly IEmailService _emailService;
     private readonly AlertSettingsOptions _settings;
     private readonly ILogger _logger;
-    private IReadOnlyList<Score13Company>? _previousList;
+    private IReadOnlyList<TopScoreCompany>? _previousList;
 
-    public Score13AlertService(
+    public TopScoreAlertService(
         IStocksDataRequestsProcessor requestProcessor,
         IQuoteService quotesService,
         IEmailService emailService,
         IOptions<AlertSettingsOptions> options,
-        ILogger<Score13AlertService> logger) {
+        ILogger<TopScoreAlertService> logger) {
 
         _requestProcessor = requestProcessor;
         _quotesService = quotesService;
@@ -35,17 +35,17 @@ internal class Score13AlertService : BackgroundService {
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        _logger.LogInformation("Score13AlertService - Starting");
+        _logger.LogInformation("TopScoreAlertService - Starting");
 
         if (!ValidateSettings()) {
-            _logger.LogError("Score13AlertService - Invalid AlertSettings configuration, exiting");
+            _logger.LogError("TopScoreAlertService - Invalid AlertSettings configuration, exiting");
             return;
         }
 
         try {
-            _logger.LogInformation("Score13AlertService - Waiting for QuoteService to be ready");
+            _logger.LogInformation("TopScoreAlertService - Waiting for QuoteService to be ready");
             await _quotesService.QuoteServiceReady.Task.WaitAsync(stoppingToken);
-            _logger.LogInformation("Score13AlertService - QuoteService is ready");
+            _logger.LogInformation("TopScoreAlertService - QuoteService is ready");
 
             while (!stoppingToken.IsCancellationRequested) {
                 try {
@@ -53,7 +53,7 @@ internal class Score13AlertService : BackgroundService {
                 } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
                     break;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Score13AlertService - Error during check cycle");
+                    _logger.LogError(ex, "TopScoreAlertService - Error during check cycle");
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(_settings.CheckIntervalMinutes), stoppingToken);
@@ -62,7 +62,7 @@ internal class Score13AlertService : BackgroundService {
             // Normal shutdown
         }
 
-        _logger.LogInformation("Score13AlertService - Stopped");
+        _logger.LogInformation("TopScoreAlertService - Stopped");
     }
 
     private async Task CheckAndAlertAsync(CancellationToken ct) {
@@ -72,13 +72,13 @@ internal class Score13AlertService : BackgroundService {
         using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         using var req = new GetStocksForExchangeRequest(reqId, "TSX", cts);
         if (!_requestProcessor.PostRequest(req)) {
-            _logger.LogWarning("Score13AlertService - Failed to post request to request processor");
+            _logger.LogWarning("TopScoreAlertService - Failed to post request to request processor");
             return;
         }
 
         object? response = await req.Completed.Task;
         if (response is not GetStocksDataReply reply || !reply.Success) {
-            _logger.LogWarning("Score13AlertService - Received invalid response from request processor");
+            _logger.LogWarning("TopScoreAlertService - Received invalid response from request processor");
             return;
         }
 
@@ -91,13 +91,13 @@ internal class Score13AlertService : BackgroundService {
         using CancellationTokenSource cts2 = CancellationTokenSource.CreateLinkedTokenSource(ct);
         using var req2 = new QuoteServiceFillPricesForSymbolsInput(reqId, cts2, symbols);
         if (!_quotesService.PostRequest(req2)) {
-            _logger.LogWarning("Score13AlertService - Failed to post request to quotes service");
+            _logger.LogWarning("TopScoreAlertService - Failed to post request to quotes service");
             return;
         }
 
         object? response2 = await req2.Completed.Task;
         if (response2 is not IDictionary<string, decimal> prices) {
-            _logger.LogWarning("Score13AlertService - Received invalid response from quotes service");
+            _logger.LogWarning("TopScoreAlertService - Received invalid response from quotes service");
             return;
         }
 
@@ -113,7 +113,7 @@ internal class Score13AlertService : BackgroundService {
             }
         }
 
-        _logger.LogInformation("Score13AlertService - Fetched {Count} companies, {Missing} missing prices",
+        _logger.LogInformation("TopScoreAlertService - Fetched {Count} companies, {Missing} missing prices",
             reply.StocksData.Count, numItemsMissingPrices);
 
         // Step 4: Construct CompanyFullDetailReport objects
@@ -138,42 +138,42 @@ internal class Score13AlertService : BackgroundService {
                 numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
         }
 
-        // Step 5: Compute score-13 list
-        IReadOnlyList<Score13Company> currentList = Score13DiffComputer.ComputeScore13List(reports);
+        // Step 5: Compute top-score list
+        IReadOnlyList<TopScoreCompany> currentList = TopScoreDiffComputer.ComputeTopScoreList(reports);
 
-        _logger.LogInformation("Score13AlertService - Found {Count} score-13 companies", currentList.Count);
+        _logger.LogInformation("TopScoreAlertService - Found {Count} top-score companies", currentList.Count);
 
         // Step 6: First run establishes baseline (or sends test email if configured)
         if (_previousList is null) {
             if (_settings.SendTestEmailOnStartup && currentList.Count > 0) {
-                _logger.LogInformation("Score13AlertService - SendTestEmailOnStartup enabled, sending initial list as test email");
-                var testDiff = Score13DiffComputer.ComputeDiff([], currentList);
+                _logger.LogInformation("TopScoreAlertService - SendTestEmailOnStartup enabled, sending initial list as test email");
+                var testDiff = TopScoreDiffComputer.ComputeDiff([], currentList);
                 if (testDiff is not null) {
-                    string testSubject = Score13DiffComputer.FormatAlertSubject(testDiff);
-                    string testPlainBody = Score13DiffComputer.FormatAlertBody(testDiff);
-                    string testHtmlBody = Score13DiffComputer.FormatAlertBodyHtml(testDiff);
+                    string testSubject = TopScoreDiffComputer.FormatAlertSubject(testDiff);
+                    string testPlainBody = TopScoreDiffComputer.FormatAlertBody(testDiff);
+                    string testHtmlBody = TopScoreDiffComputer.FormatAlertBodyHtml(testDiff);
                     _ = await _emailService.SendEmailAsync(testSubject, testPlainBody, testHtmlBody, ct);
                 }
             }
             _previousList = currentList;
-            _logger.LogInformation("Score13AlertService - Baseline established with {Count} score-13 companies", currentList.Count);
+            _logger.LogInformation("TopScoreAlertService - Baseline established with {Count} top-score companies", currentList.Count);
             return;
         }
 
         // Step 7: Compute diff
-        Score13Diff? diff = Score13DiffComputer.ComputeDiff(_previousList, currentList);
+        TopScoreDiff? diff = TopScoreDiffComputer.ComputeDiff(_previousList, currentList);
         if (diff is null) {
-            _logger.LogInformation("Score13AlertService - No change in score-13 list");
+            _logger.LogInformation("TopScoreAlertService - No change in top-score list");
             _previousList = currentList;
             return;
         }
 
         // Step 8: Send email alert
-        string subject = Score13DiffComputer.FormatAlertSubject(diff);
-        string plainBody = Score13DiffComputer.FormatAlertBody(diff);
-        string htmlBody = Score13DiffComputer.FormatAlertBodyHtml(diff);
+        string subject = TopScoreDiffComputer.FormatAlertSubject(diff);
+        string plainBody = TopScoreDiffComputer.FormatAlertBody(diff);
+        string htmlBody = TopScoreDiffComputer.FormatAlertBodyHtml(diff);
 
-        _logger.LogInformation("Score13AlertService - Score-13 list changed: {Added} added, {Removed} removed. Sending alert.",
+        _logger.LogInformation("TopScoreAlertService - Top-Score list changed: {Added} added, {Removed} removed. Sending alert.",
             diff.Added.Count, diff.Removed.Count);
 
         _ = await _emailService.SendEmailAsync(subject, plainBody, htmlBody, ct);
@@ -184,23 +184,23 @@ internal class Score13AlertService : BackgroundService {
 
     private bool ValidateSettings() {
         if (string.IsNullOrWhiteSpace(_settings.SmtpHost)) {
-            _logger.LogError("Score13AlertService - SmtpHost is not configured");
+            _logger.LogError("TopScoreAlertService - SmtpHost is not configured");
             return false;
         }
         if (string.IsNullOrWhiteSpace(_settings.SmtpUsername)) {
-            _logger.LogError("Score13AlertService - SmtpUsername is not configured");
+            _logger.LogError("TopScoreAlertService - SmtpUsername is not configured");
             return false;
         }
         if (string.IsNullOrWhiteSpace(_settings.SmtpPassword)) {
-            _logger.LogError("Score13AlertService - SmtpPassword is not configured");
+            _logger.LogError("TopScoreAlertService - SmtpPassword is not configured");
             return false;
         }
         if (string.IsNullOrWhiteSpace(_settings.SenderEmail)) {
-            _logger.LogError("Score13AlertService - SenderEmail is not configured");
+            _logger.LogError("TopScoreAlertService - SenderEmail is not configured");
             return false;
         }
         if (_settings.Recipients is null || _settings.Recipients.Length == 0) {
-            _logger.LogError("Score13AlertService - No recipients configured");
+            _logger.LogError("TopScoreAlertService - No recipients configured");
             return false;
         }
         return true;

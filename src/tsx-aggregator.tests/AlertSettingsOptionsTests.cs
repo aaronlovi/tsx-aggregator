@@ -49,25 +49,25 @@ public class AlertSettingsOptionsTests {
     }
 
     [Fact]
-    public void HostedServicesOptions_RunScore13AlertService_ShouldExistAsNullableBool() {
+    public void HostedServicesOptions_RunTopScoreAlertService_ShouldExistAsNullableBool() {
         // Arrange
         var options = new HostedServicesOptions();
 
         // Assert
-        _ = options.RunScore13AlertService.Should().BeNull();
+        _ = options.RunTopScoreAlertService.Should().BeNull();
     }
 
     [Fact]
-    public void HostedServicesOptions_RunScore13AlertService_SetToTrue_ShouldReturnTrue() {
+    public void HostedServicesOptions_RunTopScoreAlertService_SetToTrue_ShouldReturnTrue() {
         // Arrange
-        var options = new HostedServicesOptions { RunScore13AlertService = true };
+        var options = new HostedServicesOptions { RunTopScoreAlertService = true };
 
         // Assert
-        _ = options.RunScore13AlertService.Should().BeTrue();
+        _ = options.RunTopScoreAlertService.Should().BeTrue();
     }
 
     [Fact]
-    public void HostedServicesOptions_MissingRunScore13AlertService_ShouldFailValidation() {
+    public void HostedServicesOptions_MissingRunTopScoreAlertService_ShouldFailValidation() {
         // Arrange
         var options = new HostedServicesOptions {
             RunAggregator = true,
@@ -75,7 +75,7 @@ public class AlertSettingsOptionsTests {
             RunStocksDataRequestsProcessor = true,
             RunQuoteService = true,
             RunSearchService = true
-            // RunScore13AlertService intentionally missing (null)
+            // RunTopScoreAlertService intentionally missing (null)
         };
 
         // Act
@@ -84,6 +84,6 @@ public class AlertSettingsOptionsTests {
 
         // Assert
         _ = isValid.Should().BeFalse();
-        _ = results.Should().Contain(r => r.ErrorMessage!.Contains("RunScore13AlertService"));
+        _ = results.Should().Contain(r => r.ErrorMessage!.Contains("RunTopScoreAlertService"));
     }
 }

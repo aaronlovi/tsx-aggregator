@@ -76,7 +76,7 @@ public class Program {
                     .AddSingleton<ISearchService, SearchService>()
                     .AddSingleton<IGoogleSheetsService, GoogleSheetsService>()
                     .AddSingleton<IEmailService, EmailService>()
-                    .AddSingleton<Score13AlertService>();
+                    .AddSingleton<TopScoreAlertService>();
 
                 if (DoesConfigContainConnectionString(context.Configuration))
                     _ = services.AddSingleton<IDbmService, DbmService>();
@@ -101,8 +101,8 @@ public class Program {
                 if (hostedServicesOptions.RunSearchService ?? false)
                     _ = services.AddHostedService(p => p.GetRequiredService<ISearchService>());
 
-                if (hostedServicesOptions.RunScore13AlertService ?? false)
-                    _ = services.AddHostedService(p => p.GetRequiredService<Score13AlertService>());
+                if (hostedServicesOptions.RunTopScoreAlertService ?? false)
+                    _ = services.AddHostedService(p => p.GetRequiredService<TopScoreAlertService>());
 
                 _ = services.AddGrpc();
             })

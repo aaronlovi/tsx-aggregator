@@ -30,6 +30,10 @@
     .data-table__row--maybe {
         background-color: mat.m2-get-color-from-palette($warn-palette, 50) !important;
     }
+
+    .data-table__row--close {
+        background-color: mat.m2-get-color-from-palette($primary-palette, 50) !important;
+    }
 }
 
 @mixin typography($theme) {

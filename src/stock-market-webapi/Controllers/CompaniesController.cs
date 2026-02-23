@@ -62,9 +62,9 @@ public class CompaniesController : Controller {
             return bAvgReturn.CompareTo(aAvgReturn);
         });
 
-        // Keep only the top 'GetCompaniesMaxNumCompanies' companies, and transform to summary reports
+        // Keep only score >= 13 companies, and transform to summary reports
         var summaryReports = fullDetailReports
-            .Take(GetCompaniesMaxNumCompanies)
+            .Where(r => r.OverallScore >= 13)
             .Select(CompanySummaryReport.FromDetailedReport)
             .ToList();
 

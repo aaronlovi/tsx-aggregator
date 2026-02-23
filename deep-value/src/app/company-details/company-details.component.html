@@ -199,18 +199,34 @@
             {{ companyDetails.doesPassCheckIsHistoryLongEnough ? 'Yes' :
             'No' }}
           </td>
-          <!-- Spacer -->
-          <td class="mat-row data-table__data" colspan="4">&nbsp;</td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="Is Return on Equity from Cash Flow (Avg. Net Cash Flow / Total Shareholders Equity) &gt; 10%?">
+              ROE from Cash Flow Big Enough?
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--score"
+            [ngClass]="{no: !companyDetails.doesPassCheckROE_FromCashFlow_BigEnough}">
+            {{ companyDetails.doesPassCheckROE_FromCashFlow_BigEnough ? 'Yes' : 'No' }}
+          </td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="Is Return on Equity from Owner Earnings (Avg. Owner Earnings / Total Shareholders Equity) &gt; 10%?">
+              ROE from Owner Earnings Big Enough?
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--score"
+            [ngClass]="{no: !companyDetails.doesPassCheckROE_FromOwnerEarnings_BigEnough}">
+            {{ companyDetails.doesPassCheckROE_FromOwnerEarnings_BigEnough ? 'Yes' : 'No' }}
+          </td>
           <th class="mat-header-cell data-table__header">
             Overall Score
           </th>
           <td class="mat-cell data-table__data data-table__data--score">
-            <strong>{{ companyDetails.overallScore }} / 13</strong>
+            <strong>{{ companyDetails.overallScore }} / 15</strong>
           </td>
         </tr>
         <!-- Financials -->
         <tr class="mat-row data-table__row">
-          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="5">
+          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="6">
             Financials
           </th>
           <th class="mat-header-cell data-table__header">
@@ -305,6 +321,28 @@
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ companyDetails.longTermDebtToBookRatio | number:'1.2-2' }}
           </td>
+          <th class="mat-header-cell data-table__header">&nbsp;</th>
+          <td class="mat-cell data-table__data">&nbsp;</td>
+        </tr>
+        <tr class="mat-row data-table__row">
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="Average Net Cash Flow divided by Total Shareholders Equity. Measures how effectively the company generates cash flow relative to equity.">
+              ROE from Cash Flow
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--numeric">
+            {{ companyDetails.returnOnEquity_FromCashFlow | percent:'1.2-2' }}
+          </td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="Average Owner Earnings divided by Total Shareholders Equity. Measures how effectively the company generates owner earnings relative to equity.">
+              ROE from Owner Earnings
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--numeric">
+            {{ companyDetails.returnOnEquity_FromOwnerEarnings | percent:'1.2-2' }}
+          </td>
+          <th class="mat-header-cell data-table__header">&nbsp;</th>
+          <td class="mat-cell data-table__data">&nbsp;</td>
           <th class="mat-header-cell data-table__header">&nbsp;</th>
           <td class="mat-cell data-table__data">&nbsp;</td>
         </tr>

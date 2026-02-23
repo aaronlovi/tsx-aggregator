@@ -63,6 +63,8 @@ public class CompanyFullDetailReport {
     public decimal CurPriceToBookRatio => Utilities.DivSafe(CurMarketCap, CurBookValue);
     public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
     public bool DidAdjustedRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
+    public decimal ReturnOnEquity_FromCashFlow => Utilities.DivSafe(AverageNetCashFlow, CurTotalShareholdersEquity);
+    public decimal ReturnOnEquity_FromOwnerEarnings => Utilities.DivSafe(AverageOwnerEarnings, CurTotalShareholdersEquity);
     public decimal EstimatedNextYearBookValue_FromCashFlow {
         get {
             return CurBookValue == decimal.MinValue || AverageNetCashFlow == decimal.MinValue
@@ -138,6 +140,8 @@ public class CompanyFullDetailReport {
     public bool DoesPassCheck_DebtToBookRatioSmallEnough => LongTermDebtToBookRatio < 1M;
     public bool DoesPassCheck_RetainedEarningsPositive => CurAdjustedRetainedEarnings > 0;
     public bool DoesPassCheck_IsHistoryLongEnough => NumAnnualProcessedCashFlowReports >= 4;
+    public bool DoesPassCheck_ROE_FromCashFlow_BigEnough => ReturnOnEquity_FromCashFlow > 0.10M;
+    public bool DoesPassCheck_ROE_FromOwnerEarnings_BigEnough => ReturnOnEquity_FromOwnerEarnings > 0.10M;
     public bool DoesPassCheck_Overall =>
         DoesPassCheck_DebtToEquitySmallEnough
         && DoesPassCheck_BookValueBigEnough
@@ -151,7 +155,9 @@ public class CompanyFullDetailReport {
         && DoesPassCheck_DebtToBookRatioSmallEnough
         && DoesPassCheck_RetainedEarningsPositive
         && DoesPassCheck_IsHistoryLongEnough
-        && DidAdjustedRetainedEarningsIncrease;
+        && DidAdjustedRetainedEarningsIncrease
+        && DoesPassCheck_ROE_FromCashFlow_BigEnough
+        && DoesPassCheck_ROE_FromOwnerEarnings_BigEnough;
     public int OverallScore =>
         (DoesPassCheck_DebtToEquitySmallEnough ? 1 : 0)
         + (DoesPassCheck_BookValueBigEnough ? 1 : 0)
@@ -165,5 +171,7 @@ public class CompanyFullDetailReport {
         + (DoesPassCheck_DebtToBookRatioSmallEnough ? 1 : 0)
         + (DoesPassCheck_RetainedEarningsPositive ? 1 : 0)
         + (DoesPassCheck_IsHistoryLongEnough ? 1 : 0)
-        + (DidAdjustedRetainedEarningsIncrease ? 1 : 0);
+        + (DidAdjustedRetainedEarningsIncrease ? 1 : 0)
+        + (DoesPassCheck_ROE_FromCashFlow_BigEnough ? 1 : 0)
+        + (DoesPassCheck_ROE_FromOwnerEarnings_BigEnough ? 1 : 0);
 }

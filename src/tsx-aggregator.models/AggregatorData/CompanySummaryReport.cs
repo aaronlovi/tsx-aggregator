@@ -9,7 +9,9 @@ public record CompanySummaryReport(
     decimal EstimatedNextYearTotalReturnPercentage_FromCashFlow,
     decimal EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
     int OverallScore,
-    decimal MaxPrice) {
+    decimal MaxPrice,
+    decimal ReturnOnEquity_FromCashFlow,
+    decimal ReturnOnEquity_FromOwnerEarnings) {
 
     public decimal PercentageUpside {
         get {
@@ -29,6 +31,8 @@ public record CompanySummaryReport(
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromCashFlow,
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
             fullDetailReport.OverallScore,
-            fullDetailReport.MaxPrice);
+            fullDetailReport.MaxPrice,
+            fullDetailReport.ReturnOnEquity_FromCashFlow,
+            fullDetailReport.ReturnOnEquity_FromOwnerEarnings);
     }
 }

@@ -20,6 +20,8 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         'marketCap',
         'estimatedNextYearTotalReturnPercentageFromCashFlow',
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',
+        'roeFromCashFlow',
+        'roeFromOwnerEarnings',
         'overallScore'
     ];
     companies: CompanySummary[];
@@ -50,7 +52,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 this.pageTitle = 'Bottom 30 Companies';
                 this.loadBottomCompanies();
             } else {
-                this.pageTitle = 'Top 30 Companies';
+                this.pageTitle = 'Top Companies (Score 13+)';
                 this.loadCompanies();
             }
         });

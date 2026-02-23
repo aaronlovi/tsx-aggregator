@@ -59,6 +59,8 @@ export class CompanyDetails {
     public get curPriceToBookRatio() { return Utilities.DivSafe(this.curMarketCap, this.curBookValue); }
     public get longTermDebtToBookRatio() { return Utilities.DivSafe(this.curLongTermDebt, this.curBookValue); }
     public get didAdjustedRetainedEarningsIncrease() { return this.curAdjustedRetainedEarnings > this.oldestRetainedEarnings; }
+    public get returnOnEquity_FromCashFlow() { return Utilities.DivSafe(this.averageNetCashFlow, this.curTotalShareholdersEquity); }
+    public get returnOnEquity_FromOwnerEarnings() { return Utilities.DivSafe(this.averageOwnerEarnings, this.curTotalShareholdersEquity); }
     public get estimatedNextYearBookValue_FromCashFlow() {
         return this.curBookValue === Number.MIN_VALUE || this.averageNetCashFlow === Number.MIN_VALUE
             ? Number.MIN_VALUE
@@ -124,6 +126,8 @@ export class CompanyDetails {
     public get doesPassCheckDebtToBookRatioSmallEnough() { return this.longTermDebtToBookRatio < 1; }
     public get doesPassCheckAdjustedRetainedEarningsPositive() { return this.curAdjustedRetainedEarnings > 0; }
     public get doesPassCheckIsHistoryLongEnough() { return this.numAnnualProcessedCashFlowReports >= 4; }
+    public get doesPassCheckROE_FromCashFlow_BigEnough() { return this.returnOnEquity_FromCashFlow > 0.10; }
+    public get doesPassCheckROE_FromOwnerEarnings_BigEnough() { return this.returnOnEquity_FromOwnerEarnings > 0.10; }
     public get doesPassCheckOverall() {
         return this.doesPassCheckDebtToEquitySmallEnough
             && this.doesPassCheckBookValueBigEnough
@@ -137,7 +141,9 @@ export class CompanyDetails {
             && this.doesPassCheckDebtToBookRatioSmallEnough
             && this.doesPassCheckAdjustedRetainedEarningsPositive
             && this.doesPassCheckIsHistoryLongEnough
-            && this.didAdjustedRetainedEarningsIncrease;
+            && this.didAdjustedRetainedEarningsIncrease
+            && this.doesPassCheckROE_FromCashFlow_BigEnough
+            && this.doesPassCheckROE_FromOwnerEarnings_BigEnough;
     }
     public get overallScore() {
         return (this.doesPassCheckDebtToEquitySmallEnough ? 1 : 0)
@@ -152,6 +158,8 @@ export class CompanyDetails {
             + (this.doesPassCheckDebtToBookRatioSmallEnough ? 1 : 0)
             + (this.doesPassCheckAdjustedRetainedEarningsPositive ? 1 : 0)
             + (this.doesPassCheckIsHistoryLongEnough ? 1 : 0)
-            + (this.didAdjustedRetainedEarningsIncrease ? 1 : 0);
+            + (this.didAdjustedRetainedEarningsIncrease ? 1 : 0)
+            + (this.doesPassCheckROE_FromCashFlow_BigEnough ? 1 : 0)
+            + (this.doesPassCheckROE_FromOwnerEarnings_BigEnough ? 1 : 0);
     }
 }
