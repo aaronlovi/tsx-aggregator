@@ -226,7 +226,7 @@
         </tr>
         <!-- Financials -->
         <tr class="mat-row data-table__row">
-          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="6">
+          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="5">
             Financials
           </th>
           <th class="mat-header-cell data-table__header">
@@ -321,10 +321,6 @@
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ companyDetails.longTermDebtToBookRatio | number:'1.2-2' }}
           </td>
-          <th class="mat-header-cell data-table__header">&nbsp;</th>
-          <td class="mat-cell data-table__data">&nbsp;</td>
-        </tr>
-        <tr class="mat-row data-table__row">
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Average Net Cash Flow divided by Total Shareholders Equity. Measures how effectively the company generates cash flow relative to equity.">
               ROE from Cash Flow
@@ -333,18 +329,6 @@
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ companyDetails.returnOnEquity_FromCashFlow | percent:'1.2-2' }}
           </td>
-          <th class="mat-header-cell data-table__header">
-            <span matTooltip="Average Owner Earnings divided by Total Shareholders Equity. Measures how effectively the company generates owner earnings relative to equity.">
-              ROE from Owner Earnings
-            </span>
-          </th>
-          <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.returnOnEquity_FromOwnerEarnings | percent:'1.2-2' }}
-          </td>
-          <th class="mat-header-cell data-table__header">&nbsp;</th>
-          <td class="mat-cell data-table__data">&nbsp;</td>
-          <th class="mat-header-cell data-table__header">&nbsp;</th>
-          <td class="mat-cell data-table__data">&nbsp;</td>
         </tr>
         <tr class="mat-row data-table__row">
           <th class="mat-header-cell data-table__header">
@@ -373,8 +357,14 @@
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ companyDetails.estimatedNextYearBookValueFromOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
           </td>
-          <th class="mat-header-cell data-table__header">&nbsp;</th>
-          <td class="mat-cell data-table__data">&nbsp;</td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="Average Owner Earnings divided by Total Shareholders Equity. Measures how effectively the company generates owner earnings relative to equity.">
+              ROE from Owner Earnings
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--numeric">
+            {{ companyDetails.returnOnEquity_FromOwnerEarnings | percent:'1.2-2' }}
+          </td>
         </tr>
         <tr class="mat-row data-table__row">
           <th class="mat-header-cell data-table__header">
