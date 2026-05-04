@@ -20,11 +20,33 @@ internal partial class RawCollector : BackgroundService {
     /// Fetches the current instrument directory from the TSX website.
     /// Creates new instruments and obsoletes instruments that are no longer listed.
     /// </summary>
+    // Minimum fraction of currently-registered instruments that a fresh fetch must
+    // contain before we trust it enough to obsolete the missing ones. Guards against
+    // a partially-failed fetch (e.g., DNS blip mid-run) wiping the entire registry.
+    private const double MinDirectoryRetentionRatio = 0.5;
+
     private async Task ProcessFetchDirectory(CancellationToken ct) {
         _logger.LogInformation("ProcessFetchDirectory begin");
 
         // Map from company symbol --> instrument symbol --> InstrumentDto
-        Dictionary<string, InstrumentDtoByInstrumentNameMap> directory = await FetchInstrumentDirectory(ct);
+        Dictionary<string, InstrumentDtoByInstrumentNameMap>? directory = await FetchInstrumentDirectory(ct);
+        if (directory is null) {
+            _logger.LogError("ProcessFetchDirectory - aborting: directory fetch failed, skipping registry diff to avoid mass obsoletion");
+            return;
+        }
+
+        int fetchedInstrumentCount = 0;
+        foreach (InstrumentDtoByInstrumentNameMap m in directory.Values)
+            fetchedInstrumentCount += m.Count;
+
+        int currentInstrumentCount = _registry.NumInstruments;
+        if (currentInstrumentCount > 0
+            && fetchedInstrumentCount < currentInstrumentCount * MinDirectoryRetentionRatio) {
+            _logger.LogError(
+                "ProcessFetchDirectory - aborting: fetched {Fetched} instruments vs {Current} currently registered (< {Ratio:P0}); refusing to obsolete",
+                fetchedInstrumentCount, currentInstrumentCount, MinDirectoryRetentionRatio);
+            return;
+        }
 
         UpdateRegistryResults instrumentUpdateResults = await UpdateRegistry(directory, ct);
         var newInstruments = instrumentUpdateResults.NewInstruments;
@@ -88,7 +110,7 @@ internal partial class RawCollector : BackgroundService {
         // Database and registry are back in consistent state
     }
 
-    private async Task<Dictionary<string, InstrumentDtoByInstrumentNameMap>> FetchInstrumentDirectory(CancellationToken ct) {
+    private async Task<Dictionary<string, InstrumentDtoByInstrumentNameMap>?> FetchInstrumentDirectory(CancellationToken ct) {
         var directory = new Dictionary<string, InstrumentDtoByInstrumentNameMap>();
         string[] letters = {
             "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0-9"
@@ -157,7 +179,7 @@ internal partial class RawCollector : BackgroundService {
             }
         } catch (Exception ex) {
             _logger.LogError(ex, "FetchInstrumentDirectory error");
-            directory.Clear();
+            return null;
         }
 
         return directory;
