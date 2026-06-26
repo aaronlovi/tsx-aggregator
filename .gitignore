@@ -406,3 +406,10 @@ package-lock.json
 
 # Log files
 src/tsx-aggregator/tsx-aggregator-*.txt
+
+# Per-machine config overrides (not tracked)
+src/tsx-aggregator/appsettings.Local.json
+src/stock-market-webapi/appsettings.Local.json
+
+# Claude Code per-machine local settings (not tracked)
+.claude/settings.local.json

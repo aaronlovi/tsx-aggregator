@@ -21,6 +21,9 @@
 # Shell scripts should keep LF
 *.sh text eol=lf
 
+# Claude Code writes these local config files with LF; don't force CRLF on them
+.claude/** text eol=lf
+
 # Binary files
 *.png binary
 *.jpg binary
