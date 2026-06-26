@@ -76,9 +76,10 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         if (!value) return false;
         const d = new Date(value);
         if (isNaN(d.getTime())) return false;
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        return d < oneMonthAgo;
+        // Use a fixed 30-day window. Date.setMonth(getMonth()-1) overflows near
+        // month end (e.g. Mar 31 -> "Feb 31" -> Mar 3), drifting the cutoff.
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+        return d.getTime() < Date.now() - THIRTY_DAYS_MS;
     }
 
     refreshData() {

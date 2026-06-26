@@ -32,4 +32,33 @@ describe('CompanyListComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  describe('isStale', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const daysAgo = (n: number) => new Date(Date.now() - n * DAY_MS).toISOString();
+
+    it('is false for null/undefined/empty', () => {
+      expect(component.isStale(null)).toBeFalse();
+      expect(component.isStale(undefined)).toBeFalse();
+      expect(component.isStale('')).toBeFalse();
+    });
+
+    it('is false for an unparseable date', () => {
+      expect(component.isStale('not-a-date')).toBeFalse();
+    });
+
+    it('is false for a recent date', () => {
+      expect(component.isStale(daysAgo(5))).toBeFalse();
+    });
+
+    it('is true for a date older than 30 days', () => {
+      expect(component.isStale(daysAgo(45))).toBeTrue();
+    });
+
+    it('handles the month boundary without drift (40 days ago is stale)', () => {
+      // Guards against Date.setMonth overflow near month end.
+      expect(component.isStale(daysAgo(40))).toBeTrue();
+      expect(component.isStale(daysAgo(20))).toBeFalse();
+    });
+  });
 });
