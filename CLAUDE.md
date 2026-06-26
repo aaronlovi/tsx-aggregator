@@ -9,7 +9,7 @@ TSX stock market data aggregation platform. Scrapes Toronto Stock Exchange finan
 ## Tech Stack
 
 - **Backend:** C# / .NET 10.0, ASP.NET Core, gRPC, PostgreSQL (Npgsql), PuppeteerSharp (web scraping), Serilog
-- **Frontend:** Angular 16, TypeScript, Angular Material, RxJS
+- **Frontend:** Angular 21, TypeScript, Angular Material, RxJS
 - **Testing:** xUnit, FluentAssertions, Moq (backend); Karma + Jasmine (frontend)
 - **Infrastructure:** Docker Compose (PostgreSQL 17.4 + pgAdmin), Evolve (DB migrations)
 
@@ -90,7 +90,7 @@ Each can be toggled on/off via `HostedServices` in appsettings.json:
 
 ### Frontend (deep-value/)
 
-Angular 16 SPA with Angular Material. Key structure:
+Angular 21 SPA with Angular Material. Key structure:
 - `services/company.service.ts` -- Main data service calling the REST API
 - `company-list/` -- Companies listing with sorting/filtering
 - `company-details/` -- Individual company financial detail view
