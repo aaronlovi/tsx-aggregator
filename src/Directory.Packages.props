@@ -20,7 +20,7 @@
     <PackageVersion Include="Grpc.Tools" Version="2.78.0" />
 
     <!-- Web scraping -->
-    <PackageVersion Include="PuppeteerSharp" Version="21.0.1" />
+    <PackageVersion Include="PuppeteerSharp" Version="25.1.2" />
 
     <!-- Logging -->
     <PackageVersion Include="Serilog" Version="4.3.1" />
