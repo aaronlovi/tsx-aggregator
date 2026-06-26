@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CompanyService } from '../services/company.service';
 import { CompanyDetails } from '../models/company.details';
 
@@ -9,13 +10,16 @@ import { CompanyDetails } from '../models/company.details';
     styleUrls: ['./company-details.component.scss'],
     standalone: false
 })
-export class CompanyDetailsComponent implements OnInit {
+export class CompanyDetailsComponent implements OnInit, OnDestroy {
     exchange: string;
     instrumentSymbol: string;
     companyDetails?: CompanyDetails;
     loading: boolean;
     errorMsg: string;
     now: Date = new Date();
+
+    private routeSub: Subscription | null = null;
+    private timerInterval: ReturnType<typeof setInterval> | null = null;
 
     constructor(private companyService: CompanyService, private route: ActivatedRoute) {
         this.exchange = '';
@@ -26,7 +30,7 @@ export class CompanyDetailsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.route.paramMap.subscribe(params => {
+        this.routeSub = this.route.paramMap.subscribe(params => {
             this.exchange = params.get('exchange') || '';
             this.instrumentSymbol = params.get('instrumentSymbol') || '';
 
@@ -38,6 +42,20 @@ export class CompanyDetailsComponent implements OnInit {
                 this.errorMsg = 'Invalid exchange or instrument symbol';
             }
         });
+
+        // Keep the "Last Scraped" relative time ticking, like the list view.
+        this.timerInterval = setInterval(() => {
+            this.now = new Date();
+        }, 1000);
+    }
+
+    ngOnDestroy(): void {
+        if (this.routeSub) {
+            this.routeSub.unsubscribe();
+        }
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
     }
 
     isInputsValid(): boolean {
