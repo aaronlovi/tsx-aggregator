@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
 import { CompanyService } from '../services/company.service';
 import { DashboardAggregates, DashboardStats } from '../models/dashboard-stats';
+import { RelativeTimePipe } from '../pipes/relative-time.pipe';
+import { CompactCurrencyPipe } from '../pipes/compact-currency.pipe';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,14 +19,19 @@ describe('DashboardComponent', () => {
     const mockStats = new DashboardStats(
         1000, 50, 800, 200,
         '2025-01-15T10:00:00Z', '2025-01-15T09:00:00Z',
-        15, 7,
+        15,
         [{ reportType: 1, reportTypeName: 'Cash Flow', count: 500 }],
-        '2025-01-15T12:00:00Z', '2025-01-15T13:00:00Z', '2025-01-15T14:00:00Z'
+        '2025-01-15T12:00:00Z', '2025-01-15T13:00:00Z', '2025-01-15T14:00:00Z', '2025-01-15T15:00:00Z'
     );
 
     const mockAggregates = new DashboardAggregates(
         500, 450, 50, 5, 12.34, 8.76, 10.50, 7.25, 1234567890,
-        [{ score: 15, count: 5 }, { score: 14, count: 10 }]
+        [{ score: 15, count: 5 }, { score: 14, count: 10 }],
+        [{
+            score: 15, count: 5, sumMarketCap: 1000, meanMarketCap: 200, medianMarketCap: 180,
+            meanReturnFromCashFlow: 12.3, medianReturnFromCashFlow: 11.0,
+            meanReturnFromOwnerEarnings: 8.5, medianReturnFromOwnerEarnings: 8.0
+        }]
     );
 
     beforeEach(() => {
@@ -32,11 +40,13 @@ describe('DashboardComponent', () => {
         mockCompanyService.getDashboardAggregates.and.returnValue(of(mockAggregates));
 
         TestBed.configureTestingModule({
-            declarations: [DashboardComponent],
+            // Template uses the compactCurrency and relativeTime custom pipes.
+            declarations: [DashboardComponent, RelativeTimePipe, CompactCurrencyPipe],
             imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
             providers: [
                 { provide: CompanyService, useValue: mockCompanyService }
-            ]
+            ],
+            schemas: [NO_ERRORS_SCHEMA]
         });
         fixture = TestBed.createComponent(DashboardComponent);
         component = fixture.componentInstance;
