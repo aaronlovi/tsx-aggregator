@@ -52,7 +52,10 @@ public record ProcessedFullInstrumentReportDto(
     DateTimeOffset? InstrumentObsoletedDate,
     DateTimeOffset ReportCreatedDate,
     DateTimeOffset? ReportObsoletedDate,
-    int NumAnnualCashFlowReports);
+    int NumAnnualCashFlowReports,
+    DateTimeOffset? MostRecentAnnualReportDate = null,
+    DateTimeOffset? MostRecentQuarterlyReportDate = null,
+    DateTimeOffset? LastUpdatedDate = null);
 
 public record InstrumentDto : InstrumentKey {
     // List of company name exceptions that are not considered mutual funds despite naming conventions

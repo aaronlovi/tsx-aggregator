@@ -1,6 +1,11 @@
-<app-header></app-header>
+<app-header
+  [sidenavOpened]="sidenavOpened"
+  (toggleSidenav)="sidenavOpened = !sidenavOpened"></app-header>
 <mat-sidenav-container>
-  <mat-sidenav mode="side" opened>
+  <mat-sidenav
+    [opened]="sidenavOpened"
+    (openedChange)="sidenavOpened = $event"
+    mode="side">
     <mat-nav-list>
       <a mat-list-item routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
       <a mat-list-item routerLink="/companies" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Top Companies (13+)</a>

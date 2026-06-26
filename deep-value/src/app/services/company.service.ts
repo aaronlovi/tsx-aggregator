@@ -27,7 +27,10 @@ export class CompanyService {
                     item.overallScore,
                     item.maxPrice,
                     item.returnOnEquity_FromCashFlow,
-                    item.returnOnEquity_FromOwnerEarnings
+                    item.returnOnEquity_FromOwnerEarnings,
+                    item.mostRecentAnnualReportDate ?? null,
+                    item.mostRecentQuarterlyReportDate ?? null,
+                    item.lastUpdatedDate ?? null
                 ));
             })
         );
@@ -47,7 +50,10 @@ export class CompanyService {
                     item.overallScore,
                     item.maxPrice,
                     item.returnOnEquity_FromCashFlow,
-                    item.returnOnEquity_FromOwnerEarnings
+                    item.returnOnEquity_FromOwnerEarnings,
+                    item.mostRecentAnnualReportDate ?? null,
+                    item.mostRecentQuarterlyReportDate ?? null,
+                    item.lastUpdatedDate ?? null
                 ));
             })
         );
@@ -62,7 +68,7 @@ export class CompanyService {
     getCompanyDetails(exchange: string, instrumentSymbol: string): Observable<CompanyDetails> {
         return this.http.get<any>(`${this.config.apiEndpoint}/companies/${exchange}/${instrumentSymbol}`).pipe(
             map(data => {
-                return new CompanyDetails(
+                const details = new CompanyDetails(
                     data.exchange,
                     data.companySymbol,
                     data.instrumentSymbol,
@@ -79,6 +85,10 @@ export class CompanyService {
                     data.curAdjustedRetainedEarnings,
                     data.oldestRetainedEarnings,
                     data.numAnnualProcessedCashFlowReports);
+                details.mostRecentAnnualReportDate = data.mostRecentAnnualReportDate ?? null;
+                details.mostRecentQuarterlyReportDate = data.mostRecentQuarterlyReportDate ?? null;
+                details.lastUpdatedDate = data.lastUpdatedDate ?? null;
+                return details;
             })
         );
     }

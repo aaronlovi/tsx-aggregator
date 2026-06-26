@@ -22,7 +22,8 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         'estimatedNextYearTotalReturnPercentageOwnerEarnings',
         'roeFromCashFlow',
         'roeFromOwnerEarnings',
-        'overallScore'
+        'overallScore',
+        'lastUpdated'
     ];
     companies: CompanySummary[];
     loading: boolean;
@@ -69,6 +70,15 @@ export class CompanyListComponent implements OnInit, OnDestroy {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
+    }
+
+    isStale(value: string | null | undefined): boolean {
+        if (!value) return false;
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return false;
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        return d < oneMonthAgo;
     }
 
     refreshData() {

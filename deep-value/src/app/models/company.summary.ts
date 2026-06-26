@@ -10,6 +10,9 @@ export class CompanySummary {
     maxPrice: number;
     returnOnEquity_FromCashFlow: number;
     returnOnEquity_FromOwnerEarnings: number;
+    mostRecentAnnualReportDate: string | null;
+    mostRecentQuarterlyReportDate: string | null;
+    lastUpdatedDate: string | null;
 
     constructor(
         exchange: string,
@@ -22,7 +25,10 @@ export class CompanySummary {
         overallScore: number,
         maxPrice: number,
         returnOnEquity_FromCashFlow: number,
-        returnOnEquity_FromOwnerEarnings: number) {
+        returnOnEquity_FromOwnerEarnings: number,
+        mostRecentAnnualReportDate: string | null = null,
+        mostRecentQuarterlyReportDate: string | null = null,
+        lastUpdatedDate: string | null = null) {
             this.exchange = exchange;
             this.instrumentSymbol = instrumentSymbol;
             this.companyName = companyName;
@@ -34,6 +40,9 @@ export class CompanySummary {
             this.maxPrice = maxPrice;
             this.returnOnEquity_FromCashFlow = returnOnEquity_FromCashFlow;
             this.returnOnEquity_FromOwnerEarnings = returnOnEquity_FromOwnerEarnings;
+            this.mostRecentAnnualReportDate = mostRecentAnnualReportDate;
+            this.mostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
+            this.lastUpdatedDate = lastUpdatedDate;
     }
 
     public get percentageUpside() {

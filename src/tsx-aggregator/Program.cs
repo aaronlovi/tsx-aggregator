@@ -43,6 +43,8 @@ public class Program {
     private static IHost BuildHost<TStartup>(string[] args) where TStartup : class {
 
         var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((ctx, cfg) =>
+                cfg.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true))
             .ConfigureWebHostDefaults(webBuilder => { _ = webBuilder.UseStartup<TStartup>(); })
             .ConfigureServices((context, services) => {
 

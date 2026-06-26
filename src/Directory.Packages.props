@@ -32,7 +32,8 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
 
     <!-- Email -->
-    <PackageVersion Include="MailKit" Version="4.14.1" />
+    <PackageVersion Include="MailKit" Version="4.16.0" />
+    <PackageVersion Include="MimeKit" Version="4.16.0" />
 
     <!-- OpenAPI -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.3" />

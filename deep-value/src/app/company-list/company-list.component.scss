@@ -51,9 +51,26 @@
     border-top: 0px;
     margin-top: 15px;
     width: 100%;
+    table-layout: fixed;
+
+    // Per-column widths so the rightmost columns don't get crushed when a
+    // new column is added. Material auto-applies `.mat-column-{name}` to both
+    // the <th> and <td> for each matColumnDef. With `table-layout: fixed`,
+    // widths set on the <th> drive the whole column.
+    .mat-column-instrumentSymbol { width: 7%; }
+    .mat-column-companyName      { width: 14%; }
+    .mat-column-pricePerShare    { width: 7%; }
+    .mat-column-maxPrice         { width: 7%; }
+    .mat-column-percentageUpside { width: 6%; }
+    .mat-column-marketCap        { width: 9%; }
+    .mat-column-estimatedNextYearTotalReturnPercentageFromCashFlow      { width: 9%; }
+    .mat-column-estimatedNextYearTotalReturnPercentageOwnerEarnings     { width: 9%; }
+    .mat-column-roeFromCashFlow      { width: 6%; }
+    .mat-column-roeFromOwnerEarnings { width: 6%; }
+    .mat-column-overallScore         { width: 7%; }
+    .mat-column-lastUpdated          { width: 13%; }
 
     .data-table__header {
-        width: 9.09%;
         padding: 5px 8px 5px 8px;
         margin-left: 2px;
         margin-right: 2px;
@@ -72,9 +89,17 @@
         margin-right: 2px;
         padding-left: 8px;
         padding-right: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         &.data-table__cell--numeric {
             text-align: right;
+        }
+
+        &.data-table__cell--stale {
+            color: #b35c00;
+            font-weight: 600;
         }
 
         a {
@@ -82,7 +107,7 @@
             display: inline-block;
             position: relative;
         }
-    
+
         a::after {
             content: '';
             position: absolute;
@@ -94,10 +119,15 @@
             transform-origin: bottom right;
             transition: transform 0.25s ease-out;
         }
-    
+
         a:hover::after {
             transform: scaleX(1);
             transform-origin: bottom left;
         }
+    }
+
+    .data-table__stale-icon {
+        margin-right: 4px;
+        color: #b35c00;
     }
 }

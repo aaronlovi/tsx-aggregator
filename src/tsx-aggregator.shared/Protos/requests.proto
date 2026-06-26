@@ -57,6 +57,9 @@ message GetStocksDataReplyItem {
     int64 average_owner_earnings = 17;
     int32 num_annual_processed_cash_flow_reports = 18;
     DecimalValue per_share_price = 19;
+    google.protobuf.Timestamp most_recent_annual_report_date = 20;
+    google.protobuf.Timestamp most_recent_quarterly_report_date = 21;
+    google.protobuf.Timestamp last_updated_date = 22;
 }
 
 message GetStockSearchResultsRequest {

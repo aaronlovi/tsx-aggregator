@@ -129,6 +129,11 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
+    public ValueTask<Result> UpdateInstrumentLastScrapedDate(long instrumentId, DateTimeOffset lastScrapedDate, CancellationToken ct) {
+        // No-op for the in-memory backend; only the Postgres implementation persists this.
+        return ValueTask.FromResult(Result.SUCCESS);
+    }
+
     public ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct) {
         var emptyResult = PagedInstrumentInfoDto.WithPageNumberAndSizeOnly(pageNumber, pageSize);
         return ValueTask.FromResult(new Result<PagedInstrumentInfoDto>(true, string.Empty, emptyResult));

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
     selector: 'app-header',
@@ -7,5 +7,7 @@ import { Component } from '@angular/core';
     standalone: false
 })
 export class HeaderComponent {
+    @Input() sidenavOpened = true;
+    @Output() toggleSidenav = new EventEmitter<void>();
     constructor() { }
 }

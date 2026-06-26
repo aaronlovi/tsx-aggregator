@@ -1,4 +1,13 @@
 <mat-toolbar class="title title--dark">
+    <button
+        mat-icon-button
+        class="title__menu-toggle"
+        (click)="toggleSidenav.emit()"
+        [matTooltip]="sidenavOpened ? 'Collapse menu' : 'Expand menu'"
+        [attr.aria-label]="sidenavOpened ? 'Collapse navigation' : 'Expand navigation'"
+        [attr.aria-expanded]="sidenavOpened">
+        <mat-icon>{{ sidenavOpened ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+    </button>
     <img class="title__favicon" src="../../favicon.svg" alt=""/>
     <span class="title__title-name">TSX Deep Value Guide</span>
     <span class="title__spacer"></span>

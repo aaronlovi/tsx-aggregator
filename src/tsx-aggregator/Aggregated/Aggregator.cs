@@ -147,7 +147,7 @@ public class Aggregator : BackgroundService, INamedService {
         CompanyEventTypes eventType = instrumentEvt.EventType.ToCompanyEventType();
         switch (eventType) {
             case CompanyEventTypes.NewListedCompany:
-                await ProcessNewListedCompanyEvent(instrumentEvt, ct);
+                // Nothing to do here for now beyond marking the event processed.
                 break;
             case CompanyEventTypes.UpdatedListedCompany:
                 break;
@@ -160,15 +160,16 @@ public class Aggregator : BackgroundService, INamedService {
             default:
                 break;
         }
+
+        await MarkInstrumentEventAsProcessed(instrumentEvt, ct);
     }
 
-    private async Task ProcessNewListedCompanyEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
-        // Mark the event as processed. Nothing to do here for now.
+    private async Task MarkInstrumentEventAsProcessed(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         InstrumentEventDto instrumentEventDto = instrumentEvt.InstrumentEvent with { IsProcessed = true };
         InstrumentEventExDto dto = instrumentEvt with { InstrumentEvent = instrumentEventDto };
-        var res = await _dbm.MarkInstrumentEventAsProcessed(dto, ct);
+        Result res = await _dbm.MarkInstrumentEventAsProcessed(dto, ct);
         if (!res.Success)
-            _logger.LogWarning("ProcessNewListedCompanyEvent - unexpected failed to mark instrument event as processed {Error}", res.ErrMsg);
+            _logger.LogWarning("MarkInstrumentEventAsProcessed - failed to mark instrument event as processed: {Error}", res.ErrMsg);
     }
 
     private async Task ProcessCompanyDataChangedEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {

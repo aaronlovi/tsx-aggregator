@@ -56,6 +56,37 @@
             {{ companyDetails.percentageUpside / 100.0 | percent:'1.2-2' }}
           </td>
         </tr>
+        <!-- Data Freshness -->
+        <tr class="mat-row data-table__row">
+          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2">
+            Data Freshness
+          </th>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="The date of the most recent annual financial report we have on file for this company.">
+              Most Recent Annual Report
+            </span>
+          </th>
+          <td class="mat-cell data-table__data">
+            {{ companyDetails.mostRecentAnnualReportDate ? (companyDetails.mostRecentAnnualReportDate | date:'yyyy-MM-dd') : '—' }}
+          </td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="The date of the most recent quarterly financial report we have on file.">
+              Most Recent Quarterly Report
+            </span>
+          </th>
+          <td class="mat-cell data-table__data">
+            {{ companyDetails.mostRecentQuarterlyReportDate ? (companyDetails.mostRecentQuarterlyReportDate | date:'yyyy-MM-dd') : '—' }}
+          </td>
+          <th class="mat-header-cell data-table__header">
+            <span matTooltip="When the scraper last produced new data for this company. The dashboard shows the global last-fetch time; this is per-company.">
+              Last Scraped
+            </span>
+          </th>
+          <td class="mat-cell data-table__data"
+              [matTooltip]="companyDetails.lastUpdatedDate ? (companyDetails.lastUpdatedDate | date:'yyyy-MM-dd HH:mm:ss zzzz') : ''">
+            {{ companyDetails.lastUpdatedDate ? (companyDetails.lastUpdatedDate | relativeTime:now) : '—' }}
+          </td>
+        </tr>
         <!-- Scores -->
         <tr class="mat-row data-table__row data-table__row--alternating">
           <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="4">

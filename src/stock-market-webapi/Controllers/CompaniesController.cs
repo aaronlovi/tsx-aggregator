@@ -48,7 +48,10 @@ public class CompaniesController : Controller {
                 curDividendsPaid: item.CurrentDividendsPaid,
                 curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
                 oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
+                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
+                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
+                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
         }
 
         // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
@@ -97,7 +100,10 @@ public class CompaniesController : Controller {
                 curDividendsPaid: item.CurrentDividendsPaid,
                 curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
                 oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
+                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
+                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
+                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
         }
 
         // Sort the output list first by overall score ascending, then by the average of total return ascending
@@ -147,7 +153,10 @@ public class CompaniesController : Controller {
                 curDividendsPaid: item.CurrentDividendsPaid,
                 curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
                 oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
+                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
+                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
+                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
         }
 
         // Sort descending by overall score, then by average return
@@ -196,7 +205,10 @@ public class CompaniesController : Controller {
             curDividendsPaid: reply.StockDetail.CurrentDividendsPaid,
             curAdjustedRetainedEarnings: reply.StockDetail.CurrentAdjustedRetainedEarnings,
             oldestRetainedEarnings: reply.StockDetail.OldestRetainedEarnings,
-            numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports);
+            numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports,
+            mostRecentAnnualReportDate: reply.StockDetail.MostRecentAnnualReportDate?.ToDateTimeOffset(),
+            mostRecentQuarterlyReportDate: reply.StockDetail.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
+            lastUpdatedDate: reply.StockDetail.LastUpdatedDate?.ToDateTimeOffset());
 
         return Ok(fullDetailReport);
     }

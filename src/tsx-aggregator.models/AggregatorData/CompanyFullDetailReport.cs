@@ -20,7 +20,10 @@ public class CompanyFullDetailReport {
         decimal curDividendsPaid,
         decimal curAdjustedRetainedEarnings, // oldestRetainedEarnings + Dividends + Share buybacks
         decimal oldestRetainedEarnings,
-        int numAnnualProcessedCashFlowReports) {
+        int numAnnualProcessedCashFlowReports,
+        DateTimeOffset? mostRecentAnnualReportDate = null,
+        DateTimeOffset? mostRecentQuarterlyReportDate = null,
+        DateTimeOffset? lastUpdatedDate = null) {
 
         Exchange = exchange;
         CompanySymbol = companySymbol;
@@ -38,6 +41,9 @@ public class CompanyFullDetailReport {
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
+        MostRecentAnnualReportDate = mostRecentAnnualReportDate;
+        MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
+        LastUpdatedDate = lastUpdatedDate;
     }
 
     public string Exchange { get; init; }
@@ -56,6 +62,9 @@ public class CompanyFullDetailReport {
     public decimal CurAdjustedRetainedEarnings { get; init; }
     public decimal OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
+    public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
+    public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
+    public DateTimeOffset? LastUpdatedDate { get; init; }
 
     // Calculated Properties
     public decimal CurMarketCap => CurNumShares * PricePerShare;

@@ -103,6 +103,28 @@
       <td mat-cell *matCellDef="let company" class="data-table__cell data-table__cell--numeric">{{ company.overallScore }}</td>
     </ng-container>
 
+    <!-- Last Updated Column. Tooltip shows the underlying annual/quarterly report dates. -->
+    <ng-container matColumnDef="lastUpdated">
+      <th mat-header-cell *matHeaderCellDef class="data-table__header">Last Updated</th>
+      <td mat-cell *matCellDef="let company" class="data-table__cell"
+          [class.data-table__cell--stale]="isStale(company.lastUpdatedDate)"
+          [matTooltip]="
+            'Annual: ' + (company.mostRecentAnnualReportDate ? (company.mostRecentAnnualReportDate | date:'yyyy-MM-dd') : '—') +
+            ' • Quarterly: ' + (company.mostRecentQuarterlyReportDate ? (company.mostRecentQuarterlyReportDate | date:'yyyy-MM-dd') : '—') +
+            (company.lastUpdatedDate ? ' • Scraped: ' + (company.lastUpdatedDate | date:'yyyy-MM-dd HH:mm') : '') +
+            (isStale(company.lastUpdatedDate) ? '\n⚠ Data is over a month old' : '')"
+          matTooltipClass="data-freshness-tooltip">
+        @if (company.lastUpdatedDate) {
+          @if (isStale(company.lastUpdatedDate)) {
+            <span class="data-table__stale-icon" aria-hidden="true">⚠</span>
+          }
+          <span>{{ company.lastUpdatedDate | date:'yyyy-MM-dd HH:mm' }}</span>
+        } @else {
+          <span class="data-table__cell--muted">&mdash;</span>
+        }
+      </td>
+    </ng-container>
+
     <!-- Table Header Row -->
     <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
 

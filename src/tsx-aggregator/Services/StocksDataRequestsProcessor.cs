@@ -138,7 +138,13 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     AverageNetCashFlow = averageNetCashFlow,
                     AverageOwnerEarnings = averageOwnerEarnings,
                     PerSharePrice = 0M, // To be filled out later by the quotes service
-                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports
+                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
+                    MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
+                    MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.MostRecentQuarterlyReportDate.Value) : null,
+                    LastUpdatedDate = dto.LastUpdatedDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
                 };
                 getStocksDataReply.StocksData.Add(item);
             }
@@ -228,7 +234,13 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     AverageNetCashFlow = averageNetCashFlow,
                     AverageOwnerEarnings = averageOwnerEarnings,
                     PerSharePrice = 0M, // To be filled out later by the quotes service
-                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports
+                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
+                    MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
+                    MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.MostRecentQuarterlyReportDate.Value) : null,
+                    LastUpdatedDate = dto.LastUpdatedDate.HasValue
+                        ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
                 };
             } catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",

@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using static tsx_aggregator.Services.StockDataService;
@@ -9,6 +10,8 @@ namespace stock_market_webapi;
 public class Program {
     public static void Main(string[] args) {
         var builder = WebApplication.CreateBuilder(args);
+
+        _ = builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
         _ = builder.Services.AddCors(options => {
             options.AddPolicy("AllowAll", builder => {

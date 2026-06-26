@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Npgsql;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
@@ -8,7 +9,12 @@ namespace dbm_persistence;
 internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : QueryDbStmtBase {
     private static readonly string sql = "SELECT i.instrument_id, i.company_symbol, i.company_name, i.instrument_symbol, i.instrument_name,"
         + " pir.report_json, i.created_date as instrument_created_date, pir.created_date as report_created_date,"
-        + " COUNT(ir.instrument_report_id) as num_reports"
+        + " COUNT(ir.instrument_report_id) as num_reports,"
+        + " (SELECT MAX(report_date) FROM instrument_reports WHERE instrument_id = i.instrument_id"
+        + "    AND report_period_type = " + (int)Constants.ReportPeriodTypes.Annual + " AND is_current = TRUE) as last_annual_report_date,"
+        + " (SELECT MAX(report_date) FROM instrument_reports WHERE instrument_id = i.instrument_id"
+        + "    AND report_period_type = " + (int)Constants.ReportPeriodTypes.Quarterly + " AND is_current = TRUE) as last_quarterly_report_date,"
+        + " i.last_scraped_date as last_updated_date"
         + " FROM instruments i JOIN processed_instrument_reports pir ON i.instrument_id = pir.instrument_id"
         + " JOIN instrument_reports ir ON i.instrument_id = ir.instrument_id"
         + " WHERE i.obsoleted_date IS NULL"
@@ -19,7 +25,7 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
         + " AND ir.report_period_type = " + (int)Constants.ReportPeriodTypes.Annual
         + " AND ir.is_current = TRUE"
         + " GROUP BY i.instrument_id, i.company_symbol, i.company_name, i.instrument_symbol, i.instrument_name,"
-        + " pir.report_json, i.created_date, pir.created_date";
+        + " pir.report_json, i.created_date, pir.created_date, i.last_scraped_date";
 
     // Inputs
     private readonly string _exchange;
@@ -34,6 +40,9 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
     private static int _instrumentCreatedDateIndex = -1;
     private static int _reportCreatedDateIndex = -1;
     private static int _numAnnualCashFlowReportsIndex = -1;
+    private static int _lastAnnualReportDateIndex = -1;
+    private static int _lastQuarterlyReportDateIndex = -1;
+    private static int _lastUpdatedDateIndex = -1;
 
     // Results
     private ProcessedFullInstrumentReportDto? _processedInstrumentReportDto;
@@ -70,7 +79,13 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
         _instrumentCreatedDateIndex = reader.GetOrdinal("instrument_created_date");
         _reportCreatedDateIndex = reader.GetOrdinal("report_created_date");
         _numAnnualCashFlowReportsIndex = reader.GetOrdinal("num_reports");
+        _lastAnnualReportDateIndex = reader.GetOrdinal("last_annual_report_date");
+        _lastQuarterlyReportDateIndex = reader.GetOrdinal("last_quarterly_report_date");
+        _lastUpdatedDateIndex = reader.GetOrdinal("last_updated_date");
     }
+
+    private static DateTimeOffset? ReadNullableUtc(NpgsqlDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal).EnsureUtc();
 
     protected override bool ProcessCurrentRow(NpgsqlDataReader reader) {
         _processedInstrumentReportDto = new ProcessedFullInstrumentReportDto(
@@ -84,7 +99,10 @@ internal sealed class GetProcessedStockDataByExchangeAndInstrumentSymbolStmt : Q
             InstrumentObsoletedDate: null,
             ReportCreatedDate: reader.GetDateTime(_reportCreatedDateIndex).EnsureUtc(),
             ReportObsoletedDate: null,
-            NumAnnualCashFlowReports: reader.GetInt32(_numAnnualCashFlowReportsIndex));
+            NumAnnualCashFlowReports: reader.GetInt32(_numAnnualCashFlowReportsIndex),
+            MostRecentAnnualReportDate: ReadNullableUtc(reader, _lastAnnualReportDateIndex),
+            MostRecentQuarterlyReportDate: ReadNullableUtc(reader, _lastQuarterlyReportDateIndex),
+            LastUpdatedDate: ReadNullableUtc(reader, _lastUpdatedDateIndex));
         return true;
     }
 }

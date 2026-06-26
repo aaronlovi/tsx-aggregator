@@ -1,4 +1,6 @@
-﻿namespace tsx_aggregator.models;
+﻿using System;
+
+namespace tsx_aggregator.models;
 
 public record CompanySummaryReport(
     string Exchange,
@@ -11,7 +13,10 @@ public record CompanySummaryReport(
     int OverallScore,
     decimal MaxPrice,
     decimal ReturnOnEquity_FromCashFlow,
-    decimal ReturnOnEquity_FromOwnerEarnings) {
+    decimal ReturnOnEquity_FromOwnerEarnings,
+    DateTimeOffset? MostRecentAnnualReportDate = null,
+    DateTimeOffset? MostRecentQuarterlyReportDate = null,
+    DateTimeOffset? LastUpdatedDate = null) {
 
     public decimal PercentageUpside {
         get {
@@ -33,6 +38,9 @@ public record CompanySummaryReport(
             fullDetailReport.OverallScore,
             fullDetailReport.MaxPrice,
             fullDetailReport.ReturnOnEquity_FromCashFlow,
-            fullDetailReport.ReturnOnEquity_FromOwnerEarnings);
+            fullDetailReport.ReturnOnEquity_FromOwnerEarnings,
+            fullDetailReport.MostRecentAnnualReportDate,
+            fullDetailReport.MostRecentQuarterlyReportDate,
+            fullDetailReport.LastUpdatedDate);
     }
 }

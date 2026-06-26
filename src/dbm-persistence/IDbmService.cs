@@ -28,6 +28,7 @@ public interface IDbmService {
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
+    ValueTask<Result> UpdateInstrumentLastScrapedDate(long instrumentId, DateTimeOffset lastScrapedDate, CancellationToken ct);
 
     ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
 

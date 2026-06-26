@@ -15,7 +15,8 @@ export class CompanyDetailsComponent implements OnInit {
     companyDetails?: CompanyDetails;
     loading: boolean;
     errorMsg: string;
-    
+    now: Date = new Date();
+
     constructor(private companyService: CompanyService, private route: ActivatedRoute) {
         this.exchange = '';
         this.instrumentSymbol = '';

@@ -17,6 +17,9 @@ export class CompanyDetails {
     curAdjustedRetainedEarnings: number;
     oldestRetainedEarnings: number;
     numAnnualProcessedCashFlowReports: number;
+    mostRecentAnnualReportDate: string | null = null;
+    mostRecentQuarterlyReportDate: string | null = null;
+    lastUpdatedDate: string | null = null;
 
     constructor(
         exchange: string,

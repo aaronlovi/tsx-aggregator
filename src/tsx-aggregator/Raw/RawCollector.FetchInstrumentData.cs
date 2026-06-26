@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -59,6 +60,11 @@ internal partial class RawCollector : BackgroundService {
 
         if (updateInstrumentRes.Success) {
             _logger.LogInformation("ProcessFetchInstrumentData - Updated instrument reports success");
+            // Stamp last-scraped time even when the delta was empty, so the UI
+            // reflects "we checked recently" rather than "data hasn't changed".
+            Result stampRes = await _dbm.UpdateInstrumentLastScrapedDate(instrumentDto.InstrumentId, DateTimeOffset.UtcNow, ct);
+            if (!stampRes.Success)
+                _logger.LogWarning("ProcessFetchInstrumentData - Failed to stamp last_scraped_date: {Error}", stampRes.ErrMsg);
         }
         else {
             _logger.LogWarning("ProcessFetchInstrumentData - Updated instrument reports failed with error {Error}", updateInstrumentRes.ErrMsg);
