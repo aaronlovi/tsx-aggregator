@@ -141,27 +141,35 @@ public class Aggregator : BackgroundService, INamedService {
         }
     }
 
-    private async Task ProcessInstrumentEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
+    internal async Task ProcessInstrumentEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         _logger.LogInformation("Found instrument event: {InstrumentEvent}", instrumentEvt);
 
         CompanyEventTypes eventType = instrumentEvt.EventType.ToCompanyEventType();
+        bool handled;
         switch (eventType) {
             case CompanyEventTypes.NewListedCompany:
-                // Nothing to do here for now beyond marking the event processed.
-                break;
             case CompanyEventTypes.UpdatedListedCompany:
-                break;
             case CompanyEventTypes.ObsoletedListedCompany:
+                // Nothing to aggregate for these yet; treat as handled.
+                handled = true;
                 break;
             case CompanyEventTypes.RawDataChanged:
-                await ProcessCompanyDataChangedEvent(instrumentEvt, ct);
+                handled = await ProcessCompanyDataChangedEvent(instrumentEvt, ct);
                 break;
             case CompanyEventTypes.Undefined:
             default:
+                // Unknown event type: mark processed so it can't wedge the queue.
+                _logger.LogWarning("ProcessInstrumentEvent - unknown event type {EventType}; marking processed", instrumentEvt.EventType);
+                handled = true;
                 break;
         }
 
-        await MarkInstrumentEventAsProcessed(instrumentEvt, ct);
+        // Only mark the event processed when handling actually succeeded. A
+        // transient failure (e.g. a DB error during aggregation) leaves it
+        // unprocessed so the next cycle retries it, rather than silently
+        // dropping the update.
+        if (handled)
+            await MarkInstrumentEventAsProcessed(instrumentEvt, ct);
     }
 
     private async Task MarkInstrumentEventAsProcessed(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
@@ -172,12 +180,21 @@ public class Aggregator : BackgroundService, INamedService {
             _logger.LogWarning("MarkInstrumentEventAsProcessed - failed to mark instrument event as processed: {Error}", res.ErrMsg);
     }
 
-    private async Task ProcessCompanyDataChangedEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
+    /// <returns>
+    /// True if the event was handled (and may be marked processed); false on a
+    /// transient failure that should be retried on the next cycle.
+    /// </returns>
+    private async Task<bool> ProcessCompanyDataChangedEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         (Result res, IReadOnlyList<CurrentInstrumentRawDataReportDto> rawReports) = await _dbm.GetCurrentInstrumentReports(instrumentEvt.InstrumentId, ct);
-        if (!res.Success || rawReports.Count == 0) {
-            _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected no company data changed ({DbResult},{NumReports})",
-                res.Success, rawReports.Count);
-            return;
+        if (!res.Success) {
+            _logger.LogWarning("ProcessCompanyDataChangedEvent - failed to read current reports, will retry: {Error}", res.ErrMsg);
+            return false;
+        }
+        if (rawReports.Count == 0) {
+            // No current raw data to aggregate. This is a data anomaly rather
+            // than a transient error, so don't retry forever — mark it handled.
+            _logger.LogWarning("ProcessCompanyDataChangedEvent - no current raw reports for instrument {InstrumentId}; nothing to aggregate", instrumentEvt.InstrumentId);
+            return true;
         }
 
         var companyReportBuilder = new CompanyReportBuilder(
@@ -195,8 +212,12 @@ public class Aggregator : BackgroundService, INamedService {
         string serializedReport = JsonSerializer.Serialize(companyReport);
         var processedReportDto = new ProcessedInstrumentReportDto(instrumentEvt.InstrumentId, serializedReport, DateTimeOffset.UtcNow, null);
         res = await _dbm.InsertProcessedCompanyReport(processedReportDto, ct);
-        if (!res.Success)
-            _logger.LogWarning("ProcessCompanyDataChangedEvent - unexpected failed to insert processed company report: {Error}", res.ErrMsg);
+        if (!res.Success) {
+            _logger.LogWarning("ProcessCompanyDataChangedEvent - failed to insert processed company report, will retry: {Error}", res.ErrMsg);
+            return false;
+        }
+
+        return true;
     }
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
