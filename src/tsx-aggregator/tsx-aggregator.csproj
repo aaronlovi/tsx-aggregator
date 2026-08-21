@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Grpc.AspNetCore" />
         <PackageReference Include="MailKit" />
         <PackageReference Include="Google.Apis.Sheets.v4" />
         <PackageReference Include="PuppeteerSharp" />
