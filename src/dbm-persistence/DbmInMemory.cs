@@ -86,9 +86,16 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
-    public ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
+    public ValueTask<(Result, IReadOnlyDictionary<InstrumentKey, long>)> GetObsoletedInstrumentIds(CancellationToken ct) {
         lock (_data) {
-            _data.UpdateInstrumentList(newInstrumentList, obsoletedInstrumentList);
+            IReadOnlyDictionary<InstrumentKey, long> instrumentIdsByKey = _data.GetObsoletedInstrumentIds();
+            return ValueTask.FromResult<(Result, IReadOnlyDictionary<InstrumentKey, long>)>((Result.SUCCESS, instrumentIdsByKey));
+        }
+    }
+
+    public ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> revivedInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
+        lock (_data) {
+            _data.UpdateInstrumentList(newInstrumentList, revivedInstrumentList, obsoletedInstrumentList);
         }
         return ValueTask.FromResult(Result.SUCCESS);
     }

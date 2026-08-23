@@ -316,12 +316,50 @@ internal class DbmInMemoryData {
         return true;
     }
 
-    public void UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList) {
+    public IReadOnlyDictionary<InstrumentKey, long> GetObsoletedInstrumentIds() {
+        var results = new Dictionary<InstrumentKey, long>();
+
+        foreach (InstrumentDto instrument in _instrumentsByInstrumentId.Values) {
+            if (instrument.ObsoletedDate is null)
+                continue;
+
+            var key = new InstrumentKey(instrument.CompanySymbol, instrument.InstrumentSymbol, instrument.Exchange);
+            results[key] = instrument.InstrumentId;
+        }
+
+        return results;
+    }
+
+    public bool ReviveInstrument(InstrumentDto dto) {
+        if (!_instrumentsByInstrumentId.TryGetValue(dto.InstrumentId, out InstrumentDto? instrument))
+            return false; // Nothing to revive
+
+        _instrumentsByInstrumentId[dto.InstrumentId] = instrument with {
+            ObsoletedDate = null,
+            CompanyName = dto.CompanyName,
+            InstrumentName = dto.InstrumentName
+        };
+
+        return true;
+    }
+
+    public void UpdateInstrumentList(
+        IReadOnlyList<InstrumentDto> newInstrumentList,
+        IReadOnlyList<InstrumentDto> revivedInstrumentList,
+        IReadOnlyList<InstrumentDto> obsoletedInstrumentList) {
         foreach (InstrumentDto newInstrument in newInstrumentList) {
             var res = InsertInstrument(newInstrument);
             if (res) {
                 var newInstrumentEvent = new InstrumentEventDto(newInstrument.InstrumentId, DateTime.UtcNow, (int)CompanyEventTypes.NewListedCompany, false);
                 InsertInstrumentEvent(newInstrumentEvent);
+            }
+        }
+
+        foreach (InstrumentDto revivedInstrument in revivedInstrumentList) {
+            var res = ReviveInstrument(revivedInstrument);
+            if (res) {
+                var revivedInstrumentEvent = new InstrumentEventDto(revivedInstrument.InstrumentId, DateTime.UtcNow, (int)CompanyEventTypes.NewListedCompany, false);
+                InsertInstrumentEvent(revivedInstrumentEvent);
             }
         }
 

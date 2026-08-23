@@ -48,21 +48,28 @@ internal partial class RawCollector : BackgroundService {
             return;
         }
 
-        UpdateRegistryResults instrumentUpdateResults = await UpdateRegistry(directory, ct);
+        UpdateRegistryResults? instrumentUpdateResults = await UpdateRegistry(directory, ct);
+        if (instrumentUpdateResults is null) {
+            _logger.LogError("ProcessFetchDirectory - aborting: registry diff failed");
+            return;
+        }
+
         var newInstruments = instrumentUpdateResults.NewInstruments;
+        var revivedInstruments = instrumentUpdateResults.RevivedInstruments;
         var obsoletedInstruments = instrumentUpdateResults.ObsoletedInstruments;
 
-        _logger.LogInformation("ProcessFetchDirectory - new:{NumNewInstruments},obsolete:{NumObsoletedInstruments}",
-            newInstruments.Count, obsoletedInstruments.Count);
+        _logger.LogInformation("ProcessFetchDirectory - new:{NumNewInstruments},revived:{NumRevivedInstruments},obsolete:{NumObsoletedInstruments}",
+            newInstruments.Count, revivedInstruments.Count, obsoletedInstruments.Count);
 
         if (instrumentUpdateResults.IsEmpty) {
-            _logger.LogInformation("ProcessFetchDirectory - no new or obsoleted instruments");
+            _logger.LogInformation("ProcessFetchDirectory - no new, revived or obsoleted instruments");
             return;
         }
 
         IReadOnlyList<InstrumentDto> newInstruments_ = (IReadOnlyList<InstrumentDto>)newInstruments;
+        IReadOnlyList<InstrumentDto> revivedInstruments_ = (IReadOnlyList<InstrumentDto>)revivedInstruments;
         IReadOnlyList<InstrumentDto> obsoletedInstruments_ = (IReadOnlyList<InstrumentDto>)obsoletedInstruments;
-        Result res = await _dbm.UpdateInstrumentList(newInstruments_, obsoletedInstruments_, ct);
+        Result res = await _dbm.UpdateInstrumentList(newInstruments_, revivedInstruments_, obsoletedInstruments_, ct);
 
         if (!res.Success) {
             _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}. Error: {Error}", res.Success, res.ErrMsg);
@@ -76,20 +83,45 @@ internal partial class RawCollector : BackgroundService {
         _logger.LogInformation("ProcessFetchDirectory - end. Success: {Success}", res.Success);
     }
 
-    private async Task<UpdateRegistryResults> UpdateRegistry(
+    internal async Task<UpdateRegistryResults?> UpdateRegistry(
         Dictionary<string, InstrumentDtoByInstrumentNameMap> directory,
         CancellationToken ct) {
-        IList<InstrumentDto> newInstrumentList = _registry.GetNewInstruments(directory);
-        for (var i = 0; i < newInstrumentList.Count; i++) {
-            newInstrumentList[i] = newInstrumentList[i] with { InstrumentId = (long)await _dbm.GetNextId64(ct) };
-            _registry.AddInstrument(newInstrumentList[i]);
+        // The registry only holds active instruments, so anything that was obsoleted looks
+        // brand new here. Those instruments still own their natural key in the database, so
+        // they have to be updated in place rather than inserted.
+        (Result idsRes, IReadOnlyDictionary<InstrumentKey, long> obsoletedInstrumentIds) = await _dbm.GetObsoletedInstrumentIds(ct);
+        if (!idsRes.Success) {
+            _logger.LogError("UpdateRegistry - could not load obsoleted instrument ids: {Error}", idsRes.ErrMsg);
+            return null;
+        }
+
+        IList<InstrumentDto> candidateInstrumentList = _registry.GetNewInstruments(directory);
+        var newInstrumentList = new List<InstrumentDto>();
+        var revivedInstrumentList = new List<InstrumentDto>();
+
+        foreach (InstrumentDto candidate in candidateInstrumentList) {
+            // InstrumentDto derives from InstrumentKey, but record equality is type-sensitive,
+            // so the key has to be rebuilt to match the dictionary's key type.
+            var candidateKey = new InstrumentKey(candidate.CompanySymbol, candidate.InstrumentSymbol, candidate.Exchange);
+            if (obsoletedInstrumentIds.TryGetValue(candidateKey, out long existingInstrumentId)) {
+                InstrumentDto revived = candidate with { InstrumentId = existingInstrumentId };
+                revivedInstrumentList.Add(revived);
+                _registry.AddInstrument(revived);
+                _logger.LogInformation("UpdateRegistry - re-listing previously obsoleted instrument: {CompanySymbol},{InstrumentSymbol},id:{InstrumentId}",
+                    revived.CompanySymbol, revived.InstrumentSymbol, existingInstrumentId);
+                continue;
+            }
+
+            InstrumentDto added = candidate with { InstrumentId = (long)await _dbm.GetNextId64(ct) };
+            newInstrumentList.Add(added);
+            _registry.AddInstrument(added);
         }
 
         IList<InstrumentDto> obsoletedInstrumentList = _registry.GetObsoletedInstruments(directory);
         foreach (var obsoletedInstrument in obsoletedInstrumentList)
             _registry.RemoveInstrument(obsoletedInstrument);
 
-        return new UpdateRegistryResults(newInstrumentList, obsoletedInstrumentList);
+        return new UpdateRegistryResults(newInstrumentList, revivedInstrumentList, obsoletedInstrumentList);
     }
 
     /// <summary>
@@ -106,6 +138,10 @@ internal partial class RawCollector : BackgroundService {
         // Remove the newly inserted elements
         foreach (var newInstrument in instrumentUpdateResults.NewInstruments)
             _registry.RemoveInstrument(newInstrument);
+
+        // Remove the re-listed elements; they are still obsoleted in the database
+        foreach (var revivedInstrument in instrumentUpdateResults.RevivedInstruments)
+            _registry.RemoveInstrument(revivedInstrument);
 
         // Database and registry are back in consistent state
     }
@@ -124,17 +160,22 @@ internal partial class RawCollector : BackgroundService {
 
                 using HttpResponseMessage response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) {
-                    _logger.LogWarning("FetchInstrumentDirectory - letter:{Letter}, HTTP request failed with status code: {StatusCode}",
+                    // Skipping the letter would hand back a directory that looks complete but is
+                    // missing a whole slice of the alphabet, and the caller would obsolete every
+                    // instrument in it. Fail the entire fetch instead.
+                    _logger.LogError("FetchInstrumentDirectory - letter:{Letter}, HTTP request failed with status code: {StatusCode}. Abandoning fetch",
                         curLetter, response.StatusCode);
-                    continue;
+                    return null;
                 }
 
                 string json = await response.Content.ReadAsStringAsync(ct);
                 using JsonDocument doc = JsonDocument.Parse(json);
                 JsonElement root = doc.RootElement;
                 JsonElement curLetterDirectory = GetDirectoryForLetter(root, curLetter);
-                if (curLetterDirectory.ValueKind == JsonValueKind.Undefined)
-                    continue;
+                if (curLetterDirectory.ValueKind == JsonValueKind.Undefined) {
+                    _logger.LogError("FetchInstrumentDirectory - letter:{Letter}, no usable directory in response. Abandoning fetch", curLetter);
+                    return null;
+                }
 
                 foreach (JsonElement company in curLetterDirectory.EnumerateArray()) {
                     var (companySymbol, companyName, instruments) = ExtractCompanyDetails(company, curLetter);

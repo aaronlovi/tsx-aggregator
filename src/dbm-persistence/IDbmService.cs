@@ -22,7 +22,8 @@ public interface IDbmService {
 
     // Raw
     ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct);
-    ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct);
+    ValueTask<(Result, IReadOnlyDictionary<InstrumentKey, long>)> GetObsoletedInstrumentIds(CancellationToken ct);
+    ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> revivedInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct);
     ValueTask<(Result, ApplicationCommonState?)> GetApplicationCommonState(CancellationToken ct);
     ValueTask<Result> PersistStateFsmState(ApplicationCommonState stateFsmState, CancellationToken ct);
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);

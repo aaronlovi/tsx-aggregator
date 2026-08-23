@@ -126,8 +126,14 @@ public sealed class DbmService : IDisposable, IDbmService {
         return (res, stmt.Instruments);
     }
 
-    public async ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
-        var stmt = new UpdateInstrumentListStmt(newInstrumentList, obsoletedInstrumentList);
+    public async ValueTask<(Result, IReadOnlyDictionary<InstrumentKey, long>)> GetObsoletedInstrumentIds(CancellationToken ct) {
+        var stmt = new GetObsoletedInstrumentIdsStmt();
+        DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
+        return (res, stmt.InstrumentIdsByKey);
+    }
+
+    public async ValueTask<Result> UpdateInstrumentList(IReadOnlyList<InstrumentDto> newInstrumentList, IReadOnlyList<InstrumentDto> revivedInstrumentList, IReadOnlyList<InstrumentDto> obsoletedInstrumentList, CancellationToken ct) {
+        var stmt = new UpdateInstrumentListStmt(newInstrumentList, revivedInstrumentList, obsoletedInstrumentList);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
