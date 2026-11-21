@@ -12,7 +12,10 @@ internal sealed class GetDashboardStatsStmt : QueryDbStmtBase {
         + "), obsoleted_instruments AS ("
         + " SELECT COUNT(*) AS cnt FROM instruments WHERE obsoleted_date IS NOT NULL"
         + "), instruments_with_processed AS ("
-        + " SELECT COUNT(DISTINCT instrument_id) AS cnt FROM processed_instrument_reports WHERE obsoleted_date IS NULL"
+        // Listed instruments only: a delisted instrument keeps its processed report (B13)
+        + " SELECT COUNT(DISTINCT p.instrument_id) AS cnt FROM processed_instrument_reports p"
+        + " JOIN instruments i ON i.instrument_id = p.instrument_id"
+        + " WHERE p.obsoleted_date IS NULL AND i.obsoleted_date IS NULL"
         + "), latest_raw AS ("
         + " SELECT MAX(created_date) AS dt FROM instrument_reports"
         + "), latest_processed AS ("

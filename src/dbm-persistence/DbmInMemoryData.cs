@@ -516,8 +516,11 @@ internal class DbmInMemoryData {
                 ++totalObsoleted;
         }
 
+        // Listed instruments only: a delisted instrument keeps its processed report (B13)
         long withProcessed = 0;
         foreach (var entry in _processedInstrumentReportsByInstrumentId) {
+            if (!_instrumentsByInstrumentId.TryGetValue(entry.Key, out InstrumentDto? instrument) || instrument.ObsoletedDate is not null)
+                continue;
             foreach (ProcessedInstrumentReportDto pir in entry.Value) {
                 if (pir.ReportObsoletedDate is null) {
                     ++withProcessed;
