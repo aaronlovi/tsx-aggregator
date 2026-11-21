@@ -1,28 +1,9 @@
-# Auto detect text files and perform LF normalization
+# Normalize text files to LF in the repository; working-copy line endings
+# follow the platform (LF on Linux/WSL, CRLF on Windows with core.autocrlf=true).
 * text=auto
 
-# Force CRLF line endings for Windows source files
-*.cs text eol=crlf
-*.csproj text eol=crlf
-*.sln text eol=crlf
-*.json text eol=crlf
-*.xml text eol=crlf
-*.props text eol=crlf
-*.targets text eol=crlf
-*.md text eol=crlf
-*.yml text eol=crlf
-*.yaml text eol=crlf
-*.ts text eol=crlf
-*.html text eol=crlf
-*.css text eol=crlf
-*.scss text eol=crlf
-*.js text eol=crlf
-
-# Shell scripts should keep LF
+# Shell scripts must keep LF everywhere (they run inside Linux/containers)
 *.sh text eol=lf
-
-# Claude Code writes these local config files with LF; don't force CRLF on them
-.claude/** text eol=lf
 
 # Binary files
 *.png binary
