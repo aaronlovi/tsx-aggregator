@@ -10,11 +10,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using tsx_aggregator.models;
 using tsx_aggregator.Raw;
+using tsx_aggregator.Services;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator;
 
-internal partial class RawCollector : BackgroundService, INamedService {
+internal partial class RawCollector : BackgroundService, INamedService, IPausableService {
     private const string _serviceName = "RawCollector";
 
     private long _reqId;
@@ -44,6 +45,16 @@ internal partial class RawCollector : BackgroundService, INamedService {
     public string ServiceName => _serviceName;
 
     public bool PostRequest(RawCollectorInputBase inp) => _inputChannel.Writer.TryWrite(inp);
+
+    public bool IsPaused => _stateFsm.IsPaused;
+
+    public async Task SetPausedAsync(bool paused, CancellationToken ct) {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        using var input = new RawCollectorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts);
+        if (!PostRequest(input))
+            throw new InvalidOperationException("RawCollector - failed to post the pause/resume request");
+        _ = await input.Completed.Task.WaitAsync(ct);
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
@@ -75,6 +86,10 @@ internal partial class RawCollector : BackgroundService, INamedService {
                     var output = new RawCollectorFsmOutputs();
                     _stateFsm.Update(input, utcNow, output);
                     await ProcessOutput(input, output.OutputList, stoppingToken);
+
+                    // A pause/resume that does not change the state produces no output, so complete it here.
+                    if (input is RawCollectorPauseServiceInput)
+                        _ = input.Completed.TrySetResult(null);
                 } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
                     _logger.LogWarning("RawCollector - Application stop in progress, stopping");
                     break; // Process no more inputs

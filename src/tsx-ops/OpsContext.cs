@@ -26,6 +26,7 @@ internal sealed class OpsContext : IDisposable {
     public const string ConnectionStringName = "tsx-scraper";
     public const string ApplicationName = "tsx-ops";
     private const int DefaultStatementTimeoutSeconds = 120;
+    private const string DefaultAggregatorGrpcUrl = "http://localhost:7001";
 
     private OpsContext(IConfiguration configuration, ILoggerFactory loggerFactory, TextWriter output) {
         Configuration = configuration;
@@ -63,7 +64,21 @@ internal sealed class OpsContext : IDisposable {
         return new OpsContext(configuration, loggerFactory, Console.Out);
     }
 
+    /// <summary>For tests: the given configuration and output, with logging discarded.</summary>
+    internal static OpsContext CreateForTests(IConfiguration configuration, TextWriter output) =>
+        new(configuration, Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance, output);
+
     public ILogger CreateLogger<T>() => LoggerFactory.CreateLogger<T>();
+
+    /// <summary>
+    /// The tsx-aggregator gRPC address: <paramref name="overrideValue"/> if given, otherwise Ops:AggregatorGrpcUrl.
+    /// </summary>
+    public Uri GetAggregatorGrpcUrl(string? overrideValue) {
+        string value = overrideValue ?? Configuration["Ops:AggregatorGrpcUrl"] ?? DefaultAggregatorGrpcUrl;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out Uri? uri))
+            throw new UsageException($"Invalid tsx-aggregator gRPC address '{value}'");
+        return uri;
+    }
 
     /// <summary>
     /// The database connection string: <paramref name="overrideValue"/> if given, otherwise ConnectionStrings:tsx-scraper,

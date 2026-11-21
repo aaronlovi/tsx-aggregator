@@ -15,6 +15,7 @@ public static class Program {
     internal static readonly ICommand[] Commands = [
         new SnapshotCommand(),
         new DiffCommand(),
+        new ServiceCommand(),
     ];
 
     public static async Task<int> Main(string[] args) {

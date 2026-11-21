@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option csharp_namespace = "tsx_aggregator.Services";
+
+// Operations-support endpoints on tsx-aggregator, used by tsx-ops. Kept separate from StockDataService
+// (the data API used by stock-market-webapi) so the operations surface can be secured or bound separately later.
+service AdminService {
+    // Each pausable service's state: whether it runs in this process and whether it is paused.
+    rpc GetServiceStatus(GetServiceStatusRequest) returns (GetServiceStatusReply);
+
+    // Pause or resume a pausable service. If the service runs in this process the change takes effect now;
+    // otherwise it is saved and applies when the service next starts. Either way it is persisted.
+    rpc SetServicePaused(SetServicePausedRequest) returns (SetServicePausedReply);
+}
+
+message GetServiceStatusRequest {}
+
+message ServiceStatus {
+    string service_name = 1;
+    bool is_running = 2;   // Enabled as a hosted service in this process (HostedServices config)
+    bool is_paused = 3;    // Live state if running, otherwise the saved state it would start with
+}
+
+message GetServiceStatusReply {
+    bool success = 1;
+    string error_message = 2;
+    repeated ServiceStatus services = 3;
+}
+
+message SetServicePausedRequest {
+    string service_name = 1;
+    bool paused = 2;
+}
+
+message SetServicePausedReply {
+    bool success = 1;
+    string error_message = 2;
+    bool was_paused = 3;
+    bool is_paused = 4;
+    bool applied_to_running_service = 5;  // False: saved for the next start
+}

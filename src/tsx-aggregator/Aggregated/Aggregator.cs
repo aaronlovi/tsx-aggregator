@@ -10,12 +10,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using tsx_aggregator.Aggregated;
 using tsx_aggregator.models;
+using tsx_aggregator.Services;
 using tsx_aggregator.shared;
 using static tsx_aggregator.shared.Constants;
 
 namespace tsx_aggregator;
 
-public class Aggregator : BackgroundService, INamedService {
+public class Aggregator : BackgroundService, INamedService, IPausableService {
     private const string _serviceName = "Aggregator";
     private static readonly TimeSpan ShortInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LongInterval = TimeSpan.FromMinutes(2);
@@ -46,10 +47,22 @@ public class Aggregator : BackgroundService, INamedService {
 
     public bool PostRequest(AggregatorInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
+    public bool IsPaused => _stateFsm.IsPaused;
+
+    public async Task SetPausedAsync(bool paused, CancellationToken ct) {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        using var input = new AggregatorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts);
+        if (!PostRequest(input))
+            throw new InvalidOperationException("Aggregator - failed to post the pause/resume request");
+        _ = await input.Completed.Task.WaitAsync(ct);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
 
         try {
+            await RestorePausedState(stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested) {
                 var utcNow = DateTime.UtcNow;
                 var nextTimeout = utcNow.Add(_intervalToNextTimeout);
@@ -71,6 +84,10 @@ public class Aggregator : BackgroundService, INamedService {
                     var output = new AggregatorFsmOutputs();
                     _stateFsm.Update(input, output);
                     await ProcessOutput(input, output.OutputList, thisRequestCts.Token);
+
+                    // A pause/resume that does not change the state produces no output, so complete it here.
+                    if (input is AggregatorPauseServiceInput)
+                        _ = input.Completed.TrySetResult(null);
                 } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
                     _logger.LogWarning("Aggregator - Application stop in progress, stopping");
                     break; // Process no more inputs
@@ -243,6 +260,19 @@ public class Aggregator : BackgroundService, INamedService {
             // Indicate to any listeners that the pause/resume operation failed
             _ = input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
         }
+    }
+
+    /// <summary>Restores the paused state saved in service_state, so a pause survives a restart.</summary>
+    private async Task RestorePausedState(CancellationToken ct) {
+        (Result res, bool isPaused) = await _dbm.GetCommonServiceState(ServiceName, ct);
+        if (!res.Success) {
+            _logger.LogWarning("Aggregator - could not read the saved paused state, starting unpaused: {Error}", res.ErrMsg);
+            return;
+        }
+
+        _stateFsm.IsPaused = isPaused;
+        if (isPaused)
+            _logger.LogWarning("Aggregator - starting paused (saved state)");
     }
 
     private long GetNextReqId() => Interlocked.Increment(ref _reqId);

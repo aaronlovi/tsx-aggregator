@@ -80,6 +80,11 @@ public class Program {
                     .AddSingleton<IEmailService, EmailService>()
                     .AddSingleton<TopScoreAlertService>();
 
+                // Pausable services, for AdminSvc. Same singletons as above.
+                _ = services
+                    .AddSingleton<IPausableService>(p => p.GetRequiredService<Aggregator>())
+                    .AddSingleton<IPausableService>(p => p.GetRequiredService<RawCollector>());
+
                 if (DoesConfigContainConnectionString(context.Configuration))
                     _ = services.AddSingleton<IDbmService, DbmService>();
                 else

@@ -38,6 +38,8 @@ dotnet run --project stock-market-webapi/
 dotnet run --project tsx-ops -- help
 dotnet run --project tsx-ops -- snapshot --label <name>     # score every company to snapshots/*.csv
 dotnet run --project tsx-ops -- diff <a.csv> <b.csv>        # Markdown summary of score changes
+dotnet run --project tsx-ops -- service status               # pausable services (needs tsx-aggregator running)
+dotnet run --project tsx-ops -- service pause RawCollector --execute   # dry run without --execute
 ```
 
 ### Frontend (Angular)
@@ -100,6 +102,7 @@ Separate executable for operations-support work against a running system, with o
 - Never use `DbmService`: its constructor runs migrations.
 - Data goes to stdout or files, logs go to stderr. Exit codes: 0 ok, 1 error, 2 usage.
 - Commands that change data must default to a dry run and require `--execute`.
+- Changes to live service state go through tsx-aggregator's `AdminService` gRPC API (`admin.proto`, `Services/AdminSvc.cs`), not direct DB writes. Pausable services implement `IPausableService`.
 
 ### Frontend (deep-value/)
 

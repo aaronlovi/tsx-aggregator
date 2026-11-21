@@ -13,8 +13,8 @@ public static class ReportingHostConfig {
     /// <summary>
     /// Used at application startup to configure gRPC endpoints.
     /// In this case, incoming HTTP requests are routed to gRPC endpoints
-    /// in the <see cref="StockDataService"/> class.
+    /// in the <see cref="StockDataService"/> class, and operations requests to <see cref="AdminSvc"/>.
     /// </summary>
     public static IEnumerable<GrpcServiceEndpointConventionBuilder> ConfigureEndpoints(IEndpointRouteBuilder endpoints)
-        => new[] { endpoints.MapGrpcService<StockDataSvc>() };
+        => new[] { endpoints.MapGrpcService<StockDataSvc>(), endpoints.MapGrpcService<AdminSvc>() };
 }
