@@ -93,7 +93,7 @@ public class CompanyReportTests {
     /// SaleOfPPE and CapitalExpenditureReported are positive, a negative ChangeInWorkingCapital means
     /// working capital increased.
     /// </summary>
-    private static decimal OwnerEarningsOf(params (string Key, decimal Value)[] fields) {
+    private static decimal? OwnerEarningsOf(params (string Key, decimal Value)[] fields) {
         var cashFlow = CreateRawReport(fields);
         cashFlow["NetIncomeFromContinuingOperations"] = 100m;
         var report = NewReport();
@@ -187,7 +187,7 @@ public class CompanyReportTests {
     // else DepreciationAmortizationDepletion (without adding Depletion again).
     // Each case has capex 10, since a year with D&A but no capex key is left out of the average (B12).
 
-    private static decimal OwnerEarningsWithCapEx10(params (string Key, decimal Value)[] fields) =>
+    private static decimal? OwnerEarningsWithCapEx10(params (string Key, decimal Value)[] fields) =>
         OwnerEarningsOf([.. fields, ("NetPPEPurchaseAndSale", -10m)]);
 
     [Fact]
@@ -327,9 +327,9 @@ public class CompanyReportTests {
     }
 
     [Fact]
-    public void OwnerEarnings_NoYearHasCapEx_IsZero() {
-        // Interim until W1, which makes this NotAvailable.
-        _ = OwnerEarningsOf(("DepreciationAndAmortization", 50m)).Should().Be(0m);
+    public void OwnerEarnings_NoYearHasCapEx_IsNull() {
+        // W1: unknown, not 0 (decision 15's interim 0 is replaced).
+        _ = OwnerEarningsOf(("DepreciationAndAmortization", 50m)).Should().BeNull();
     }
 
     // Decision 21: a non-negative NetPPEPurchaseAndSale with no PurchaseOfPPE (and D&A > 0) is not trusted as capex.
@@ -356,7 +356,7 @@ public class CompanyReportTests {
         _ = OwnerEarningsOf(
             ("DepreciationAndAmortization", 50m),
             ("NetPPEPurchaseAndSale", 0m))
-            .Should().Be(0m);
+            .Should().BeNull();
     }
 
     [Fact]
@@ -466,13 +466,79 @@ public class CompanyReportTests {
 
     #endregion
 
+    #region W1a - missing data is null
+
+    [Fact]
+    public void MissingBalanceSheetFields_AreNull() {
+        var report = NewReport();
+        AddAnnualWithBalanceSheet(report, Fy2021, CreateRawReport(("Goodwill", 30m)));
+
+        _ = Process(report);
+
+        _ = report.CurTotalShareholdersEquity.Should().BeNull();
+        _ = report.CurRetainedEarnings.Should().BeNull();
+        _ = report.OldestRetainedEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void MissingBalanceSheetFields_DerivedValuesStillComputedAsBefore() {
+        // W1a keeps book value and adjusted retained earnings as they were (missing inputs as 0); W1b makes them null.
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("CashDividendsPaid", 20m),
+            ("NetCommonStockIssuance", -5m)));
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(("Goodwill", 30m)));
+        report.AddAnnualIncomeStatement(Fy2021, CreateRawReport(("NetIncomeContinuousOperations", 100m)));
+
+        _ = Process(report);
+
+        _ = report.CurBookValue.Should().Be(-30m);
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(25m);
+    }
+
+    [Fact]
+    public void PresentBalanceSheetFields_AreRead() {
+        var report = NewReport();
+        AddAnnualWithBalanceSheet(report, Fy2021, CreateRawReport(
+            ("StockholdersEquity", 500m), ("RetainedEarnings", 200m)));
+
+        _ = Process(report);
+
+        _ = report.CurTotalShareholdersEquity.Should().Be(500m);
+        _ = report.CurRetainedEarnings.Should().Be(200m);
+        _ = report.OldestRetainedEarnings.Should().Be(200m);
+    }
+
+    [Fact]
+    public void NoAnnualCashFlow_AveragesAndDividendsAreNull() {
+        // Was the decimal.MinValue sentinel, which overflowed when read back.
+        var report = NewReport();
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(("StockholdersEquity", 500m)));
+
+        _ = Process(report);
+
+        _ = report.AverageNetCashFlow.Should().BeNull();
+        _ = report.AverageOwnerEarnings.Should().BeNull();
+        _ = report.CurDividendsPaid.Should().BeNull();
+        _ = report.NumAnnualProcessedCashFlowReports.Should().Be(0);
+    }
+
+    private static void AddAnnualWithBalanceSheet(CompanyReport report, DateOnly date, RawReportDataMap balanceSheet) {
+        report.AddAnnualCashFlowStatement(date, CreateRawReport(("NetIncomeFromContinuingOperations", 100m)));
+        report.AddAnnualBalanceSheet(date, balanceSheet);
+        report.AddAnnualIncomeStatement(date, CreateRawReport(("NetIncomeContinuousOperations", 100m)));
+    }
+
+    #endregion
+
     #region B4 - working capital fallback
 
     /// <summary>
     /// Owner earnings (net income 100, no other add-backs or capex) of a FY2021 cash-flow statement without
     /// ChangeInWorkingCapital, so the change comes from the FY2020 and FY2021 annual balance sheets.
     /// </summary>
-    private static decimal OwnerEarningsWithBalanceSheets(RawReportDataMap prevBalanceSheet, RawReportDataMap curBalanceSheet) {
+    private static decimal? OwnerEarningsWithBalanceSheets(RawReportDataMap prevBalanceSheet, RawReportDataMap curBalanceSheet) {
         var report = NewReport();
         report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("NetIncomeFromContinuingOperations", 100m)));
         report.AddAnnualBalanceSheet(Fy2020, prevBalanceSheet);

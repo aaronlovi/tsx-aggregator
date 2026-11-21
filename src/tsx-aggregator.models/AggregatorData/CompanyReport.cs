@@ -43,84 +43,36 @@ public class CompanyReport
     public string Symbol { get; init; }
     public string Name { get; init; }
     public string Exchange { get; init; }
-    public decimal CurTotalShareholdersEquity { get; set; }
+    // Null means the source data didn't have the figure (W1). Goodwill, intangibles and long-term debt stay 0 when
+    // missing (decisions 6 and 7).
+    public decimal? CurTotalShareholdersEquity { get; set; }
     public decimal CurGoodwill { get; set; }
     public decimal CurIntangibles { get; set; }
     public decimal CurLongTermDebt { get; set; }
-    public decimal CurDividendsPaid { get; set; }
-    public decimal CurRetainedEarnings { get; set; }
+    /// <summary>From the most recent annual cash flow; null when there is none, 0 when it has no dividends key.</summary>
+    public decimal? CurDividendsPaid { get; set; }
+    public decimal? CurRetainedEarnings { get; set; }
     public decimal CurAdjustedRetainedEarnings { get; set; }
-    public decimal OldestRetainedEarnings { get; set; }
-    public bool DidAdjustedRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
-    public decimal CurBookValue => CurTotalShareholdersEquity - (CurGoodwill + CurIntangibles);
-    public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
-    public decimal AverageNetCashFlow
+    public decimal? OldestRetainedEarnings { get; set; }
+    // W1a keeps these two derived values as before, with a missing input counted as 0; W1b makes them null.
+    public decimal CurBookValue => (CurTotalShareholdersEquity ?? 0) - (CurGoodwill + CurIntangibles);
+    /// <summary>Null when there are no annual cash flow statements.</summary>
+    public decimal? AverageNetCashFlow =>
+        _annualProcessedCashFlowItems.Count == 0
+            ? null
+            : _annualProcessedCashFlowItems.Values.Sum(item => item.NetCashFlow) / _annualProcessedCashFlowItems.Count;
+    /// <summary>
+    /// Years without capex data are left out (decision 15). Null when no year is left, or there are no annual
+    /// cash flow statements.
+    /// </summary>
+    public decimal? AverageOwnerEarnings
     {
         get
         {
-            decimal totalGrossCashFlow = _annualProcessedCashFlowItems.Sum(cashFlowItem => cashFlowItem.Value.NetCashFlow);
-            return Utilities.DivSafe(totalGrossCashFlow, _annualProcessedCashFlowItems.Count, decimal.MinValue);
-        }
-    }
-    public decimal AverageOwnerEarnings
-    {
-        get
-        {
-            if (_annualProcessedCashFlowItems.Count == 0)
-                return decimal.MinValue;
-
-            // Years without capex data are left out. If none is left, 0 until W1 makes this NotAvailable.
             List<CashFlowItem> usableItems = [.. _annualProcessedCashFlowItems.Values.Where(item => item.IsUsableForOwnerEarnings)];
-            decimal totalGrossOwnerEarnings = usableItems.Sum(item => item.OwnerEarnings);
-            return Utilities.DivSafe(totalGrossOwnerEarnings, usableItems.Count, 0M);
+            return usableItems.Count == 0 ? null : usableItems.Sum(item => item.OwnerEarnings) / usableItems.Count;
         }
     }
-    public decimal EstimatedNextYearBookValue_FromCashFlow
-    {
-        get
-        {
-            return CurBookValue == decimal.MinValue || AverageNetCashFlow == decimal.MinValue
-                ? decimal.MinValue
-                : CurBookValue + AverageNetCashFlow;
-        }
-    }
-    public decimal EstimatedNextYearBookValue_FromOwnerEarnings
-    {
-        get
-        {
-            return CurBookValue == decimal.MinValue || AverageOwnerEarnings == decimal.MinValue
-                ? decimal.MinValue
-                : CurBookValue + AverageOwnerEarnings;
-        }
-    }
-    public decimal MaxPrice
-    {
-        get
-        {
-            if (CurNumShares <= 0
-                || EstimatedNextYearBookValue_FromCashFlow == decimal.MinValue
-                || EstimatedNextYearBookValue_FromOwnerEarnings == decimal.MinValue
-                || CurBookValue == decimal.MinValue)
-            {
-                return -1;
-            }
-
-            // DoesPassCheck_PriceToBookSmallEnough
-            // max price = 3 * this.CurBookValue
-            decimal maxPriceSoFar = 3M * CurBookValue;
-
-            // DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough
-            // max price = 20 * (EstimatedNextYearBookValue_FromCashFlow - curDividendsPaid - CurBookValue)
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromCashFlow - CurDividendsPaid - CurBookValue));
-
-            // DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough
-            // max price = 20 * (EstimatedNextYearBookValue_FromOwnerEarnings - curDividendsPaid - CurBookValue)
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromOwnerEarnings - CurDividendsPaid - CurBookValue));
-
-            return maxPriceSoFar / CurNumShares;
-        }
-    }
-    public decimal DebtToEquityRatio => Utilities.DivSafe(CurLongTermDebt, CurTotalShareholdersEquity);
     public int NumAnnualProcessedCashFlowReports => _annualProcessedCashFlowItems.Count;
     [JsonIgnore] public string ToShortString => $"{Symbol}/{Name}";
 
@@ -491,7 +443,7 @@ public class CompanyReport
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
 
-        CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
+        CurAdjustedRetainedEarnings = (CurRetainedEarnings ?? 0) + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
     }
 
     /// <summary>

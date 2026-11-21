@@ -102,4 +102,63 @@ public class ProcessedReportFieldsTests {
         _ = fields.AverageNetCashFlow.Should().Be(40);
         _ = fields.AverageOwnerEarnings.Should().Be(100);
     }
+
+    [Fact]
+    public void TryParse_NullableFieldsNull_ReadsNulls() {
+        string json = CompleteJson
+            .Replace("\"CurTotalShareholdersEquity\": 500.5", "\"CurTotalShareholdersEquity\": null")
+            .Replace("\"CurDividendsPaid\": 2.5", "\"CurDividendsPaid\": null")
+            .Replace("\"CurAdjustedRetainedEarnings\": 3.5", "\"CurAdjustedRetainedEarnings\": null")
+            .Replace("\"OldestRetainedEarnings\": -4.5", "\"OldestRetainedEarnings\": null")
+            .Replace("\"CurBookValue\": 470", "\"CurBookValue\": null")
+            .Replace("\"AverageNetCashFlow\": 50", "\"AverageNetCashFlow\": null")
+            .Replace("\"AverageOwnerEarnings\": 60", "\"AverageOwnerEarnings\": null");
+
+        bool ok = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeTrue();
+        _ = fields.Should().Be(new ProcessedReportFields(
+            CurNumShares: 1000,
+            CurTotalShareholdersEquity: null,
+            CurGoodwill: 10,
+            CurIntangibles: 21,
+            CurLongTermDebt: 30,
+            CurDividendsPaid: null,
+            CurAdjustedRetainedEarnings: null,
+            OldestRetainedEarnings: null,
+            CurBookValue: null,
+            AverageNetCashFlow: null,
+            AverageOwnerEarnings: null));
+    }
+
+    [Fact]
+    public void TryParse_SerializedCompanyReportWithNoAnnualCashFlow_ReadsNullAverages() {
+        // The old decimal.MinValue sentinel made this throw (and the company was skipped).
+        var report = new CompanyReport("ABC", "Abc Corp", "TSX", curNumShares: 1234);
+        report.ProcessReports(new List<string>());
+
+        bool ok = ProcessedReportFields.TryParse(JsonSerializer.Serialize(report), out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeTrue();
+        _ = fields!.AverageNetCashFlow.Should().BeNull();
+        _ = fields.AverageOwnerEarnings.Should().BeNull();
+        _ = fields.CurDividendsPaid.Should().BeNull();
+        _ = fields.CurTotalShareholdersEquity.Should().BeNull();
+        _ = fields.OldestRetainedEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void SerializedCompanyReport_HasNoUnusedComputedCopies() {
+        // Ratios, est. book values and max price live only in CompanyFullDetailReport (decision 22).
+        var report = new CompanyReport("ABC", "Abc Corp", "TSX", curNumShares: 1234);
+        report.ProcessReports(new List<string>());
+
+        string json = JsonSerializer.Serialize(report);
+
+        _ = json.Should().NotContain("MaxPrice")
+            .And.NotContain("EstimatedNextYearBookValue")
+            .And.NotContain("DebtToEquityRatio")
+            .And.NotContain("LongTermDebtToBookRatio")
+            .And.NotContain("DidAdjustedRetainedEarningsIncrease");
+    }
 }

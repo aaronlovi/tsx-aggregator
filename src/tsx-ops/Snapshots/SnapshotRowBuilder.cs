@@ -75,6 +75,7 @@ internal static class SnapshotRowBuilder {
         return row;
     }
 
+    // W1a: a missing figure is still treated as 0, matching the API. W1b writes empty cells and n/a checks.
     public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields) {
         var report = new CompanyFullDetailReport(
             exchange: instrument.Exchange,
@@ -84,14 +85,14 @@ internal static class SnapshotRowBuilder {
             instrumentName: instrument.InstrumentName,
             pricePerShare: instrument.PricePerShare,
             curLongTermDebt: fields.CurLongTermDebt,
-            curTotalShareholdersEquity: fields.CurTotalShareholdersEquity,
-            curBookValue: fields.CurBookValue,
+            curTotalShareholdersEquity: fields.CurTotalShareholdersEquity ?? 0,
+            curBookValue: fields.CurBookValue ?? 0,
             curNumShares: fields.CurNumShares,
-            averageNetCashFlow: fields.AverageNetCashFlow,
-            averageOwnerEarnings: fields.AverageOwnerEarnings,
-            curDividendsPaid: fields.CurDividendsPaid,
-            curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings,
-            oldestRetainedEarnings: fields.OldestRetainedEarnings,
+            averageNetCashFlow: fields.AverageNetCashFlow ?? 0,
+            averageOwnerEarnings: fields.AverageOwnerEarnings ?? 0,
+            curDividendsPaid: fields.CurDividendsPaid ?? 0,
+            curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings ?? 0,
+            oldestRetainedEarnings: fields.OldestRetainedEarnings ?? 0,
             numAnnualProcessedCashFlowReports: instrument.NumAnnualCashFlowReports);
 
         // Same order as CompanyFullDetailReport.OverallScore.
@@ -127,14 +128,14 @@ internal static class SnapshotRowBuilder {
             [Snapshot.StatusColumn] = StatusOk,
             ["price_per_share"] = Format(instrument.PricePerShare),
             ["num_shares"] = Format(fields.CurNumShares),
-            ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity),
-            ["cur_book_value"] = Format(fields.CurBookValue),
+            ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity ?? 0),
+            ["cur_book_value"] = Format(fields.CurBookValue ?? 0),
             ["cur_long_term_debt"] = Format(fields.CurLongTermDebt),
-            ["average_net_cash_flow"] = Format(fields.AverageNetCashFlow),
-            ["average_owner_earnings"] = Format(fields.AverageOwnerEarnings),
-            ["cur_dividends_paid"] = Format(fields.CurDividendsPaid),
-            ["cur_adjusted_retained_earnings"] = Format(fields.CurAdjustedRetainedEarnings),
-            ["oldest_retained_earnings"] = Format(fields.OldestRetainedEarnings),
+            ["average_net_cash_flow"] = Format(fields.AverageNetCashFlow ?? 0),
+            ["average_owner_earnings"] = Format(fields.AverageOwnerEarnings ?? 0),
+            ["cur_dividends_paid"] = Format(fields.CurDividendsPaid ?? 0),
+            ["cur_adjusted_retained_earnings"] = Format(fields.CurAdjustedRetainedEarnings ?? 0),
+            ["oldest_retained_earnings"] = Format(fields.OldestRetainedEarnings ?? 0),
             ["num_annual_cash_flow_reports"] = Format(instrument.NumAnnualCashFlowReports),
             ["debt_to_equity"] = Format(report.DebtToEquityRatio),
             ["price_to_book"] = Format(report.CurPriceToBookRatio),
