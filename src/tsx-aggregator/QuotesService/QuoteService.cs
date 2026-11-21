@@ -205,12 +205,21 @@ public class QuoteService : BackgroundService, IQuoteService {
         }
     }
 
+    /// <summary>
+    /// The next quote fetch time for the heartbeat log. It is null until the saved state is loaded (the first
+    /// heartbeat comes before that), or for good if loading it failed.
+    /// </summary>
+    internal static string DescribeNextFetchQuotesTime(DateTime? nextFetchQuotesTimeUtc) =>
+        nextFetchQuotesTimeUtc is DateTime t
+            ? t.ToString("u", System.Globalization.CultureInfo.InvariantCulture)
+            : "not known (saved state not loaded)";
+
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
         ILogger logger = svp.GetRequiredService<ILogger<QuoteService>>();
         IQuoteService quoteService = svp.GetRequiredService<IQuoteService>();
         while (!ct.IsCancellationRequested) {
-            DateTime nextFetchQuotesTime = quoteService.NextFetchQuotesTime ?? DateTime.MaxValue;
-            logger.LogInformation("QuoteService heartbeat - Next quotes fetch time {NextFetchQuotesTime}", nextFetchQuotesTime);
+            logger.LogInformation("QuoteService heartbeat - Next quotes fetch time {NextFetchQuotesTime}",
+                DescribeNextFetchQuotesTime(quoteService.NextFetchQuotesTime));
             await Task.Delay(Constants.OneMinute, ct);
         }
     }
