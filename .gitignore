@@ -413,3 +413,6 @@ src/stock-market-webapi/appsettings.Local.json
 
 # Claude Code per-machine local settings (not tracked)
 .claude/settings.local.json
+
+# tsx-ops score snapshots
+/snapshots/

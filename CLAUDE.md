@@ -33,6 +33,11 @@ dotnet run --project tsx-aggregator/
 
 # Run REST API (ports 5000/5001)
 dotnet run --project stock-market-webapi/
+
+# Operations CLI (read-only, safe alongside the running services)
+dotnet run --project tsx-ops -- help
+dotnet run --project tsx-ops -- snapshot --label <name>     # score every company to snapshots/*.csv
+dotnet run --project tsx-ops -- diff <a.csv> <b.csv>        # Markdown summary of score changes
 ```
 
 ### Frontend (Angular)
@@ -87,6 +92,14 @@ Each can be toggled on/off via `HostedServices` in appsettings.json:
 - **tsx-aggregator.models** -- DTOs, configuration option classes, report data models (CompanyReport, CashFlowItem, etc.)
 - **tsx-aggregator.shared** -- Protobuf definitions (`Protos/`), trie data structure, utility classes, Result type
 - **dbm-persistence** -- Database access layer with raw SQL via Npgsql, Evolve migrations
+
+### Operations CLI (tsx-ops/)
+
+Separate executable for operations-support work against a running system, with one subcommand per task (`snapshot`, `diff`). Add new operational tools as `tsx-ops` commands rather than new executables. Conventions:
+- Read-only commands run all queries in one `REPEATABLE READ READ ONLY` transaction (`Db/OpsDb.cs`).
+- Never use `DbmService`: its constructor runs migrations.
+- Data goes to stdout or files, logs go to stderr. Exit codes: 0 ok, 1 error, 2 usage.
+- Commands that change data must default to a dry run and require `--execute`.
 
 ### Frontend (deep-value/)
 
