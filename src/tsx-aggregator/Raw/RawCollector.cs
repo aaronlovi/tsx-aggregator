@@ -47,8 +47,8 @@ internal partial class RawCollector : BackgroundService, INamedService {
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
+            // The instrument directory is loaded into the registry at startup by RegistryLoader.
             await RestoreStateFsm(stoppingToken);
-            await RestoreInstrumentDirectory(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested) {
                 var utcNow = DateTime.UtcNow;
@@ -130,24 +130,6 @@ internal partial class RawCollector : BackgroundService, INamedService {
 
         _logger.LogInformation("RestoreStateFsm - restored state from database");
         _stateFsm.SetState(stateFsmState);
-    }
-
-    private async Task RestoreInstrumentDirectory(CancellationToken ct) {
-        _logger.LogInformation("RestoreInstrumentDirectory");
-        (Result res, IReadOnlyList<InstrumentDto> instrumentList) = await _dbm.GetInstrumentList(ct);
-
-        if (!res.Success) {
-            _logger.LogError("RestoreInstrumentDirectory fatal error - {Error}", res.ErrMsg);
-            throw new InvalidOperationException("RestoreInstrumentDirectory fatal error - " + res.ErrMsg);
-        }
-
-        if (instrumentList.Count == 0) {
-            _logger.LogWarning("RestoreInstrumentDirectory - no instruments to restore, starting from empty");
-            return;
-        }
-
-        _registry.InitializeDirectory(instrumentList);
-        _logger.LogInformation("RestoreInstrumentDirectory - restored {Count} instruments", instrumentList.Count);
     }
 
     private Task PreprocessInputs(RawCollectorInputBase inputs, CancellationToken ct) {

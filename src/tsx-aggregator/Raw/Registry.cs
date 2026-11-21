@@ -36,8 +36,12 @@ internal class Registry {
         }
     }
 
+    /// <summary>
+    /// Replaces the registry contents with <paramref name="directory"/> and signals <see cref="DirectoryInitialized"/>.
+    /// </summary>
     public void InitializeDirectory(IReadOnlyList<InstrumentDto> directory) {
         lock (_instruments) {
+            _instruments.Clear();
             foreach (var instrument in directory)
                 _instruments.Add(instrument);
 

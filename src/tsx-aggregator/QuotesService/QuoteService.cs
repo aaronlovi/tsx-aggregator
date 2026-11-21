@@ -48,7 +48,7 @@ public class QuoteService : BackgroundService, IQuoteService {
         _logger.LogInformation("QuoteService - Entering main loop");
 
         // Wait for the registry to contain the list of stocks
-        await _registry.DirectoryInitialized.Task;
+        await _registry.DirectoryInitialized.Task.WaitAsync(stoppingToken);
 
         _logger.LogInformation("QuoteService - Directory initialized");
 

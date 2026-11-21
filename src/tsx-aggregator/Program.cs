@@ -88,6 +88,10 @@ public class Program {
                 var serviceProvider = services.BuildServiceProvider();
                 var hostedServicesOptions = serviceProvider.GetRequiredService<IOptions<HostedServicesOptions>>().Value;
 
+                // Always first: hosted services start in registration order, and the services below
+                // wait for the registry that this loads.
+                _ = services.AddHostedService<RegistryLoader>();
+
                 if (hostedServicesOptions.RunAggregator ?? false)
                     _ = services.AddHostedService(p => p.GetRequiredService<Aggregator>());
 

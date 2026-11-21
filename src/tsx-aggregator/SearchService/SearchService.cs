@@ -46,7 +46,7 @@ public class SearchService : BackgroundService, ISearchService {
         _logger.LogInformation("SearchService - Entering main loop");
 
         // Wait for the registry to contain the list of stocks
-        await _registry.DirectoryInitialized.Task;
+        await _registry.DirectoryInitialized.Task.WaitAsync(stoppingToken);
 
         _logger.LogInformation("SearchService - Directory initialized");
 
