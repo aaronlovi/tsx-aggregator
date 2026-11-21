@@ -21,6 +21,6 @@ describe('AppComponent', () => {
   it('should default the sidenav to open', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.sidenavOpened).toBeTrue();
+    expect(app.sidenavOpened).toBe(true);
   });
 });

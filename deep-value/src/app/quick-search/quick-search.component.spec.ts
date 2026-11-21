@@ -14,7 +14,7 @@ describe('QuickSearchComponent', () => {
   let fixture: ComponentFixture<QuickSearchComponent>;
 
   beforeEach(() => {
-    const searchServiceSpy = jasmine.createSpyObj('CompanySearchService', ['quickSearch']);
+    const searchServiceSpy = { quickSearch: vi.fn() };
 
     TestBed.configureTestingModule({
       declarations: [QuickSearchComponent],

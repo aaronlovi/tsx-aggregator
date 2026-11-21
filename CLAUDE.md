@@ -10,7 +10,7 @@ TSX stock market data aggregation platform. Scrapes Toronto Stock Exchange finan
 
 - **Backend:** C# / .NET 10.0, ASP.NET Core, gRPC, PostgreSQL (Npgsql), PuppeteerSharp (web scraping), Serilog
 - **Frontend:** Angular 21, TypeScript, Angular Material, RxJS
-- **Testing:** xUnit, FluentAssertions, Moq (backend); Karma + Jasmine (frontend)
+- **Testing:** xUnit, FluentAssertions, Moq (backend); Vitest (frontend)
 - **Infrastructure:** Docker Compose (PostgreSQL 17.4 + pgAdmin), Evolve (DB migrations)
 
 ## Build & Run Commands
@@ -41,7 +41,7 @@ dotnet run --project stock-market-webapi/
 cd deep-value
 npm install
 npm start          # Dev server at http://localhost:4200
-npm test           # Karma + Jasmine tests
+npm test           # Vitest unit tests (ng test)
 npm run build      # Production build
 npm run build:ssr  # Server-side rendering build
 ```

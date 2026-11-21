@@ -11,7 +11,7 @@ describe('CompanyDetailsComponent', () => {
   let fixture: ComponentFixture<CompanyDetailsComponent>;
 
   beforeEach(() => {
-    const companyServiceSpy = jasmine.createSpyObj('CompanyService', ['getCompanyDetails']);
+    const companyServiceSpy = { getCompanyDetails: vi.fn() };
 
     TestBed.configureTestingModule({
       // RelativeTimePipe is used in the template, so it must be declared here.

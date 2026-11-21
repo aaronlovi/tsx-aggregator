@@ -11,9 +11,7 @@ describe('CompanyListComponent', () => {
   let fixture: ComponentFixture<CompanyListComponent>;
 
   beforeEach(() => {
-    const companyServiceSpy = jasmine.createSpyObj('CompanyService', [
-      'getCompanies', 'getBottomCompanies'
-    ]);
+    const companyServiceSpy = { getCompanies: vi.fn(), getBottomCompanies: vi.fn() };
 
     TestBed.configureTestingModule({
       // RelativeTimePipe is used in the template, so it must be declared here.
@@ -38,27 +36,27 @@ describe('CompanyListComponent', () => {
     const daysAgo = (n: number) => new Date(Date.now() - n * DAY_MS).toISOString();
 
     it('is false for null/undefined/empty', () => {
-      expect(component.isStale(null)).toBeFalse();
-      expect(component.isStale(undefined)).toBeFalse();
-      expect(component.isStale('')).toBeFalse();
+      expect(component.isStale(null)).toBe(false);
+      expect(component.isStale(undefined)).toBe(false);
+      expect(component.isStale('')).toBe(false);
     });
 
     it('is false for an unparseable date', () => {
-      expect(component.isStale('not-a-date')).toBeFalse();
+      expect(component.isStale('not-a-date')).toBe(false);
     });
 
     it('is false for a recent date', () => {
-      expect(component.isStale(daysAgo(5))).toBeFalse();
+      expect(component.isStale(daysAgo(5))).toBe(false);
     });
 
     it('is true for a date older than 30 days', () => {
-      expect(component.isStale(daysAgo(45))).toBeTrue();
+      expect(component.isStale(daysAgo(45))).toBe(true);
     });
 
     it('handles the month boundary without drift (40 days ago is stale)', () => {
       // Guards against Date.setMonth overflow near month end.
-      expect(component.isStale(daysAgo(40))).toBeTrue();
-      expect(component.isStale(daysAgo(20))).toBeFalse();
+      expect(component.isStale(daysAgo(40))).toBe(true);
+      expect(component.isStale(daysAgo(20))).toBe(false);
     });
   });
 });
