@@ -4,9 +4,10 @@ using Npgsql;
 namespace dbm_persistence;
 
 internal sealed class UpdateCommonServiceStateStmt : NonQueryDbStmtBase {
-    private const string sql = "UPDATE service_state"
-        + " SET is_paused = @is_paused"
-        + " WHERE service_name = @service_name";
+    // Upsert: the service may not have a row yet (one row per service, see R__009__FixServiceStateTable.sql).
+    private const string sql = "INSERT INTO service_state (service_name, is_paused)"
+        + " VALUES (@service_name, @is_paused)"
+        + " ON CONFLICT (service_name) DO UPDATE SET is_paused = EXCLUDED.is_paused";
 
     private readonly bool _pauseNotResume;
     private readonly string _serviceName;
