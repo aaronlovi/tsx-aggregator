@@ -35,8 +35,6 @@ export class CompanyDetailsComponent implements OnInit, OnDestroy {
             this.exchange = params.get('exchange') || '';
             this.instrumentSymbol = params.get('instrumentSymbol') || '';
 
-            console.log(`Exchange = ${this.exchange}, Instrument Symbol: ${this.instrumentSymbol}`);
-
             if (this.isInputsValid()) {
                 this.getCompanyDetails();
             } else {

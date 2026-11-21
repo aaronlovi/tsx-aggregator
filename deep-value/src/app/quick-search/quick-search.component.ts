@@ -58,7 +58,6 @@ export class QuickSearchComponent implements OnInit, OnDestroy {
     }
 
     displayFn(result: CompanySearchItem): string {
-        console.log(`displayFn: ${result ? `ex: ${result.exchange} | sym: ${result.instrumentSymbol} | name: ${result.companyName}` : ''}`);
         return result ? `${result.exchange}:${result.instrumentSymbol}` : '';
     }
 }
