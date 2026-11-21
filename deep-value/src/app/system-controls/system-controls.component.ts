@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CompanyService } from '../services/company.service';
 
 @Component({
     selector: 'app-system-controls',
     templateUrl: './system-controls.component.html',
     styleUrls: ['./system-controls.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SystemControlsComponent implements OnInit {

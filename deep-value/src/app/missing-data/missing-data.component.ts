@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { PagingData } from '../models/paging_data';
 import { CompanyService } from '../services/company.service';
 
@@ -6,6 +6,7 @@ import { CompanyService } from '../services/company.service';
     selector: 'app-missing-data',
     templateUrl: './missing-data.component.html',
     styleUrls: ['./missing-data.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class MissingDataComponent implements OnInit {

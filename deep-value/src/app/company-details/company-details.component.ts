@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CompanyService } from '../services/company.service';
@@ -8,6 +8,7 @@ import { CompanyDetails } from '../models/company.details';
     selector: 'app-company-details',
     templateUrl: './company-details.component.html',
     styleUrls: ['./company-details.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CompanyDetailsComponent implements OnInit, OnDestroy {

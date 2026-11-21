@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { DashboardAggregates, DashboardStats, ScoreDistributionItem } from '../models/dashboard-stats';
 import { CompanyService } from '../services/company.service';
 
@@ -6,6 +6,7 @@ import { CompanyService } from '../services/company.service';
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
     styleUrls: ['./dashboard.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DashboardComponent implements OnInit, OnDestroy {

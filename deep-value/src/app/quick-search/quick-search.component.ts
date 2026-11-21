@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
 import { CompanySearchService } from '../services/company-search.service';
 import { CompanySearchItem } from '../models/company.search.item';
@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
     selector: 'app-quick-search',
     templateUrl: './quick-search.component.html',
     styleUrls: ['./quick-search.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class QuickSearchComponent implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CompanySummary } from '../models/company.summary';
 import { PagingData } from '../models/paging_data';
 import { CompanyService } from '../services/company.service';
@@ -7,6 +7,7 @@ import { CompanyService } from '../services/company.service';
     selector: 'app-all-companies',
     templateUrl: './all-companies.component.html',
     styleUrls: ['./all-companies.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AllCompaniesComponent implements OnInit, OnDestroy {
