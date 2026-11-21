@@ -174,6 +174,8 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             CurrentGoodwill = fields.CurGoodwill,
             CurrentIntangibles = fields.CurIntangibles,
             CurrentLongTermDebt = fields.CurLongTermDebt,
+            CurrentRetainedEarningsEstimated = fields.CurRetainedEarningsEstimated,
+            OldestRetainedEarningsEstimated = fields.OldestRetainedEarningsEstimated,
             PerSharePrice = 0M, // To be filled out later by the quotes service
             NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
             MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue

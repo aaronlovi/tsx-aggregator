@@ -35,6 +35,9 @@ export interface CompanyDetails {
     mostRecentAnnualReportDate: string | null;
     mostRecentQuarterlyReportDate: string | null;
     lastUpdatedDate: string | null;
+    /** Retained earnings missing from the provider's balance sheet, estimated with net income - dividends. */
+    curRetainedEarningsEstimated: boolean;
+    oldestRetainedEarningsEstimated: boolean;
 
     // Computed by the backend
     curMarketCap: number | null;

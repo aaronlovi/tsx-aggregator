@@ -307,6 +307,9 @@
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ (companyDetails.curAdjustedRetainedEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            @if (companyDetails.curRetainedEarningsEstimated) {
+              <span class="estimated" matTooltip="The data provider's balance sheet has no retained earnings for this period, so this is estimated from the last reported figure, adding net income minus dividends for each year since.">(est.)</span>
+            }
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Accumulated profits that have not been distributed to shareholders as dividends and are reinvested in the business taken from the cash flow report 5 years ago. Used for comparison with 'Current Retained Earnings'.">
@@ -315,6 +318,9 @@
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
             {{ (companyDetails.oldestRetainedEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            @if (companyDetails.oldestRetainedEarningsEstimated) {
+              <span class="estimated" matTooltip="The data provider's balance sheet has no retained earnings for this period, so this is estimated from the last reported figure, adding net income minus dividends for each year since.">(est.)</span>
+            }
           </td>
         </tr>
         <tr class="mat-row data-table__row">

@@ -62,6 +62,7 @@ describe('CompanyDetailsComponent', () => {
     expect(cells).toContain('No');
     expect(cells).not.toContain('n/a');
     expect((fixture.nativeElement as HTMLElement).querySelector('.na-count')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.estimated')).toBeNull();
   });
 
   it('shows n/a for missing figures and checks, and the n/a count next to the score', () => {
@@ -78,6 +79,8 @@ describe('CompanyDetailsComponent', () => {
     // e.g. Max Buy Price and Total Shareholders Equity
     const numericCells = Array.from(root.querySelectorAll('.data-table__data--numeric')).map(cell => cell.textContent?.trim());
     expect(numericCells.filter(text => text === 'n/a').length).toBeGreaterThanOrEqual(10);
+    // Current retained earnings are estimated in this fixture; the oldest are missing.
+    expect(Array.from(root.querySelectorAll('.estimated')).map(e => e.textContent?.trim())).toEqual(['(est.)']);
   });
 
   it('maps check results to labels and classes', () => {

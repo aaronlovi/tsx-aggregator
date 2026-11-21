@@ -26,7 +26,9 @@ public class CompanyFullDetailReport {
         int numAnnualProcessedCashFlowReports,
         DateTimeOffset? mostRecentAnnualReportDate = null,
         DateTimeOffset? mostRecentQuarterlyReportDate = null,
-        DateTimeOffset? lastUpdatedDate = null) {
+        DateTimeOffset? lastUpdatedDate = null,
+        bool curRetainedEarningsEstimated = false,
+        bool oldestRetainedEarningsEstimated = false) {
 
         Exchange = exchange;
         CompanySymbol = companySymbol;
@@ -47,6 +49,8 @@ public class CompanyFullDetailReport {
         MostRecentAnnualReportDate = mostRecentAnnualReportDate;
         MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
         LastUpdatedDate = lastUpdatedDate;
+        CurRetainedEarningsEstimated = curRetainedEarningsEstimated;
+        OldestRetainedEarningsEstimated = oldestRetainedEarningsEstimated;
     }
 
     /// <summary>
@@ -72,7 +76,9 @@ public class CompanyFullDetailReport {
         numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
         mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
         mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
-        lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset());
+        lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset(),
+        curRetainedEarningsEstimated: item.CurrentRetainedEarningsEstimated,
+        oldestRetainedEarningsEstimated: item.OldestRetainedEarningsEstimated);
 
     public string Exchange { get; init; }
     public string CompanySymbol { get; init; }
@@ -94,6 +100,13 @@ public class CompanyFullDetailReport {
     public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
     public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
     public DateTimeOffset? LastUpdatedDate { get; init; }
+    /// <summary>
+    /// The provider's balance sheet had no retained earnings, so the figure behind CurAdjustedRetainedEarnings was
+    /// estimated with net income - dividends from the nearest balance sheet that had it (decision 23).
+    /// </summary>
+    public bool CurRetainedEarningsEstimated { get; init; }
+    /// <summary>As <see cref="CurRetainedEarningsEstimated"/>, for OldestRetainedEarnings.</summary>
+    public bool OldestRetainedEarningsEstimated { get; init; }
 
     // Calculated Properties. Null when an input is null, or a denominator is 0.
 

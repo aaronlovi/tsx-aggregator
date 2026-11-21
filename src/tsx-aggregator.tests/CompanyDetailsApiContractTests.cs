@@ -59,7 +59,8 @@ public class CompanyDetailsApiContractTests {
 
     /// <summary>
     /// The sample company with no equity (so no book value) and no oldest retained earnings in the source data:
-    /// checks 1, 2, 3, 10, 13, 14 and 15 are NotAvailable, and max price and upside are null (W1).
+    /// checks 1, 2, 3, 10, 13, 14 and 15 are NotAvailable, and max price and upside are null (W1). Its current
+    /// retained earnings are estimated (decision 23).
     /// </summary>
     internal static CompanyFullDetailReport MissingDataSampleReport() {
         CompanyFullDetailReport sample = SampleReport();
@@ -82,7 +83,8 @@ public class CompanyDetailsApiContractTests {
             numAnnualProcessedCashFlowReports: sample.NumAnnualProcessedCashFlowReports,
             mostRecentAnnualReportDate: sample.MostRecentAnnualReportDate,
             mostRecentQuarterlyReportDate: sample.MostRecentQuarterlyReportDate,
-            lastUpdatedDate: sample.LastUpdatedDate);
+            lastUpdatedDate: sample.LastUpdatedDate,
+            curRetainedEarningsEstimated: true);
     }
 
     [Fact]

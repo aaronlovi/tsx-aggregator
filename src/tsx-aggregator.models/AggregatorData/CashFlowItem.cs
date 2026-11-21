@@ -6,6 +6,8 @@ internal class CashFlowItem
 
     internal decimal? NetIncomeFromContinuingOperations { get; set; }
     internal decimal GrossCashFlow { get; set; }
+    /// <summary>CashDividendsPaid, positive as reported; 0 when the key is missing.</summary>
+    internal decimal DividendsPaid { get; set; }
     internal decimal NetIssuanceOfDebt { get; set; }
     internal decimal NetIssuanceOfStock { get; set; }
     internal decimal NetIssuanceOfPreferredStock { get; set; }

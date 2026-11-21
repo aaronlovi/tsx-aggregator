@@ -161,4 +161,30 @@ public class ProcessedReportFieldsTests {
             .And.NotContain("LongTermDebtToBookRatio")
             .And.NotContain("DidAdjustedRetainedEarningsIncrease");
     }
+
+    [Fact]
+    public void TryParse_ReportWithoutEstimateFlags_ReadsFalse() {
+        // Reports written before decision 23 have no flags.
+        _ = ProcessedReportFields.TryParse(CompleteJson, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.CurRetainedEarningsEstimated.Should().BeFalse();
+        _ = fields.OldestRetainedEarningsEstimated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryParse_SerializedCompanyReport_ReadsEstimateFlags() {
+        var report = new CompanyReport("ABC", "Abc Corp", "TSX", curNumShares: 1234);
+        foreach ((DateOnly date, decimal? re) in new[] { (new DateOnly(2024, 12, 31), (decimal?)100m), (new DateOnly(2025, 12, 31), null) }) {
+            report.AddAnnualCashFlowStatement(date, new RawReportDataMap { ["NetIncomeFromContinuingOperations"] = 50, ["CashDividendsPaid"] = 10 });
+            report.AddAnnualIncomeStatement(date, new RawReportDataMap { ["NetIncomeContinuousOperations"] = 50 });
+            var balanceSheet = new RawReportDataMap { ["StockholdersEquity"] = 500 };
+            if (re is decimal r)
+                balanceSheet["RetainedEarnings"] = r;
+            report.AddAnnualBalanceSheet(date, balanceSheet);
+        }
+        report.ProcessReports(new List<string>());
+
+        _ = ProcessedReportFields.TryParse(JsonSerializer.Serialize(report), out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.CurRetainedEarningsEstimated.Should().BeTrue();
+        _ = fields.OldestRetainedEarningsEstimated.Should().BeFalse();
+    }
 }

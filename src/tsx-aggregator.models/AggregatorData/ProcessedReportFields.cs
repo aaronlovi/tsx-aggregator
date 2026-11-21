@@ -21,7 +21,9 @@ public sealed record ProcessedReportFields(
     long? OldestRetainedEarnings,
     long? CurBookValue,
     long? AverageNetCashFlow,
-    long? AverageOwnerEarnings) {
+    long? AverageOwnerEarnings,
+    bool CurRetainedEarningsEstimated = false,
+    bool OldestRetainedEarningsEstimated = false) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -59,9 +61,15 @@ public sealed record ProcessedReportFields(
             oldestRetainedEarnings,
             curBookValue,
             averageNetCashFlow,
-            averageOwnerEarnings);
+            averageOwnerEarnings,
+            // Optional: reports written before decision 23 don't have the flags.
+            GetFlag(root, "CurRetainedEarningsEstimated"),
+            GetFlag(root, "OldestRetainedEarningsEstimated"));
         return true;
     }
+
+    private static bool GetFlag(JsonElement root, string fieldName) =>
+        root.TryGetProperty(fieldName, out JsonElement jsonVal) && jsonVal.ValueKind == JsonValueKind.True;
 
     /// <summary>Like <see cref="GetDataPoint"/>, but a JSON null reads as null instead of failing.</summary>
     private static bool GetNullableDataPoint(JsonElement root, string fieldName, out long? retVal) {

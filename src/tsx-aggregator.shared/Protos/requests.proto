@@ -61,6 +61,9 @@ message GetStocksDataReplyItem {
     google.protobuf.Timestamp most_recent_annual_report_date = 20;
     google.protobuf.Timestamp most_recent_quarterly_report_date = 21;
     google.protobuf.Timestamp last_updated_date = 22;
+    // Retained earnings estimated with net income - dividends because the balance sheet lacks them (decision 23).
+    bool current_retained_earnings_estimated = 23;
+    bool oldest_retained_earnings_estimated = 24;
 }
 
 message GetStockSearchResultsRequest {

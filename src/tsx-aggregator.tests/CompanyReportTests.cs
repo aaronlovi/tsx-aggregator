@@ -550,6 +550,123 @@ public class CompanyReportTests {
 
     #endregion
 
+    #region Decision 23 - missing retained earnings are estimated with net income - dividends
+
+    private static readonly DateOnly Fy2022 = new(2022, 12, 31);
+    private static readonly DateOnly Fy2023 = new(2023, 12, 31);
+
+    /// <summary>Adds a full annual report set; the balance sheet has RetainedEarnings only when <paramref name="re"/> is set.</summary>
+    private static void AddYear(CompanyReport report, DateOnly date, decimal? re, decimal? netIncome, decimal dividends = 0m) {
+        var cashFlow = CreateRawReport(("CashDividendsPaid", dividends));
+        var income = CreateRawReport(("TotalRevenue", 1000m));
+        if (netIncome is decimal ni) {
+            cashFlow["NetIncomeFromContinuingOperations"] = ni;
+            income["NetIncomeContinuousOperations"] = ni;
+        }
+        var balanceSheet = CreateRawReport(("StockholdersEquity", 900m));
+        if (re is decimal r)
+            balanceSheet["RetainedEarnings"] = r;
+        report.AddAnnualCashFlowStatement(date, cashFlow);
+        report.AddAnnualIncomeStatement(date, income);
+        report.AddAnnualBalanceSheet(date, balanceSheet);
+    }
+
+    [Fact]
+    public void RetainedEarnings_Reported_UsedAsIs() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 50m);
+        AddYear(report, Fy2022, re: 140m, netIncome: 50m, dividends: 10m);
+
+        _ = Process(report);
+
+        _ = report.CurRetainedEarnings.Should().Be(140m);
+        _ = report.CurRetainedEarningsEstimated.Should().BeFalse();
+        _ = report.OldestRetainedEarnings.Should().Be(100m);
+        _ = report.OldestRetainedEarningsEstimated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RetainedEarnings_MissingFromLatest_RolledForwardFromLastReported() {
+        // The CVE shape: reported up to 2021, blank after. 100 + (50 - 10) + (30 - 5).
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 20m);
+        AddYear(report, Fy2022, re: null, netIncome: 50m, dividends: 10m);
+        AddYear(report, Fy2023, re: null, netIncome: 30m, dividends: 5m);
+
+        _ = Process(report);
+
+        _ = report.CurRetainedEarnings.Should().Be(165m);
+        _ = report.CurRetainedEarningsEstimated.Should().BeTrue();
+        _ = report.OldestRetainedEarnings.Should().Be(100m);
+        _ = report.OldestRetainedEarningsEstimated.Should().BeFalse();
+        // Adjusted figure = current + all dividends in the window (0 + 10 + 5).
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(180m);
+    }
+
+    [Fact]
+    public void RetainedEarnings_MissingFromOldest_RolledBackFromNextReported() {
+        // The SU shape: blank in the early years. Oldest = 200 - 50 + 10.
+        var report = NewReport();
+        AddYear(report, Fy2021, re: null, netIncome: 20m, dividends: 5m);
+        AddYear(report, Fy2022, re: 200m, netIncome: 50m, dividends: 10m);
+        AddYear(report, Fy2023, re: 240m, netIncome: 50m, dividends: 10m);
+
+        _ = Process(report);
+
+        _ = report.OldestRetainedEarnings.Should().Be(160m);
+        _ = report.OldestRetainedEarningsEstimated.Should().BeTrue();
+        _ = report.CurRetainedEarnings.Should().Be(240m);
+        _ = report.CurRetainedEarningsEstimated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RetainedEarnings_YearWithoutNetIncomeInTheGap_NotEstimated() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 20m);
+        AddYear(report, Fy2022, re: null, netIncome: null, dividends: 10m);
+        AddYear(report, Fy2023, re: null, netIncome: 30m, dividends: 5m);
+
+        _ = Process(report);
+
+        _ = report.CurRetainedEarnings.Should().BeNull();
+        _ = report.CurRetainedEarningsEstimated.Should().BeFalse();
+        _ = report.CurAdjustedRetainedEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void RetainedEarnings_NeverReported_StaysNull() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: null, netIncome: 20m);
+        AddYear(report, Fy2022, re: null, netIncome: 50m, dividends: 10m);
+
+        _ = Process(report);
+
+        _ = report.CurRetainedEarnings.Should().BeNull();
+        _ = report.OldestRetainedEarnings.Should().BeNull();
+        _ = report.CurRetainedEarningsEstimated.Should().BeFalse();
+        _ = report.OldestRetainedEarningsEstimated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RetainedEarnings_LatestQuarterBlank_UsesLatestAnnualAndFlagsIt() {
+        // The latest report is a quarter without the figure; the latest annual has it. Quarterly net income isn't
+        // used, so the figure stays at the year end, flagged because it isn't from the latest balance sheet.
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 20m);
+        AddYear(report, Fy2022, re: 140m, netIncome: 50m, dividends: 10m);
+        var q1 = new DateOnly(2023, 3, 31);
+        report.AddNonAnnualCashFlowStatement(q1, CreateRawReport(("NetIncomeFromContinuingOperations", 15m)));
+        report.AddNonAnnualIncomeStatement(q1, CreateRawReport(("NetIncomeContinuousOperations", 15m)));
+        report.AddNonAnnualBalanceSheet(q1, CreateRawReport(("StockholdersEquity", 950m)));
+
+        _ = Process(report);
+
+        _ = report.CurRetainedEarnings.Should().Be(140m);
+        _ = report.CurRetainedEarningsEstimated.Should().BeTrue();
+    }
+
+    #endregion
+
     #region B4 - working capital fallback
 
     /// <summary>

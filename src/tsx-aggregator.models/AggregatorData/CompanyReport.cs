@@ -19,6 +19,10 @@ public class CompanyReport
 
     private readonly SortedDictionary<DateOnly, CashFlowItem> _annualProcessedCashFlowItems;
 
+    // Dates of the report sets the current and oldest balance sheet figures come from.
+    private DateOnly? _mostRecentReportDate;
+    private DateOnly? _oldestReportDate;
+
     public CompanyReport(string symbol, string name, string exchange, long curNumShares)
     {
         Symbol = symbol;
@@ -52,9 +56,16 @@ public class CompanyReport
     /// <summary>From the most recent annual cash flow; null when there is none, 0 when it has no dividends key.</summary>
     public decimal? CurDividendsPaid { get; set; }
     public decimal? CurRetainedEarnings { get; set; }
+    /// <summary>
+    /// True when CurRetainedEarnings isn't from the most recent balance sheet (which lacks it) but estimated from the
+    /// nearest earlier one with net income - dividends (decision 23).
+    /// </summary>
+    public bool CurRetainedEarningsEstimated { get; private set; }
     /// <summary>Null when the current retained earnings are missing.</summary>
     public decimal? CurAdjustedRetainedEarnings { get; set; }
     public decimal? OldestRetainedEarnings { get; set; }
+    /// <summary>True when OldestRetainedEarnings is estimated back from the next balance sheet that has it (decision 23).</summary>
+    public bool OldestRetainedEarningsEstimated { get; private set; }
     /// <summary>Equity less goodwill and intangibles; null when equity is missing.</summary>
     public decimal? CurBookValue => CurTotalShareholdersEquity - (CurGoodwill + CurIntangibles);
     /// <summary>Null when there are no annual cash flow statements.</summary>
@@ -246,6 +257,7 @@ public class CompanyReport
             return;
         }
 
+        _oldestReportDate = oldestReportDate;
         if (oldestBalanceSheet.HasValue("RetainedEarnings"))
             OldestRetainedEarnings = oldestBalanceSheet["RetainedEarnings"]!.Value;
         else
@@ -313,6 +325,8 @@ public class CompanyReport
         {
             return;
         }
+
+        _mostRecentReportDate = mostRecentReportDate;
 
         if (mostRecentBalanceSheet.HasValue("StockholdersEquity"))
             CurTotalShareholdersEquity = mostRecentBalanceSheet["StockholdersEquity"]!.Value;
@@ -395,7 +409,10 @@ public class CompanyReport
             }
 
             if (rawCashFlowReport.HasValue("CashDividendsPaid"))
-                totalAnnualDividendsPaid += rawCashFlowReport["CashDividendsPaid"]!.Value;
+            {
+                cashFlowReport.DividendsPaid = rawCashFlowReport["CashDividendsPaid"]!.Value;
+                totalAnnualDividendsPaid += cashFlowReport.DividendsPaid;
+            }
 
             if (rawCashFlowReport.HasValue("NetCommonStockIssuance"))
             {
@@ -444,7 +461,52 @@ public class CompanyReport
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
 
+        EstimateMissingRetainedEarnings();
+
         CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
+    }
+
+    /// <summary>
+    /// The data provider leaves RetainedEarnings (with the rest of the equity breakdown) blank on many recent balance
+    /// sheets. When the balance sheet a figure comes from lacks it, estimate it from the nearest annual balance sheet
+    /// that has it, one annual cash flow year at a time with net income - dividends: forward for the current figure,
+    /// backward for the oldest (decision 23). No estimate if a year in between has no net income.
+    /// </summary>
+    private void EstimateMissingRetainedEarnings()
+    {
+        if (CurRetainedEarnings is null && _mostRecentReportDate is DateOnly current)
+        {
+            KeyValuePair<DateOnly, RawReportDataMap> anchor = _annualRawBalanceSheets
+                .LastOrDefault(kv => kv.Key <= current && kv.Value.HasValue("RetainedEarnings"));
+            if (anchor.Value is not null)
+            {
+                decimal? estimate = anchor.Value["RetainedEarnings"];
+                foreach ((DateOnly date, CashFlowItem item) in _annualProcessedCashFlowItems)
+                {
+                    if (date > anchor.Key && date <= current)
+                        estimate += item.NetIncomeFromContinuingOperations - item.DividendsPaid;
+                }
+                CurRetainedEarnings = estimate;
+                CurRetainedEarningsEstimated = estimate is not null;
+            }
+        }
+
+        if (OldestRetainedEarnings is null && _oldestReportDate is DateOnly oldest)
+        {
+            KeyValuePair<DateOnly, RawReportDataMap> anchor = _annualRawBalanceSheets
+                .FirstOrDefault(kv => kv.Key >= oldest && kv.Value.HasValue("RetainedEarnings"));
+            if (anchor.Value is not null)
+            {
+                decimal? estimate = anchor.Value["RetainedEarnings"];
+                foreach ((DateOnly date, CashFlowItem item) in _annualProcessedCashFlowItems)
+                {
+                    if (date > oldest && date <= anchor.Key)
+                        estimate -= item.NetIncomeFromContinuingOperations - item.DividendsPaid;
+                }
+                OldestRetainedEarnings = estimate;
+                OldestRetainedEarningsEstimated = estimate is not null;
+            }
+        }
     }
 
     /// <summary>
