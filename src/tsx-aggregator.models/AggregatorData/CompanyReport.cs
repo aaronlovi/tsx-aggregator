@@ -458,22 +458,8 @@ public class CompanyReport
                     LogMissingPropertyWarning(reportDate, "ChangeInWorkingCapital", warnings);
             }
 
-            if (rawCashFlowReport.HasValue("Depreciation"))
-                cashFlowReport.Depreciation = rawCashFlowReport["Depreciation"]!.Value;
-            else if (rawCashFlowReport.HasValue("DepreciationAndAmortization"))
-                cashFlowReport.Depreciation = rawCashFlowReport["DepreciationAndAmortization"]!.Value;
-            else
-                LogMissingPropertyWarning(reportDate, "depreciation", warnings);
-
-            if (rawCashFlowReport.HasValue("Depletion"))
-                cashFlowReport.Depletion = rawCashFlowReport["Depletion"]!.Value;
-            else
-                LogMissingPropertyWarning(reportDate, "depletion", warnings);
-
-            if (rawCashFlowReport.HasValue("Amortization"))
-                cashFlowReport.Amortization = rawCashFlowReport["Amortization"]!.Value;
-            else
-                LogMissingPropertyWarning(reportDate, "amortization", warnings);
+            SetDepreciationAmortizationAndDepletion(reportDate, rawCashFlowReport, cashFlowReport, warnings);
+            SetNetPPEPurchaseAndSale(reportDate, rawCashFlowReport, cashFlowReport, warnings);
 
             if (rawCashFlowReport.HasValue("DeferredTax"))
                 cashFlowReport.DeferredTax = rawCashFlowReport["DeferredTax"]!.Value;
@@ -489,6 +475,60 @@ public class CompanyReport
         }
 
         CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
+    }
+
+    /// <summary>
+    /// Depreciation and amortization, counted once. DepreciationAndAmortization is the combined total, so it is
+    /// preferred outright; otherwise Depreciation + Amortization. As a last resort DepreciationAmortizationDepletion
+    /// is used, and then Depletion is not added separately, since it is already included.
+    /// </summary>
+    private static void SetDepreciationAmortizationAndDepletion(
+        DateOnly reportDate, RawReportDataMap rawCashFlowReport, CashFlowItem cashFlowReport, IList<string> warnings)
+    {
+        bool hasDepletion = rawCashFlowReport.HasValue("Depletion");
+
+        if (rawCashFlowReport.HasValue("DepreciationAndAmortization"))
+        {
+            cashFlowReport.DepreciationAndAmortization = rawCashFlowReport["DepreciationAndAmortization"]!.Value;
+        }
+        else if (rawCashFlowReport.HasValue("Depreciation") || rawCashFlowReport.HasValue("Amortization"))
+        {
+            cashFlowReport.DepreciationAndAmortization =
+                (rawCashFlowReport["Depreciation"] ?? 0) + (rawCashFlowReport["Amortization"] ?? 0);
+        }
+        else if (rawCashFlowReport.HasValue("DepreciationAmortizationDepletion"))
+        {
+            cashFlowReport.DepreciationAndAmortization = rawCashFlowReport["DepreciationAmortizationDepletion"]!.Value;
+            return; // Depletion is included
+        }
+        else
+        {
+            LogMissingPropertyWarning(reportDate, "depreciation and amortization", warnings);
+        }
+
+        if (hasDepletion)
+            cashFlowReport.Depletion = rawCashFlowReport["Depletion"]!.Value;
+        else
+            LogMissingPropertyWarning(reportDate, "depletion", warnings);
+    }
+
+    /// <summary>
+    /// Net PP&amp;E purchases and sales, negative for a net outflow. Falls back to PurchaseOfPPE + SaleOfPPE,
+    /// then PurchaseOfPPE alone, then -CapitalExpenditureReported (which is reported as a positive amount).
+    /// </summary>
+    private static void SetNetPPEPurchaseAndSale(
+        DateOnly reportDate, RawReportDataMap rawCashFlowReport, CashFlowItem cashFlowReport, IList<string> warnings)
+    {
+        if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale"))
+            cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value;
+        else if (rawCashFlowReport.HasValue("PurchaseOfPPE") && rawCashFlowReport.HasValue("SaleOfPPE"))
+            cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["PurchaseOfPPE"]!.Value + rawCashFlowReport["SaleOfPPE"]!.Value;
+        else if (rawCashFlowReport.HasValue("PurchaseOfPPE"))
+            cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["PurchaseOfPPE"]!.Value;
+        else if (rawCashFlowReport.HasValue("CapitalExpenditureReported"))
+            cashFlowReport.NetPPEPurchaseAndSale = -rawCashFlowReport["CapitalExpenditureReported"]!.Value;
+        else
+            LogMissingPropertyWarning(reportDate, "NetPPEPurchaseAndSale", warnings);
     }
 
     /// <summary>
