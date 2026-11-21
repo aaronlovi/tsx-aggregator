@@ -566,9 +566,10 @@ public class CompanyReport
         decimal? prevWorkingCapital = CalcWorkingCapitalFromRawBalanceSheet(reportDate, prevReport, warnings);
         decimal? curWorkingCapital = CalcWorkingCapitalFromRawBalanceSheet(reportDate, thisReport, warnings);
 
+        // Cash-flow convention: an increase in working capital consumes cash, so it is negative.
         decimal? changeInWorkingCapital = null;
         if (prevWorkingCapital is not null && curWorkingCapital is not null)
-            changeInWorkingCapital = curWorkingCapital - prevWorkingCapital;
+            changeInWorkingCapital = prevWorkingCapital - curWorkingCapital;
 
         return changeInWorkingCapital;
     }
@@ -617,14 +618,26 @@ public class CompanyReport
         }
     }
 
+    /// <summary>
+    /// Operating working capital: current assets excluding cash, minus current liabilities excluding current debt.
+    /// A missing cash or current-debt key counts as 0.
+    /// </summary>
     private static decimal? CalcWorkingCapitalFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
         decimal? currentAssets = CalcCurrentAssetsFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
         decimal? currentLiabilities = CalcCurrentLiabilitiesFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
 
-        return currentAssets is not null && currentLiabilities is not null
-            ? currentAssets - currentLiabilities
-            : null;
+        if (currentAssets is null || currentLiabilities is null)
+            return null;
+
+        decimal cash = rawBalanceSheet["CashCashEquivalentsAndShortTermInvestments"]
+            ?? rawBalanceSheet["CashAndCashEquivalents"]
+            ?? 0;
+        decimal currentDebt = rawBalanceSheet["CurrentDebtAndCapitalLeaseObligation"]
+            ?? rawBalanceSheet["CurrentDebt"]
+            ?? 0;
+
+        return (currentAssets - cash) - (currentLiabilities - currentDebt);
     }
 
     private static decimal? CalcCurrentAssetsFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)

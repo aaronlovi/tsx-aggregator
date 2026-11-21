@@ -242,4 +242,112 @@ public class CompanyReportTests {
     }
 
     #endregion
+
+    #region B4 - working capital fallback
+
+    /// <summary>
+    /// Owner earnings (net income 100, no other add-backs or capex) of a FY2021 cash-flow statement without
+    /// ChangeInWorkingCapital, so the change comes from the FY2020 and FY2021 annual balance sheets.
+    /// </summary>
+    private static decimal OwnerEarningsWithBalanceSheets(RawReportDataMap prevBalanceSheet, RawReportDataMap curBalanceSheet) {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("NetIncomeFromContinuingOperations", 100m)));
+        report.AddAnnualBalanceSheet(Fy2020, prevBalanceSheet);
+        report.AddAnnualBalanceSheet(Fy2021, curBalanceSheet);
+        return Process(report).AverageOwnerEarnings;
+    }
+
+    [Fact]
+    public void OwnerEarnings_ReportedChangeInWorkingCapital_UsedAsIs() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("ChangeInWorkingCapital", -30m)));
+        report.AddAnnualBalanceSheet(Fy2020, CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m)));
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(("CurrentAssets", 200m), ("CurrentLiabilities", 50m)));
+
+        _ = Process(report).AverageOwnerEarnings.Should().Be(70m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalIncrease_FromBalanceSheets_ReducesOwnerEarnings() {
+        // Working capital 50 -> 80: an increase of 30 consumes cash, so it is -30 in the cash-flow convention.
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 130m), ("CurrentLiabilities", 50m)))
+            .Should().Be(70m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalDecrease_FromBalanceSheets_IncreasesOwnerEarnings() {
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 70m)))
+            .Should().Be(120m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_ExcludesCash() {
+        // Only cash grew (40 -> 100); non-cash working capital is 10 in both years.
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CashCashEquivalentsAndShortTermInvestments", 40m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 160m), ("CashCashEquivalentsAndShortTermInvestments", 100m), ("CurrentLiabilities", 50m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_CashFallsBackToCashAndCashEquivalents() {
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CashAndCashEquivalents", 40m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 160m), ("CashAndCashEquivalents", 100m), ("CurrentLiabilities", 50m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_PrefersCashIncludingShortTermInvestments() {
+        // Using CashAndCashEquivalents (5 -> 5) would show a 60 increase in working capital.
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CashCashEquivalentsAndShortTermInvestments", 40m),
+                ("CashAndCashEquivalents", 5m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 160m), ("CashCashEquivalentsAndShortTermInvestments", 100m),
+                ("CashAndCashEquivalents", 5m), ("CurrentLiabilities", 50m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_ExcludesCurrentDebt() {
+        // Only current debt grew (10 -> 40); non-debt current liabilities are 40 in both years.
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m), ("CurrentDebtAndCapitalLeaseObligation", 10m)),
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 80m), ("CurrentDebtAndCapitalLeaseObligation", 40m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_CurrentDebtFallsBackToCurrentDebt() {
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m), ("CurrentDebt", 10m)),
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 80m), ("CurrentDebt", 40m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_PrefersCurrentDebtIncludingLeases() {
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m),
+                ("CurrentDebtAndCapitalLeaseObligation", 10m), ("CurrentDebt", 1m)),
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 80m),
+                ("CurrentDebtAndCapitalLeaseObligation", 40m), ("CurrentDebt", 1m)))
+            .Should().Be(100m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_WorkingCapitalFallback_MissingCurrentLiabilities_NoAdjustment() {
+        _ = OwnerEarningsWithBalanceSheets(
+            CreateRawReport(("CurrentAssets", 100m), ("CurrentLiabilities", 50m)),
+            CreateRawReport(("CurrentAssets", 130m)))
+            .Should().Be(100m);
+    }
+
+    #endregion
 }
