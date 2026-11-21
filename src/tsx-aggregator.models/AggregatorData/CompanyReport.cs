@@ -535,7 +535,7 @@ public class CompanyReport
     /// <summary>
     /// Net PP&amp;E purchases and sales, negative for a net outflow. Uses NetPPEPurchaseAndSale, or
     /// PurchaseOfPPE + SaleOfPPE when that is the larger outflow (NetPPEPurchaseAndSale sometimes misses most of
-    /// the purchases). Falls back to PurchaseOfPPE + SaleOfPPE, then PurchaseOfPPE alone, then
+    /// the purchases; decisions 14 and 21). Falls back to PurchaseOfPPE + SaleOfPPE, then PurchaseOfPPE alone, then
     /// -CapitalExpenditureReported (which is reported as a positive amount).
     /// </summary>
     private static void SetNetPPEPurchaseAndSale(
@@ -548,7 +548,21 @@ public class CompanyReport
                 rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value,
                 rawCashFlowReport["PurchaseOfPPE"]!.Value + (rawCashFlowReport["SaleOfPPE"] ?? 0));
         else if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale"))
-            cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value;
+        {
+            // With no PurchaseOfPPE to check it against, a non-negative NetPPEPurchaseAndSale (a net sale) is not
+            // trusted: it often misses the purchases. Use CapitalExpenditureReported if present; otherwise the year
+            // has no capex data, and is left out of the owner-earnings average if it has D&A (decision 21).
+            decimal netPPE = rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value;
+            if (netPPE >= 0 && rawCashFlowReport.HasValue("CapitalExpenditureReported"))
+            {
+                cashFlowReport.NetPPEPurchaseAndSale = -rawCashFlowReport["CapitalExpenditureReported"]!.Value;
+            }
+            else
+            {
+                cashFlowReport.NetPPEPurchaseAndSale = netPPE;
+                cashFlowReport.HasCapExData = netPPE < 0;
+            }
+        }
         else if (rawCashFlowReport.HasValue("PurchaseOfPPE") && rawCashFlowReport.HasValue("SaleOfPPE"))
             cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["PurchaseOfPPE"]!.Value + rawCashFlowReport["SaleOfPPE"]!.Value;
         else if (rawCashFlowReport.HasValue("PurchaseOfPPE"))

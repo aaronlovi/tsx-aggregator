@@ -332,6 +332,49 @@ public class CompanyReportTests {
         _ = OwnerEarningsOf(("DepreciationAndAmortization", 50m)).Should().Be(0m);
     }
 
+    // Decision 21: a non-negative NetPPEPurchaseAndSale with no PurchaseOfPPE (and D&A > 0) is not trusted as capex.
+    // CapitalExpenditureReported is used when present; otherwise the year has no capex data.
+
+    [Fact]
+    public void OwnerEarnings_NonNegativeNetPPEWithoutPurchases_YearLeftOut() {
+        // The SU 2025 shape: NetPPE +5 with no PurchaseOfPPE to check it against.
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("DepreciationAndAmortization", 20m),
+            ("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("DepreciationAndAmortization", 50m),
+            ("NetPPEPurchaseAndSale", 5m)));
+
+        _ = Process(report).AverageOwnerEarnings.Should().Be(90m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_ZeroNetPPEWithoutPurchases_YearLeftOut() {
+        _ = OwnerEarningsOf(
+            ("DepreciationAndAmortization", 50m),
+            ("NetPPEPurchaseAndSale", 0m))
+            .Should().Be(0m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_NonNegativeNetPPEWithoutPurchases_UsesCapitalExpenditureReported() {
+        // 100 + 50 - 40
+        _ = OwnerEarningsOf(
+            ("DepreciationAndAmortization", 50m),
+            ("NetPPEPurchaseAndSale", 5m),
+            ("CapitalExpenditureReported", 40m))
+            .Should().Be(110m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_NonNegativeNetPPEWithoutPurchases_NoDepreciation_YearKept() {
+        // Nothing is added back, so a net sale of PP&E is taken at face value.
+        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", 5m)).Should().Be(105m);
+    }
+
     // Decision 16: Depletion is not added again when DepreciationAmortizationDepletion equals D&A.
 
     [Fact]
