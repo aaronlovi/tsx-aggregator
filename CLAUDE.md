@@ -97,7 +97,7 @@ Each can be toggled on/off via `HostedServices` in appsettings.json:
 
 ### Operations CLI (tsx-ops/)
 
-Separate executable for operations-support work against a running system, with one subcommand per task (`snapshot`, `diff`). Add new operational tools as `tsx-ops` commands rather than new executables. Conventions:
+Separate executable for operations-support work against a running system, with one subcommand per task (`snapshot`, `diff`, `service`). Add new operational tools as `tsx-ops` commands rather than new executables. Conventions:
 - Read-only commands run all queries in one `REPEATABLE READ READ ONLY` transaction (`Db/OpsDb.cs`).
 - Never use `DbmService`: its constructor runs migrations.
 - Data goes to stdout or files, logs go to stderr. Exit codes: 0 ok, 1 error, 2 usage.
