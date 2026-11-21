@@ -38,12 +38,12 @@ describe('CompanyService', () => {
         const details = fetchDetails(detailsFixture);
 
         expect(details.overallScore).toBe(12);
-        expect(details.maxPrice).toBe(20);
-        expect(details.percentageUpside).toBe(-20);
+        expect(details.maxPrice).toBe(24);
+        expect(details.percentageUpside).toBe(-4);
         expect(details.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough).toBe(false);
         expect(details.doesPassCheck_ROE_FromOwnerEarnings_BigEnough).toBe(false);
         expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe(true);
-        expect(details.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings).toBe(5.6);
+        expect(details.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings).toBe(7.2);
     });
 
     it('passes every API field through unchanged', () => {

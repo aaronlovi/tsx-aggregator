@@ -89,7 +89,9 @@ public class CompanyFullDetailReport {
                 return decimal.MinValue;
             }
 
-            return 100M * (EstimatedNextYearBookValue_FromCashFlow - CurDividendsPaid - CurBookValue) / CurMarketCap;
+            // Net cash flow is after dividends (a financing outflow) but before buybacks, so dividends are added
+            // back: cash generated for shareholders, however it is returned.
+            return 100M * (AverageNetCashFlow + CurDividendsPaid) / CurMarketCap;
         }
     }
     public decimal EstimatedNextYearBookValue_FromOwnerEarnings {
@@ -107,7 +109,8 @@ public class CompanyFullDetailReport {
                 return decimal.MinValue;
             }
 
-            return 100M * (EstimatedNextYearBookValue_FromOwnerEarnings - CurDividendsPaid - CurBookValue) / CurMarketCap;
+            // Owner earnings are pre-dividend, so all of it is the shareholders' return.
+            return 100M * AverageOwnerEarnings / CurMarketCap;
         }
     }
 
@@ -121,8 +124,9 @@ public class CompanyFullDetailReport {
             }
 
             decimal maxPriceSoFar = 3M * CurBookValue;
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromCashFlow - CurDividendsPaid - CurBookValue));
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (EstimatedNextYearBookValue_FromOwnerEarnings - CurDividendsPaid - CurBookValue));
+            // The price at which each est. return is exactly 5%: same numerators as the returns.
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (AverageNetCashFlow + CurDividendsPaid));
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * AverageOwnerEarnings);
 
             return maxPriceSoFar / CurNumShares;
         }

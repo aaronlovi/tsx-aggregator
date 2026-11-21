@@ -35,7 +35,7 @@ public class CompanyDetailsApiContractTests {
         curTotalShareholdersEquity: 900_000_000M,
         curBookValue: 800_000_000M,
         curNumShares: 50_000_000,
-        averageNetCashFlow: 70_000_000M,
+        averageNetCashFlow: 40_000_000M,
         averageOwnerEarnings: 90_000_000M,
         curDividendsPaid: 20_000_000M,
         curAdjustedRetainedEarnings: 400_000_000M,
