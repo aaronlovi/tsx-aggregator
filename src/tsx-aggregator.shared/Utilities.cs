@@ -7,14 +7,10 @@ namespace tsx_aggregator.shared;
 public static class Utilities {
 
     /// <summary>
-    /// Safely performs division, returning a default value when the divisor is zero.
+    /// Divides, returning null when either operand is null or the denominator is zero.
     /// </summary>
-    /// <param name="numerator">The numerator in the division operation.</param>
-    /// <param name="denominator">The denominator in the division operation. If this value is zero, the method returns the default value.</param>
-    /// <param name="defaultVal">The default value to return when the denominator is zero.</param>
-    /// <returns>The result of the division operation if the denominator is not zero; otherwise, the default value.</returns>
-    public static decimal DivSafe(decimal numerator, decimal denominator, decimal defaultVal = decimal.MaxValue)
-        => denominator != 0 ? numerator / denominator : defaultVal;
+    public static decimal? DivOrNull(decimal? numerator, decimal? denominator)
+        => numerator is decimal n && denominator is decimal d && d != 0 ? n / d : null;
 
     /// <summary>
     /// Determines whether the specified string contains the specified search string.

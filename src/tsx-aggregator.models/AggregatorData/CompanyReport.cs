@@ -52,10 +52,11 @@ public class CompanyReport
     /// <summary>From the most recent annual cash flow; null when there is none, 0 when it has no dividends key.</summary>
     public decimal? CurDividendsPaid { get; set; }
     public decimal? CurRetainedEarnings { get; set; }
-    public decimal CurAdjustedRetainedEarnings { get; set; }
+    /// <summary>Null when the current retained earnings are missing.</summary>
+    public decimal? CurAdjustedRetainedEarnings { get; set; }
     public decimal? OldestRetainedEarnings { get; set; }
-    // W1a keeps these two derived values as before, with a missing input counted as 0; W1b makes them null.
-    public decimal CurBookValue => (CurTotalShareholdersEquity ?? 0) - (CurGoodwill + CurIntangibles);
+    /// <summary>Equity less goodwill and intangibles; null when equity is missing.</summary>
+    public decimal? CurBookValue => CurTotalShareholdersEquity - (CurGoodwill + CurIntangibles);
     /// <summary>Null when there are no annual cash flow statements.</summary>
     public decimal? AverageNetCashFlow =>
         _annualProcessedCashFlowItems.Count == 0
@@ -443,7 +444,7 @@ public class CompanyReport
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
 
-        CurAdjustedRetainedEarnings = (CurRetainedEarnings ?? 0) + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
+        CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
     }
 
     /// <summary>

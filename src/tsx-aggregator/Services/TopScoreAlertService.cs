@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -119,23 +119,7 @@ internal class TopScoreAlertService : BackgroundService {
         // Step 4: Construct CompanyFullDetailReport objects
         var reports = new List<CompanyFullDetailReport>();
         foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            reports.Add(new CompanyFullDetailReport(
-                exchange: item.Exchange,
-                companySymbol: item.CompanySymbol,
-                instrumentSymbol: item.InstrumentSymbol,
-                companyName: item.CompanyName,
-                instrumentName: item.InstrumentName,
-                pricePerShare: item.PerSharePrice,
-                curLongTermDebt: item.CurrentLongTermDebt,
-                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
-                curBookValue: item.CurrentBookValue,
-                curNumShares: item.CurrentNumShares,
-                averageNetCashFlow: item.AverageNetCashFlow,
-                averageOwnerEarnings: item.AverageOwnerEarnings,
-                curDividendsPaid: item.CurrentDividendsPaid,
-                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
-                oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+            reports.Add(CompanyFullDetailReport.FromReplyItem(item));
         }
 
         // Step 5: Compute top-score list

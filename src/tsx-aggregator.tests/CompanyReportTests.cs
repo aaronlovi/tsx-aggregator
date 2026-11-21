@@ -481,8 +481,8 @@ public class CompanyReportTests {
     }
 
     [Fact]
-    public void MissingBalanceSheetFields_DerivedValuesStillComputedAsBefore() {
-        // W1a keeps book value and adjusted retained earnings as they were (missing inputs as 0); W1b makes them null.
+    public void MissingBalanceSheetFields_DerivedValuesAreNull() {
+        // Book value needs equity; adjusted retained earnings need the current retained earnings.
         var report = NewReport();
         report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
             ("NetIncomeFromContinuingOperations", 100m),
@@ -493,8 +493,26 @@ public class CompanyReportTests {
 
         _ = Process(report);
 
-        _ = report.CurBookValue.Should().Be(-30m);
-        _ = report.CurAdjustedRetainedEarnings.Should().Be(25m);
+        _ = report.CurBookValue.Should().BeNull();
+        _ = report.CurAdjustedRetainedEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void PresentBalanceSheetFields_DerivedValuesComputed() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("CashDividendsPaid", 20m),
+            ("NetCommonStockIssuance", -5m)));
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(
+            ("StockholdersEquity", 500m), ("Goodwill", 30m), ("RetainedEarnings", 200m)));
+        report.AddAnnualIncomeStatement(Fy2021, CreateRawReport(("NetIncomeContinuousOperations", 100m)));
+
+        _ = Process(report);
+
+        _ = report.CurBookValue.Should().Be(470m);
+        // 200 + 20 dividends + 5 bought back
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(225m);
     }
 
     [Fact]

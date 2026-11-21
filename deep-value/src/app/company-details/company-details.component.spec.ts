@@ -8,6 +8,7 @@ import { CompanyService } from '../services/company.service';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { CompanyDetails } from '../models/company.details';
 import detailsFixture from '../../testing/company-full-detail-report.json';
+import missingDataFixture from '../../testing/company-full-detail-report-missing-data.json';
 
 describe('CompanyDetailsComponent', () => {
   let component: CompanyDetailsComponent;
@@ -39,7 +40,7 @@ describe('CompanyDetailsComponent', () => {
 
   it('shows the score sent by the backend', () => {
     // A score the raw inputs would not produce, to prove the page does not recompute it.
-    const details: CompanyDetails = { ...detailsFixture, overallScore: 7 };
+    const details = { ...detailsFixture, overallScore: 7 } as CompanyDetails;
     companyServiceSpy.getCompanyDetails.mockReturnValue(of(details));
 
     fixture.detectChanges();
@@ -48,5 +49,42 @@ describe('CompanyDetailsComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('7 / 15');
     expect(text).toContain('Example Corp');
+  });
+
+  it('shows Yes and No for checks with data, and no n/a count', () => {
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(detailsFixture as CompanyDetails));
+
+    fixture.detectChanges();
+
+    const cells = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.data-table__data--score'))
+      .map(cell => cell.textContent?.trim());
+    expect(cells).toContain('Yes');
+    expect(cells).toContain('No');
+    expect(cells).not.toContain('n/a');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.na-count')).toBeNull();
+  });
+
+  it('shows n/a for missing figures and checks, and the n/a count next to the score', () => {
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(missingDataFixture as CompanyDetails));
+
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const naCells = Array.from(root.querySelectorAll('.data-table__data--score.na'));
+    expect(naCells).toHaveLength(7);
+    expect(naCells.every(cell => cell.textContent?.trim() === 'n/a')).toBe(true);
+    expect(root.querySelector('.na-count')?.textContent).toContain('(7 n/a)');
+    expect(root.textContent).toContain('7 / 15');
+    // e.g. Max Buy Price and Total Shareholders Equity
+    const numericCells = Array.from(root.querySelectorAll('.data-table__data--numeric')).map(cell => cell.textContent?.trim());
+    expect(numericCells.filter(text => text === 'n/a').length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('maps check results to labels and classes', () => {
+    expect(component.checkLabel('Pass')).toBe('Yes');
+    expect(component.checkLabel('Fail')).toBe('No');
+    expect(component.checkLabel('NotAvailable')).toBe('n/a');
+    expect(component.checkClass('Fail')).toEqual({ no: true, na: false });
+    expect(component.checkClass('NotAvailable')).toEqual({ no: false, na: true });
   });
 });

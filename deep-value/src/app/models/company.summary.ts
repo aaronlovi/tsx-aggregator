@@ -1,53 +1,42 @@
+/**
+ * A row of the company lists (GET companies, companies/bottom, companies/all). Everything is computed by the
+ * backend (CompanySummaryReport.cs). A null number means the source data didn't have the figure.
+ */
 export class CompanySummary {
     exchange: string;
     instrumentSymbol: string;
     companyName: string;
     pricePerShare: number;
-    curMarketCap: number;
-    estimatedNextYearTotalReturnPercentageFromCashFlow: number;
-    estimatedNextYearTotalReturnPercentageOwnerEarnings: number;
+    curMarketCap: number | null;
+    estimatedNextYearTotalReturnPercentageFromCashFlow: number | null;
+    estimatedNextYearTotalReturnPercentageOwnerEarnings: number | null;
     overallScore: number;
-    maxPrice: number;
-    returnOnEquity_FromCashFlow: number;
-    returnOnEquity_FromOwnerEarnings: number;
+    /** How many of the 15 checks had missing data (they earn no point). */
+    notAvailableCount: number;
+    maxPrice: number | null;
+    percentageUpside: number | null;
+    returnOnEquity_FromCashFlow: number | null;
+    returnOnEquity_FromOwnerEarnings: number | null;
     mostRecentAnnualReportDate: string | null;
     mostRecentQuarterlyReportDate: string | null;
     lastUpdatedDate: string | null;
 
-    constructor(
-        exchange: string,
-        instrumentSymbol: string,
-        companyName: string,
-        pricePerShare: number,
-        curMarketCap: number,
-        estimatedNextYearTotalReturnPercentageFromCashFlow: number,
-        estimatedNextYearTotalReturnPercentageOwnerEarnings: number,
-        overallScore: number,
-        maxPrice: number,
-        returnOnEquity_FromCashFlow: number,
-        returnOnEquity_FromOwnerEarnings: number,
-        mostRecentAnnualReportDate: string | null = null,
-        mostRecentQuarterlyReportDate: string | null = null,
-        lastUpdatedDate: string | null = null) {
-            this.exchange = exchange;
-            this.instrumentSymbol = instrumentSymbol;
-            this.companyName = companyName;
-            this.pricePerShare = pricePerShare;
-            this.curMarketCap = curMarketCap;
-            this.estimatedNextYearTotalReturnPercentageFromCashFlow = estimatedNextYearTotalReturnPercentageFromCashFlow;
-            this.estimatedNextYearTotalReturnPercentageOwnerEarnings = estimatedNextYearTotalReturnPercentageOwnerEarnings;
-            this.overallScore = overallScore;
-            this.maxPrice = maxPrice;
-            this.returnOnEquity_FromCashFlow = returnOnEquity_FromCashFlow;
-            this.returnOnEquity_FromOwnerEarnings = returnOnEquity_FromOwnerEarnings;
-            this.mostRecentAnnualReportDate = mostRecentAnnualReportDate;
-            this.mostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
-            this.lastUpdatedDate = lastUpdatedDate;
-    }
-
-    public get percentageUpside() {
-        if (this.pricePerShare <= 0 || this.maxPrice === -1)
-            return Number.MIN_VALUE;
-        return (this.maxPrice - this.pricePerShare) / this.pricePerShare * 100.0;
+    constructor(item: any) {
+        this.exchange = item.exchange;
+        this.instrumentSymbol = item.instrumentSymbol;
+        this.companyName = item.companyName;
+        this.pricePerShare = item.pricePerShare;
+        this.curMarketCap = item.curMarketCap ?? null;
+        this.estimatedNextYearTotalReturnPercentageFromCashFlow = item.estimatedNextYearTotalReturnPercentage_FromCashFlow ?? null;
+        this.estimatedNextYearTotalReturnPercentageOwnerEarnings = item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings ?? null;
+        this.overallScore = item.overallScore;
+        this.notAvailableCount = item.notAvailableCount ?? 0;
+        this.maxPrice = item.maxPrice ?? null;
+        this.percentageUpside = item.percentageUpside ?? null;
+        this.returnOnEquity_FromCashFlow = item.returnOnEquity_FromCashFlow ?? null;
+        this.returnOnEquity_FromOwnerEarnings = item.returnOnEquity_FromOwnerEarnings ?? null;
+        this.mostRecentAnnualReportDate = item.mostRecentAnnualReportDate ?? null;
+        this.mostRecentQuarterlyReportDate = item.mostRecentQuarterlyReportDate ?? null;
+        this.lastUpdatedDate = item.lastUpdatedDate ?? null;
     }
 }

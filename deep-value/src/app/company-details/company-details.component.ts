@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CompanyService } from '../services/company.service';
-import { CompanyDetails } from '../models/company.details';
+import { CheckResult, CompanyDetails } from '../models/company.details';
 
 @Component({
     selector: 'app-company-details',
@@ -55,6 +55,19 @@ export class CompanyDetailsComponent implements OnInit, OnDestroy {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
+    }
+
+    /** 'Yes', 'No', or 'n/a' when the check's source data was missing. */
+    checkLabel(result: CheckResult): string {
+        switch (result) {
+            case 'Pass': return 'Yes';
+            case 'Fail': return 'No';
+            default: return 'n/a';
+        }
+    }
+
+    checkClass(result: CheckResult): Record<string, boolean> {
+        return { no: result === 'Fail', na: result === 'NotAvailable' };
     }
 
     isInputsValid(): boolean {

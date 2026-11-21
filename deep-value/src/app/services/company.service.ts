@@ -16,22 +16,7 @@ export class CompanyService {
     getCompanies(): Observable<CompanySummary[]> {
         return this.http.get<any[]>(`${this.config.apiEndpoint}/companies`).pipe(
             map(data => {
-                return data.map(item => new CompanySummary(
-                    item.exchange,
-                    item.instrumentSymbol,
-                    item.companyName,
-                    item.pricePerShare,
-                    item.curMarketCap,
-                    item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
-                    item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-                    item.overallScore,
-                    item.maxPrice,
-                    item.returnOnEquity_FromCashFlow,
-                    item.returnOnEquity_FromOwnerEarnings,
-                    item.mostRecentAnnualReportDate ?? null,
-                    item.mostRecentQuarterlyReportDate ?? null,
-                    item.lastUpdatedDate ?? null
-                ));
+                return data.map(item => new CompanySummary(item));
             })
         );
     }
@@ -39,22 +24,7 @@ export class CompanyService {
     getBottomCompanies(): Observable<CompanySummary[]> {
         return this.http.get<any[]>(`${this.config.apiEndpoint}/companies/bottom`).pipe(
             map(data => {
-                return data.map(item => new CompanySummary(
-                    item.exchange,
-                    item.instrumentSymbol,
-                    item.companyName,
-                    item.pricePerShare,
-                    item.curMarketCap,
-                    item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
-                    item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-                    item.overallScore,
-                    item.maxPrice,
-                    item.returnOnEquity_FromCashFlow,
-                    item.returnOnEquity_FromOwnerEarnings,
-                    item.mostRecentAnnualReportDate ?? null,
-                    item.mostRecentQuarterlyReportDate ?? null,
-                    item.lastUpdatedDate ?? null
-                ));
+                return data.map(item => new CompanySummary(item));
             })
         );
     }

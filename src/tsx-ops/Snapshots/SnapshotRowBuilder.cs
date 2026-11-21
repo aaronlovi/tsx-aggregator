@@ -75,7 +75,7 @@ internal static class SnapshotRowBuilder {
         return row;
     }
 
-    // W1a: a missing figure is still treated as 0, matching the API. W1b writes empty cells and n/a checks.
+    // A missing figure is an empty cell; a check with missing inputs is N (W1).
     public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields) {
         var report = new CompanyFullDetailReport(
             exchange: instrument.Exchange,
@@ -85,36 +85,20 @@ internal static class SnapshotRowBuilder {
             instrumentName: instrument.InstrumentName,
             pricePerShare: instrument.PricePerShare,
             curLongTermDebt: fields.CurLongTermDebt,
-            curTotalShareholdersEquity: fields.CurTotalShareholdersEquity ?? 0,
-            curBookValue: fields.CurBookValue ?? 0,
+            curTotalShareholdersEquity: fields.CurTotalShareholdersEquity,
+            curBookValue: fields.CurBookValue,
             curNumShares: fields.CurNumShares,
-            averageNetCashFlow: fields.AverageNetCashFlow ?? 0,
-            averageOwnerEarnings: fields.AverageOwnerEarnings ?? 0,
-            curDividendsPaid: fields.CurDividendsPaid ?? 0,
-            curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings ?? 0,
-            oldestRetainedEarnings: fields.OldestRetainedEarnings ?? 0,
+            averageNetCashFlow: fields.AverageNetCashFlow,
+            averageOwnerEarnings: fields.AverageOwnerEarnings,
+            curDividendsPaid: fields.CurDividendsPaid,
+            curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings,
+            oldestRetainedEarnings: fields.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: instrument.NumAnnualCashFlowReports);
 
         // Same order as CompanyFullDetailReport.OverallScore.
-        bool[] checks = [
-            report.DoesPassCheck_DebtToEquitySmallEnough,
-            report.DoesPassCheck_BookValueBigEnough,
-            report.DoesPassCheck_PriceToBookSmallEnough,
-            report.DoesPassCheck_AvgCashFlow_Positive,
-            report.DoesPassCheck_AvgOwnerEarningsPositive,
-            report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough,
-            report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough,
-            report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig,
-            report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig,
-            report.DoesPassCheck_DebtToBookRatioSmallEnough,
-            report.DoesPassCheck_RetainedEarningsPositive,
-            report.DoesPassCheck_IsHistoryLongEnough,
-            report.DidAdjustedRetainedEarningsIncrease,
-            report.DoesPassCheck_ROE_FromCashFlow_BigEnough,
-            report.DoesPassCheck_ROE_FromOwnerEarnings_BigEnough,
-        ];
+        CheckResult[] checks = report.AllChecks;
 
-        int passCount = checks.Count(c => c);
+        int passCount = checks.Count(c => c == CheckResult.Pass);
         if (passCount != report.OverallScore) {
             throw new InvalidOperationException(
                 $"Snapshot check list is out of sync with CompanyFullDetailReport.OverallScore for {instrument.InstrumentSymbol}: "
@@ -128,14 +112,14 @@ internal static class SnapshotRowBuilder {
             [Snapshot.StatusColumn] = StatusOk,
             ["price_per_share"] = Format(instrument.PricePerShare),
             ["num_shares"] = Format(fields.CurNumShares),
-            ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity ?? 0),
-            ["cur_book_value"] = Format(fields.CurBookValue ?? 0),
+            ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity),
+            ["cur_book_value"] = Format(fields.CurBookValue),
             ["cur_long_term_debt"] = Format(fields.CurLongTermDebt),
-            ["average_net_cash_flow"] = Format(fields.AverageNetCashFlow ?? 0),
-            ["average_owner_earnings"] = Format(fields.AverageOwnerEarnings ?? 0),
-            ["cur_dividends_paid"] = Format(fields.CurDividendsPaid ?? 0),
-            ["cur_adjusted_retained_earnings"] = Format(fields.CurAdjustedRetainedEarnings ?? 0),
-            ["oldest_retained_earnings"] = Format(fields.OldestRetainedEarnings ?? 0),
+            ["average_net_cash_flow"] = Format(fields.AverageNetCashFlow),
+            ["average_owner_earnings"] = Format(fields.AverageOwnerEarnings),
+            ["cur_dividends_paid"] = Format(fields.CurDividendsPaid),
+            ["cur_adjusted_retained_earnings"] = Format(fields.CurAdjustedRetainedEarnings),
+            ["oldest_retained_earnings"] = Format(fields.OldestRetainedEarnings),
             ["num_annual_cash_flow_reports"] = Format(instrument.NumAnnualCashFlowReports),
             ["debt_to_equity"] = Format(report.DebtToEquityRatio),
             ["price_to_book"] = Format(report.CurPriceToBookRatio),
@@ -146,16 +130,22 @@ internal static class SnapshotRowBuilder {
             ["est_return_oe_pct"] = Format(report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings),
             ["max_price"] = Format(report.MaxPrice),
             [Snapshot.ScoreColumn] = Format(report.OverallScore),
-            ["na_count"] = "0",
+            ["na_count"] = Format(report.NotAvailableCount),
         };
 
         for (int i = 0; i < checks.Length; i++)
-            row[CheckColumns[i]] = checks[i] ? "P" : "F";
+            row[CheckColumns[i]] = checks[i] switch {
+                CheckResult.Pass => "P",
+                CheckResult.Fail => "F",
+                _ => "N",
+            };
 
         return row;
     }
 
     private static string Format(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Format(decimal? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "";
+    private static string Format(long? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "";
     private static string Format(long value) => value.ToString(CultureInfo.InvariantCulture);
     private static string Format(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

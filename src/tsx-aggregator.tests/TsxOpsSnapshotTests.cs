@@ -70,6 +70,22 @@ public class TsxOpsSnapshotTests {
     }
 
     [Fact]
+    public void RowBuilder_MissingEquity_WritesNotAvailableAndEmptyCells() {
+        // W1: no equity (so no book value) makes checks 1, 2, 3, 10, 14 and 15 N; the missing figures are empty cells.
+        ProcessedReportFields fields = AllPassFields with { CurTotalShareholdersEquity = null, CurBookValue = null };
+
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields);
+
+        _ = row["cur_total_shareholders_equity"].Should().BeEmpty();
+        _ = row["cur_book_value"].Should().BeEmpty();
+        _ = row["debt_to_equity"].Should().BeEmpty();
+        _ = row["max_price"].Should().BeEmpty();
+        _ = new[] { "c01", "c02", "c03", "c10", "c14", "c15" }.Select(c => row[c]).Should().AllBe("N");
+        _ = row["na_count"].Should().Be("6");
+        _ = row["c04"].Should().Be("P");
+    }
+
+    [Fact]
     public void Snapshot_WriteThenRead_PreservesRows() {
         Snapshot original = SnapshotBuilder.FromProcessed([Instrument], new Dictionary<long, string>());
         var writer = new StringWriter();

@@ -7,6 +7,8 @@ import { AppConfigService } from '../app-config.service';
 import { CompanyDetails } from '../models/company.details';
 // Shared with the backend's CompanyDetailsApiContractTests, which checks that the API produces exactly this JSON.
 import detailsFixture from '../../testing/company-full-detail-report.json';
+import missingDataFixture from '../../testing/company-full-detail-report-missing-data.json';
+import { CompanySummary } from '../models/company.summary';
 
 describe('CompanyService', () => {
     let service: CompanyService;
@@ -40,9 +42,10 @@ describe('CompanyService', () => {
         expect(details.overallScore).toBe(12);
         expect(details.maxPrice).toBe(24);
         expect(details.percentageUpside).toBe(-4);
-        expect(details.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough).toBe(false);
-        expect(details.doesPassCheck_ROE_FromOwnerEarnings_BigEnough).toBe(false);
-        expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe(true);
+        expect(details.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough).toBe('Fail');
+        expect(details.doesPassCheck_ROE_FromOwnerEarnings_BigEnough).toBe('Fail');
+        expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe('Pass');
+        expect(details.notAvailableCount).toBe(0);
         expect(details.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings).toBe(7.2);
     });
 
@@ -68,5 +71,41 @@ describe('CompanyService', () => {
         expect(details.mostRecentAnnualReportDate).toBeNull();
         expect(details.mostRecentQuarterlyReportDate).toBeNull();
         expect(details.lastUpdatedDate).toBeNull();
+    });
+
+    it('keeps missing figures as null and n/a checks as NotAvailable', () => {
+        const details = fetchDetails(missingDataFixture);
+
+        expect(details).toEqual(missingDataFixture);
+        expect(details.curTotalShareholdersEquity).toBeNull();
+        expect(details.maxPrice).toBeNull();
+        expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe('NotAvailable');
+        expect(details.didAdjustedRetainedEarningsIncrease).toBe('NotAvailable');
+        expect(details.notAvailableCount).toBe(7);
+        expect(details.overallScore).toBe(7);
+    });
+
+    it('maps list rows, keeping nulls and the backend percentage upside', () => {
+        let result: CompanySummary[] | undefined;
+        service.getCompanies().subscribe(d => (result = d));
+        http.expectOne('http://api.test/companies').flush([
+            {
+                exchange: 'TSX', instrumentSymbol: 'AAA', companyName: 'A Corp', pricePerShare: 10, curMarketCap: 1000,
+                estimatedNextYearTotalReturnPercentage_FromCashFlow: 6, estimatedNextYearTotalReturnPercentage_FromOwnerEarnings: null,
+                overallScore: 13, notAvailableCount: 2, maxPrice: null, percentageUpside: null,
+                returnOnEquity_FromCashFlow: 0.12, returnOnEquity_FromOwnerEarnings: null,
+                mostRecentAnnualReportDate: null, mostRecentQuarterlyReportDate: null, lastUpdatedDate: null,
+            },
+        ]);
+
+        expect(result).toHaveLength(1);
+        const row = result![0];
+        expect(row.overallScore).toBe(13);
+        expect(row.notAvailableCount).toBe(2);
+        expect(row.estimatedNextYearTotalReturnPercentageFromCashFlow).toBe(6);
+        expect(row.estimatedNextYearTotalReturnPercentageOwnerEarnings).toBeNull();
+        expect(row.maxPrice).toBeNull();
+        expect(row.percentageUpside).toBeNull();
+        expect(row.returnOnEquity_FromOwnerEarnings).toBeNull();
     });
 });

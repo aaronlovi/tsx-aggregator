@@ -51,6 +51,17 @@ table.data-table {
     font-style: italic;
 }
 
+// Missing source data: no point, but not a failed check.
+.data-table__data--score.na {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.na-count {
+    margin-left: 4px;
+    font-size: 0.85em;
+    color: rgba(0, 0, 0, 0.55);
+}
+
 .external-links {
     margin-left: 20px;
     margin-bottom: 16px;

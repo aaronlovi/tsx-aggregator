@@ -4,8 +4,14 @@
  * Every ratio, check result, the score and the max price are computed by the backend
  * (CompanyFullDetailReport.cs); this model only carries them for display. Property names match the
  * API's JSON exactly. The contract is pinned by src/testing/company-full-detail-report.json, which
- * both the backend (CompanyDetailsApiContractTests) and company.service.spec.ts test against.
+ * both the backend (CompanyDetailsApiContractTests) and company.service.spec.ts test against (plus
+ * company-full-detail-report-missing-data.json for the n/a path).
+ *
+ * A null number means the source data didn't have the figure; a check is 'NotAvailable' when one of its inputs is
+ * null. The score counts 'Pass' only.
  */
+export type CheckResult = 'Pass' | 'Fail' | 'NotAvailable';
+
 export interface CompanyDetails {
     // Identity
     exchange: string;
@@ -17,50 +23,50 @@ export interface CompanyDetails {
     // Inputs
     pricePerShare: number;
     curLongTermDebt: number;
-    curTotalShareholdersEquity: number;
-    curBookValue: number;
+    curTotalShareholdersEquity: number | null;
+    curBookValue: number | null;
     curNumShares: number;
-    averageNetCashFlow: number;
-    averageOwnerEarnings: number;
-    curDividendsPaid: number;
-    curAdjustedRetainedEarnings: number;
-    oldestRetainedEarnings: number;
+    averageNetCashFlow: number | null;
+    averageOwnerEarnings: number | null;
+    curDividendsPaid: number | null;
+    curAdjustedRetainedEarnings: number | null;
+    oldestRetainedEarnings: number | null;
     numAnnualProcessedCashFlowReports: number;
     mostRecentAnnualReportDate: string | null;
     mostRecentQuarterlyReportDate: string | null;
     lastUpdatedDate: string | null;
 
     // Computed by the backend
-    curMarketCap: number;
-    debtToEquityRatio: number;
-    curPriceToBookRatio: number;
-    longTermDebtToBookRatio: number;
-    didAdjustedRetainedEarningsIncrease: boolean;
-    returnOnEquity_FromCashFlow: number;
-    returnOnEquity_FromOwnerEarnings: number;
-    estimatedNextYearBookValue_FromCashFlow: number;
-    estimatedNextYearTotalReturnPercentage_FromCashFlow: number;
-    estimatedNextYearBookValue_FromOwnerEarnings: number;
-    estimatedNextYearTotalReturnPercentage_FromOwnerEarnings: number;
-    maxPrice: number;
-    percentageUpside: number;
+    curMarketCap: number | null;
+    debtToEquityRatio: number | null;
+    curPriceToBookRatio: number | null;
+    longTermDebtToBookRatio: number | null;
+    returnOnEquity_FromCashFlow: number | null;
+    returnOnEquity_FromOwnerEarnings: number | null;
+    estimatedNextYearBookValue_FromCashFlow: number | null;
+    estimatedNextYearTotalReturnPercentage_FromCashFlow: number | null;
+    estimatedNextYearBookValue_FromOwnerEarnings: number | null;
+    estimatedNextYearTotalReturnPercentage_FromOwnerEarnings: number | null;
+    maxPrice: number | null;
+    percentageUpside: number | null;
 
     // Checks, in the order the backend's OverallScore counts them
-    doesPassCheck_DebtToEquitySmallEnough: boolean;
-    doesPassCheck_BookValueBigEnough: boolean;
-    doesPassCheck_PriceToBookSmallEnough: boolean;
-    doesPassCheck_AvgCashFlow_Positive: boolean;
-    doesPassCheck_AvgOwnerEarningsPositive: boolean;
-    doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough: boolean;
-    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough: boolean;
-    doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig: boolean;
-    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig: boolean;
-    doesPassCheck_DebtToBookRatioSmallEnough: boolean;
-    doesPassCheck_RetainedEarningsPositive: boolean;
-    doesPassCheck_IsHistoryLongEnough: boolean;
-    // didAdjustedRetainedEarningsIncrease (above) is the 13th check
-    doesPassCheck_ROE_FromCashFlow_BigEnough: boolean;
-    doesPassCheck_ROE_FromOwnerEarnings_BigEnough: boolean;
+    doesPassCheck_DebtToEquitySmallEnough: CheckResult;
+    doesPassCheck_BookValueBigEnough: CheckResult;
+    doesPassCheck_PriceToBookSmallEnough: CheckResult;
+    doesPassCheck_AvgCashFlow_Positive: CheckResult;
+    doesPassCheck_AvgOwnerEarningsPositive: CheckResult;
+    doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough: CheckResult;
+    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough: CheckResult;
+    doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig: CheckResult;
+    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig: CheckResult;
+    doesPassCheck_DebtToBookRatioSmallEnough: CheckResult;
+    doesPassCheck_RetainedEarningsPositive: CheckResult;
+    doesPassCheck_IsHistoryLongEnough: CheckResult;
+    didAdjustedRetainedEarningsIncrease: CheckResult; // the 13th check
+    doesPassCheck_ROE_FromCashFlow_BigEnough: CheckResult;
+    doesPassCheck_ROE_FromOwnerEarnings_BigEnough: CheckResult;
     doesPassCheck_Overall: boolean;
     overallScore: number;
+    notAvailableCount: number;
 }

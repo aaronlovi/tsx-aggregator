@@ -65,19 +65,7 @@ export class AllCompaniesComponent implements OnInit, OnDestroy {
                     data.pagingData.pageNumber,
                     data.pagingData.pageSize
                 );
-                this.companies = data.companies.map((item: any) => new CompanySummary(
-                    item.exchange,
-                    item.instrumentSymbol,
-                    item.companyName,
-                    item.pricePerShare,
-                    item.curMarketCap,
-                    item.estimatedNextYearTotalReturnPercentage_FromCashFlow,
-                    item.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-                    item.overallScore,
-                    item.maxPrice,
-                    item.returnOnEquity_FromCashFlow,
-                    item.returnOnEquity_FromOwnerEarnings
-                ));
+                this.companies = data.companies.map((item: any) => new CompanySummary(item));
                 this.loading = false;
                 this.lastUpdated = new Date();
                 this.scheduleNextAutoRefresh();

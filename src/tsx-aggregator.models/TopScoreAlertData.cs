@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -10,12 +10,13 @@ public record TopScoreCompany(
     string InstrumentSymbol,
     string CompanyName,
     decimal PricePerShare,
-    decimal MaxPrice,
-    decimal PercentageUpside,
-    decimal CurMarketCap,
-    decimal EstReturnCashFlow,
-    decimal EstReturnOwnerEarnings,
-    int OverallScore) : IComparable<TopScoreCompany> {
+    decimal? MaxPrice,
+    decimal? PercentageUpside,
+    decimal? CurMarketCap,
+    decimal? EstReturnCashFlow,
+    decimal? EstReturnOwnerEarnings,
+    int OverallScore,
+    int NotAvailableCount = 0) : IComparable<TopScoreCompany> {
 
     public int CompareTo(TopScoreCompany? other) {
         if (other is null)
@@ -53,7 +54,8 @@ public static class TopScoreDiffComputer {
                 r.CurMarketCap,
                 r.EstimatedNextYearTotalReturnPercentage_FromCashFlow,
                 r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
-                r.OverallScore))
+                r.OverallScore,
+                r.NotAvailableCount))
             .OrderBy(c => c)
             .ToList();
     }
@@ -155,9 +157,15 @@ public static class TopScoreDiffComputer {
             int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
             if (scoreCompare != 0)
                 return scoreCompare;
-            decimal aAvg = (a.EstReturnCashFlow + a.EstReturnOwnerEarnings) / 2M;
-            decimal bAvg = (b.EstReturnCashFlow + b.EstReturnOwnerEarnings) / 2M;
-            return bAvg.CompareTo(aAvg);
+            // A null return sorts last.
+            decimal? aAvg = (a.EstReturnCashFlow + a.EstReturnOwnerEarnings) / 2M;
+            decimal? bAvg = (b.EstReturnCashFlow + b.EstReturnOwnerEarnings) / 2M;
+            return (aAvg, bAvg) switch {
+                (null, null) => 0,
+                (null, _) => 1,
+                (_, null) => -1,
+                ({ } x, { } y) => y.CompareTo(x),
+            };
         });
         return sorted;
     }
@@ -197,12 +205,12 @@ public static class TopScoreDiffComputer {
                   .AppendLine($"<td style=\"{tdCss}font-weight:bold;\">{Esc(c.InstrumentSymbol)}</td>")
                   .AppendLine($"<td style=\"{tdCss}\">{Esc(c.CompanyName)}</td>")
                   .AppendLine($"<td style=\"{tdRightCss}\">{FmtCurrency(c.PricePerShare)}</td>")
-                  .AppendLine($"<td style=\"{tdRightCss}\">{FmtCurrency(c.MaxPrice, naValue: -1)}</td>")
+                  .AppendLine($"<td style=\"{tdRightCss}\">{FmtCurrency(c.MaxPrice)}</td>")
                   .AppendLine($"<td style=\"{tdRightCss}\">{FmtPercent(c.PercentageUpside)}</td>")
                   .AppendLine($"<td style=\"{tdRightCss}\">{FmtMarketCap(c.CurMarketCap)}</td>")
                   .AppendLine($"<td style=\"{tdRightCss}\">{FmtPercent(c.EstReturnCashFlow)}</td>")
                   .AppendLine($"<td style=\"{tdRightCss}\">{FmtPercent(c.EstReturnOwnerEarnings)}</td>")
-                  .AppendLine($"<td style=\"{tdRightCss}\">{c.OverallScore}</td>")
+                  .AppendLine($"<td style=\"{tdRightCss}\">{FmtScore(c)}</td>")
                   .AppendLine("</tr>");
         }
 
@@ -213,21 +221,16 @@ public static class TopScoreDiffComputer {
         return value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
     }
 
-    private static string FmtCurrency(decimal value, decimal naValue = decimal.MinValue) {
-        if (value == naValue)
-            return "N/A";
-        return value.ToString("C2", CultureInfo.GetCultureInfo("en-CA"));
-    }
+    private static string FmtCurrency(decimal? value) =>
+        value?.ToString("C2", CultureInfo.GetCultureInfo("en-CA")) ?? "N/A";
 
-    private static string FmtPercent(decimal value) {
-        if (value == decimal.MinValue)
-            return "N/A";
-        return value.ToString("F2", CultureInfo.InvariantCulture) + "%";
-    }
+    private static string FmtPercent(decimal? value) =>
+        value is decimal v ? v.ToString("F2", CultureInfo.InvariantCulture) + "%" : "N/A";
 
-    private static string FmtMarketCap(decimal value) {
-        if (value == decimal.MinValue || value == 0)
-            return "N/A";
-        return value.ToString("C0", CultureInfo.GetCultureInfo("en-CA"));
-    }
+    private static string FmtMarketCap(decimal? value) =>
+        value?.ToString("C0", CultureInfo.GetCultureInfo("en-CA")) ?? "N/A";
+
+    /// <summary>"13" or, when some checks had missing data, "13 (1 n/a)" (decision 22).</summary>
+    internal static string FmtScore(TopScoreCompany c) =>
+        c.NotAvailableCount > 0 ? $"{c.OverallScore} ({c.NotAvailableCount} n/a)" : $"{c.OverallScore}";
 }

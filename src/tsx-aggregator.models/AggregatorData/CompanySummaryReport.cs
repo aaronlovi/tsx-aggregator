@@ -7,24 +7,18 @@ public record CompanySummaryReport(
     string InstrumentSymbol,
     string CompanyName,
     decimal PricePerShare,
-    decimal CurMarketCap,
-    decimal EstimatedNextYearTotalReturnPercentage_FromCashFlow,
-    decimal EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
+    decimal? CurMarketCap,
+    decimal? EstimatedNextYearTotalReturnPercentage_FromCashFlow,
+    decimal? EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
     int OverallScore,
-    decimal MaxPrice,
-    decimal ReturnOnEquity_FromCashFlow,
-    decimal ReturnOnEquity_FromOwnerEarnings,
+    int NotAvailableCount,
+    decimal? MaxPrice,
+    decimal? PercentageUpside,
+    decimal? ReturnOnEquity_FromCashFlow,
+    decimal? ReturnOnEquity_FromOwnerEarnings,
     DateTimeOffset? MostRecentAnnualReportDate = null,
     DateTimeOffset? MostRecentQuarterlyReportDate = null,
     DateTimeOffset? LastUpdatedDate = null) {
-
-    public decimal PercentageUpside {
-        get {
-            if (PricePerShare <= 0 || MaxPrice == -1)
-                return decimal.MinValue;
-            return (MaxPrice - PricePerShare) / PricePerShare * 100M;
-        }
-    }
 
     public static CompanySummaryReport FromDetailedReport(CompanyFullDetailReport fullDetailReport) {
         return new CompanySummaryReport(
@@ -36,7 +30,9 @@ public record CompanySummaryReport(
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromCashFlow,
             fullDetailReport.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings,
             fullDetailReport.OverallScore,
+            fullDetailReport.NotAvailableCount,
             fullDetailReport.MaxPrice,
+            fullDetailReport.PercentageUpside,
             fullDetailReport.ReturnOnEquity_FromCashFlow,
             fullDetailReport.ReturnOnEquity_FromOwnerEarnings,
             fullDetailReport.MostRecentAnnualReportDate,

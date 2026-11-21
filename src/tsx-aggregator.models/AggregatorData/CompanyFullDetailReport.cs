@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Text.Json.Serialization;
+using tsx_aggregator.Services;
 using tsx_aggregator.shared;
 
 namespace tsx_aggregator.models;
@@ -12,14 +15,14 @@ public class CompanyFullDetailReport {
         string instrumentName,
         decimal pricePerShare,
         decimal curLongTermDebt,
-        decimal curTotalShareholdersEquity,
-        decimal curBookValue,
+        decimal? curTotalShareholdersEquity,
+        decimal? curBookValue,
         long curNumShares,
-        decimal averageNetCashFlow,
-        decimal averageOwnerEarnings,
-        decimal curDividendsPaid,
-        decimal curAdjustedRetainedEarnings, // oldestRetainedEarnings + Dividends + Share buybacks
-        decimal oldestRetainedEarnings,
+        decimal? averageNetCashFlow,
+        decimal? averageOwnerEarnings,
+        decimal? curDividendsPaid,
+        decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
+        decimal? oldestRetainedEarnings,
         int numAnnualProcessedCashFlowReports,
         DateTimeOffset? mostRecentAnnualReportDate = null,
         DateTimeOffset? mostRecentQuarterlyReportDate = null,
@@ -46,6 +49,31 @@ public class CompanyFullDetailReport {
         LastUpdatedDate = lastUpdatedDate;
     }
 
+    /// <summary>
+    /// Builds the report from a gRPC reply item. The one mapping used by the REST API, the alert service and the
+    /// dashboard; unset optional fields become null.
+    /// </summary>
+    public static CompanyFullDetailReport FromReplyItem(GetStocksDataReplyItem item) => new(
+        exchange: item.Exchange,
+        companySymbol: item.CompanySymbol,
+        instrumentSymbol: item.InstrumentSymbol,
+        companyName: item.CompanyName,
+        instrumentName: item.InstrumentName,
+        pricePerShare: item.PerSharePrice,
+        curLongTermDebt: item.CurrentLongTermDebt,
+        curTotalShareholdersEquity: item.HasCurrentTotalShareholdersEquity ? item.CurrentTotalShareholdersEquity : null,
+        curBookValue: item.HasCurrentBookValue ? item.CurrentBookValue : null,
+        curNumShares: item.CurrentNumShares,
+        averageNetCashFlow: item.HasAverageNetCashFlow ? item.AverageNetCashFlow : null,
+        averageOwnerEarnings: item.HasAverageOwnerEarnings ? item.AverageOwnerEarnings : null,
+        curDividendsPaid: item.HasCurrentDividendsPaid ? item.CurrentDividendsPaid : null,
+        curAdjustedRetainedEarnings: item.HasCurrentAdjustedRetainedEarnings ? item.CurrentAdjustedRetainedEarnings : null,
+        oldestRetainedEarnings: item.HasOldestRetainedEarnings ? item.OldestRetainedEarnings : null,
+        numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
+        mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
+        mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
+        lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset());
+
     public string Exchange { get; init; }
     public string CompanySymbol { get; init; }
     public string InstrumentSymbol { get; init; }
@@ -53,143 +81,130 @@ public class CompanyFullDetailReport {
     public string InstrumentName { get; init; }
     public decimal PricePerShare { get; init; }
     public decimal CurLongTermDebt { get; init; }
-    public decimal CurTotalShareholdersEquity { get; init; }
-    public decimal CurBookValue { get; init; }
+    // Null means the source data didn't have the figure (W1).
+    public decimal? CurTotalShareholdersEquity { get; init; }
+    public decimal? CurBookValue { get; init; }
     public long CurNumShares { get; init; }
-    public decimal AverageNetCashFlow { get; init; }
-    public decimal AverageOwnerEarnings { get; init; }
-    public decimal CurDividendsPaid { get; init; }
-    public decimal CurAdjustedRetainedEarnings { get; init; }
-    public decimal OldestRetainedEarnings { get; init; }
+    public decimal? AverageNetCashFlow { get; init; }
+    public decimal? AverageOwnerEarnings { get; init; }
+    public decimal? CurDividendsPaid { get; init; }
+    public decimal? CurAdjustedRetainedEarnings { get; init; }
+    public decimal? OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
     public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
     public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
     public DateTimeOffset? LastUpdatedDate { get; init; }
 
-    // Calculated Properties
-    public decimal CurMarketCap => CurNumShares * PricePerShare;
-    public decimal DebtToEquityRatio => Utilities.DivSafe(CurLongTermDebt, CurTotalShareholdersEquity);
-    public decimal CurPriceToBookRatio => Utilities.DivSafe(CurMarketCap, CurBookValue);
-    public decimal LongTermDebtToBookRatio => Utilities.DivSafe(CurLongTermDebt, CurBookValue);
-    public bool DidAdjustedRetainedEarningsIncrease => CurAdjustedRetainedEarnings > OldestRetainedEarnings;
-    public decimal ReturnOnEquity_FromCashFlow => Utilities.DivSafe(AverageNetCashFlow, CurTotalShareholdersEquity);
-    public decimal ReturnOnEquity_FromOwnerEarnings => Utilities.DivSafe(AverageOwnerEarnings, CurTotalShareholdersEquity);
-    public decimal EstimatedNextYearBookValue_FromCashFlow {
+    // Calculated Properties. Null when an input is null, or a denominator is 0.
+
+    /// <summary>Null without a quote (price 0 or less) or share count (decision 20).</summary>
+    public decimal? CurMarketCap => PricePerShare > 0 && CurNumShares > 0 ? CurNumShares * PricePerShare : null;
+    public decimal? DebtToEquityRatio => Utilities.DivOrNull(CurLongTermDebt, CurTotalShareholdersEquity);
+    public decimal? CurPriceToBookRatio => Utilities.DivOrNull(CurMarketCap, CurBookValue);
+    public decimal? LongTermDebtToBookRatio => Utilities.DivOrNull(CurLongTermDebt, CurBookValue);
+    public decimal? ReturnOnEquity_FromCashFlow => Utilities.DivOrNull(AverageNetCashFlow, CurTotalShareholdersEquity);
+    public decimal? ReturnOnEquity_FromOwnerEarnings => Utilities.DivOrNull(AverageOwnerEarnings, CurTotalShareholdersEquity);
+    public decimal? EstimatedNextYearBookValue_FromCashFlow => CurBookValue + AverageNetCashFlow;
+    public decimal? EstimatedNextYearBookValue_FromOwnerEarnings => CurBookValue + AverageOwnerEarnings;
+    /// <summary>
+    /// Net cash flow is after dividends (a financing outflow) but before buybacks, so dividends are added back: cash
+    /// generated for shareholders, however it is returned (decision 2).
+    /// </summary>
+    public decimal? EstimatedNextYearTotalReturnPercentage_FromCashFlow =>
+        Utilities.DivOrNull(100M * (AverageNetCashFlow + CurDividendsPaid), CurMarketCap);
+    /// <summary>Owner earnings are pre-dividend, so all of it is the shareholders' return (decision 2).</summary>
+    public decimal? EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings =>
+        Utilities.DivOrNull(100M * AverageOwnerEarnings, CurMarketCap);
+
+    /// <summary>
+    /// The highest price at which price-to-book is at most 3 and each est. return is at least 5% (20x its numerator).
+    /// </summary>
+    public decimal? MaxPrice {
         get {
-            return CurBookValue == decimal.MinValue || AverageNetCashFlow == decimal.MinValue
-                ? decimal.MinValue
-                : CurBookValue + AverageNetCashFlow;
-        }
-    }
-    public decimal EstimatedNextYearTotalReturnPercentage_FromCashFlow {
-        get {
-            if (CurMarketCap == 0
-                || EstimatedNextYearBookValue_FromCashFlow == decimal.MinValue
-                || CurBookValue == decimal.MinValue) {
-                return decimal.MinValue;
+            if (CurNumShares <= 0 || CurBookValue is not decimal bookValue
+                || AverageNetCashFlow is not decimal netCashFlow || CurDividendsPaid is not decimal dividends
+                || AverageOwnerEarnings is not decimal ownerEarnings) {
+                return null;
             }
 
-            // Net cash flow is after dividends (a financing outflow) but before buybacks, so dividends are added
-            // back: cash generated for shareholders, however it is returned.
-            return 100M * (AverageNetCashFlow + CurDividendsPaid) / CurMarketCap;
-        }
-    }
-    public decimal EstimatedNextYearBookValue_FromOwnerEarnings {
-        get {
-            return CurBookValue == decimal.MinValue || AverageOwnerEarnings == decimal.MinValue
-                ? decimal.MinValue
-                : CurBookValue + AverageOwnerEarnings;
-        }
-    }
-    public decimal EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings {
-        get {
-            if (CurMarketCap == 0
-                || EstimatedNextYearBookValue_FromOwnerEarnings == decimal.MinValue
-                || CurBookValue == decimal.MinValue) {
-                return decimal.MinValue;
-            }
-
-            // Owner earnings are pre-dividend, so all of it is the shareholders' return.
-            return 100M * AverageOwnerEarnings / CurMarketCap;
-        }
-    }
-
-    public decimal MaxPrice {
-        get {
-            if (CurNumShares <= 0
-                || EstimatedNextYearBookValue_FromCashFlow == decimal.MinValue
-                || EstimatedNextYearBookValue_FromOwnerEarnings == decimal.MinValue
-                || CurBookValue == decimal.MinValue) {
-                return -1;
-            }
-
-            decimal maxPriceSoFar = 3M * CurBookValue;
-            // The price at which each est. return is exactly 5%: same numerators as the returns.
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (AverageNetCashFlow + CurDividendsPaid));
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * AverageOwnerEarnings);
-
+            decimal maxPriceSoFar = 3M * bookValue;
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (netCashFlow + dividends));
+            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * ownerEarnings);
             return maxPriceSoFar / CurNumShares;
         }
     }
 
-    public decimal PercentageUpside {
-        get {
-            if (PricePerShare <= 0 || MaxPrice == -1)
-                return decimal.MinValue;
-            return (MaxPrice - PricePerShare) / PricePerShare * 100M;
-        }
+    public decimal? PercentageUpside => PricePerShare > 0 && MaxPrice is decimal maxPrice
+        ? (maxPrice - PricePerShare) / PricePerShare * 100M
+        : null;
+
+    // Checks (W1): NotAvailable when an input is missing; otherwise Fail when the denominator is equity or book
+    // value and it is 0 or less (the B7 sign rule, decision 4); otherwise the threshold decides.
+
+    public CheckResult DoesPassCheck_DebtToEquitySmallEnough =>
+        CheckWithPositiveDenominator(CurTotalShareholdersEquity, DebtToEquityRatio, ratio => ratio < 0.5M);
+    public CheckResult DoesPassCheck_BookValueBigEnough => Check(CurBookValue, bookValue => bookValue > 150_000_000M);
+    public CheckResult DoesPassCheck_PriceToBookSmallEnough =>
+        CurMarketCap is null ? CheckResult.NotAvailable
+        : CheckWithPositiveDenominator(CurBookValue, CurPriceToBookRatio, ratio => ratio <= 3M);
+    public CheckResult DoesPassCheck_AvgCashFlow_Positive => Check(AverageNetCashFlow, value => value > 0);
+    public CheckResult DoesPassCheck_AvgOwnerEarningsPositive => Check(AverageOwnerEarnings, value => value > 0);
+    public CheckResult DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough =>
+        Check(EstimatedNextYearTotalReturnPercentage_FromCashFlow, value => value > 5M);
+    public CheckResult DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough =>
+        Check(EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings, value => value > 5M);
+    public CheckResult DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig =>
+        Check(EstimatedNextYearTotalReturnPercentage_FromCashFlow, value => value < 40M);
+    public CheckResult DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig =>
+        Check(EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings, value => value < 40M);
+    public CheckResult DoesPassCheck_DebtToBookRatioSmallEnough =>
+        CheckWithPositiveDenominator(CurBookValue, LongTermDebtToBookRatio, ratio => ratio < 1M);
+    public CheckResult DoesPassCheck_RetainedEarningsPositive => Check(CurAdjustedRetainedEarnings, value => value > 0);
+    public CheckResult DoesPassCheck_IsHistoryLongEnough =>
+        NumAnnualProcessedCashFlowReports >= 4 ? CheckResult.Pass : CheckResult.Fail;
+    /// <summary>The 13th check (its name predates the DoesPassCheck_ convention).</summary>
+    public CheckResult DidAdjustedRetainedEarningsIncrease =>
+        CurAdjustedRetainedEarnings is decimal current && OldestRetainedEarnings is decimal oldest
+            ? (current > oldest ? CheckResult.Pass : CheckResult.Fail)
+            : CheckResult.NotAvailable;
+    public CheckResult DoesPassCheck_ROE_FromCashFlow_BigEnough =>
+        CheckWithPositiveDenominator(CurTotalShareholdersEquity, ReturnOnEquity_FromCashFlow, roe => roe > 0.10M);
+    public CheckResult DoesPassCheck_ROE_FromOwnerEarnings_BigEnough =>
+        CheckWithPositiveDenominator(CurTotalShareholdersEquity, ReturnOnEquity_FromOwnerEarnings, roe => roe > 0.10M);
+
+    /// <summary>The 15 checks, in the order the score has always listed them. Not serialized: each has its own field.</summary>
+    [JsonIgnore]
+    public CheckResult[] AllChecks => [
+        DoesPassCheck_DebtToEquitySmallEnough,
+        DoesPassCheck_BookValueBigEnough,
+        DoesPassCheck_PriceToBookSmallEnough,
+        DoesPassCheck_AvgCashFlow_Positive,
+        DoesPassCheck_AvgOwnerEarningsPositive,
+        DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough,
+        DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough,
+        DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig,
+        DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig,
+        DoesPassCheck_DebtToBookRatioSmallEnough,
+        DoesPassCheck_RetainedEarningsPositive,
+        DoesPassCheck_IsHistoryLongEnough,
+        DidAdjustedRetainedEarningsIncrease,
+        DoesPassCheck_ROE_FromCashFlow_BigEnough,
+        DoesPassCheck_ROE_FromOwnerEarnings_BigEnough,
+    ];
+
+    public bool DoesPassCheck_Overall => AllChecks.All(check => check == CheckResult.Pass);
+    /// <summary>Counts Pass only: NotAvailable earns nothing, like Fail, so the 13 cutoff keeps its meaning.</summary>
+    public int OverallScore => AllChecks.Count(check => check == CheckResult.Pass);
+    public int NotAvailableCount => AllChecks.Count(check => check == CheckResult.NotAvailable);
+
+    private static CheckResult Check(decimal? value, Func<decimal, bool> passes) =>
+        value is decimal v ? (passes(v) ? CheckResult.Pass : CheckResult.Fail) : CheckResult.NotAvailable;
+
+    private static CheckResult CheckWithPositiveDenominator(decimal? denominator, decimal? ratio, Func<decimal, bool> passes) {
+        if (denominator is null)
+            return CheckResult.NotAvailable;
+        if (denominator <= 0)
+            return CheckResult.Fail;
+        return Check(ratio, passes);
     }
-
-    // Scores
-    // Sign rule (decision 4): a check whose denominator is equity or book value fails when that denominator is
-    // 0 or less. A negative denominator flips the ratio's meaning; the ratios themselves are left as they are.
-    private bool HasPositiveEquity => CurTotalShareholdersEquity > 0;
-    private bool HasPositiveBookValue => CurBookValue > 0;
-
-    public bool DoesPassCheck_DebtToEquitySmallEnough => HasPositiveEquity && DebtToEquityRatio < 0.5M;
-    public bool DoesPassCheck_BookValueBigEnough => CurBookValue > 150_000_000M;
-    public bool DoesPassCheck_PriceToBookSmallEnough => HasPositiveBookValue && CurPriceToBookRatio <= 3M;
-    public bool DoesPassCheck_AvgCashFlow_Positive => AverageNetCashFlow > 0;
-    public bool DoesPassCheck_AvgOwnerEarningsPositive => AverageOwnerEarnings > 0;
-    public bool DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough => EstimatedNextYearTotalReturnPercentage_FromCashFlow > 5M;
-    public bool DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough => EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings > 5M;
-    public bool DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromCashFlow < 40M;
-    public bool DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings < 40M;
-    public bool DoesPassCheck_DebtToBookRatioSmallEnough => HasPositiveBookValue && LongTermDebtToBookRatio < 1M;
-    public bool DoesPassCheck_RetainedEarningsPositive => CurAdjustedRetainedEarnings > 0;
-    public bool DoesPassCheck_IsHistoryLongEnough => NumAnnualProcessedCashFlowReports >= 4;
-    public bool DoesPassCheck_ROE_FromCashFlow_BigEnough => HasPositiveEquity && ReturnOnEquity_FromCashFlow > 0.10M;
-    public bool DoesPassCheck_ROE_FromOwnerEarnings_BigEnough => HasPositiveEquity && ReturnOnEquity_FromOwnerEarnings > 0.10M;
-    public bool DoesPassCheck_Overall =>
-        DoesPassCheck_DebtToEquitySmallEnough
-        && DoesPassCheck_BookValueBigEnough
-        && DoesPassCheck_PriceToBookSmallEnough
-        && DoesPassCheck_AvgCashFlow_Positive
-        && DoesPassCheck_AvgOwnerEarningsPositive
-        && DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough
-        && DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough
-        && DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig
-        && DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig
-        && DoesPassCheck_DebtToBookRatioSmallEnough
-        && DoesPassCheck_RetainedEarningsPositive
-        && DoesPassCheck_IsHistoryLongEnough
-        && DidAdjustedRetainedEarningsIncrease
-        && DoesPassCheck_ROE_FromCashFlow_BigEnough
-        && DoesPassCheck_ROE_FromOwnerEarnings_BigEnough;
-    public int OverallScore =>
-        (DoesPassCheck_DebtToEquitySmallEnough ? 1 : 0)
-        + (DoesPassCheck_BookValueBigEnough ? 1 : 0)
-        + (DoesPassCheck_PriceToBookSmallEnough ? 1 : 0)
-        + (DoesPassCheck_AvgCashFlow_Positive ? 1 : 0)
-        + (DoesPassCheck_AvgOwnerEarningsPositive ? 1 : 0)
-        + (DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough ? 1 : 0)
-        + (DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough ? 1 : 0)
-        + (DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig ? 1 : 0)
-        + (DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig ? 1 : 0)
-        + (DoesPassCheck_DebtToBookRatioSmallEnough ? 1 : 0)
-        + (DoesPassCheck_RetainedEarningsPositive ? 1 : 0)
-        + (DoesPassCheck_IsHistoryLongEnough ? 1 : 0)
-        + (DidAdjustedRetainedEarningsIncrease ? 1 : 0)
-        + (DoesPassCheck_ROE_FromCashFlow_BigEnough ? 1 : 0)
-        + (DoesPassCheck_ROE_FromOwnerEarnings_BigEnough ? 1 : 0);
 }

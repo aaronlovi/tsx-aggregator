@@ -32,26 +32,7 @@ public class CompaniesController : Controller {
 
         var fullDetailReports = new List<CompanyFullDetailReport>();
         foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(new CompanyFullDetailReport(
-                exchange: item.Exchange,
-                companySymbol: item.CompanySymbol,
-                instrumentSymbol: item.InstrumentSymbol,
-                companyName: item.CompanyName,
-                instrumentName: item.InstrumentName,
-                pricePerShare: item.PerSharePrice,
-                curLongTermDebt: item.CurrentLongTermDebt,
-                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
-                curBookValue: item.CurrentBookValue,
-                curNumShares: item.CurrentNumShares,
-                averageNetCashFlow: item.AverageNetCashFlow,
-                averageOwnerEarnings: item.AverageOwnerEarnings,
-                curDividendsPaid: item.CurrentDividendsPaid,
-                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
-                oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
-                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
-                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
-                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
+            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
         }
 
         // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
@@ -60,9 +41,7 @@ public class CompaniesController : Controller {
             if (scoreCompare != 0)
                 return scoreCompare;
 
-            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            return bAvgReturn.CompareTo(aAvgReturn);
+            return CompareAverageReturn(a, b, descending: true);
         });
 
         // Keep only score >= 13 companies, and transform to summary reports
@@ -84,26 +63,7 @@ public class CompaniesController : Controller {
 
         var fullDetailReports = new List<CompanyFullDetailReport>();
         foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(new CompanyFullDetailReport(
-                exchange: item.Exchange,
-                companySymbol: item.CompanySymbol,
-                instrumentSymbol: item.InstrumentSymbol,
-                companyName: item.CompanyName,
-                instrumentName: item.InstrumentName,
-                pricePerShare: item.PerSharePrice,
-                curLongTermDebt: item.CurrentLongTermDebt,
-                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
-                curBookValue: item.CurrentBookValue,
-                curNumShares: item.CurrentNumShares,
-                averageNetCashFlow: item.AverageNetCashFlow,
-                averageOwnerEarnings: item.AverageOwnerEarnings,
-                curDividendsPaid: item.CurrentDividendsPaid,
-                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
-                oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
-                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
-                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
-                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
+            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
         }
 
         // Sort the output list first by overall score ascending, then by the average of total return ascending
@@ -112,9 +72,7 @@ public class CompaniesController : Controller {
             if (scoreCompare != 0)
                 return scoreCompare;
 
-            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            return aAvgReturn.CompareTo(bAvgReturn);
+            return CompareAverageReturn(a, b, descending: false);
         });
 
         // Keep only the bottom 'GetCompaniesMaxNumCompanies' companies, and transform to summary reports
@@ -137,26 +95,7 @@ public class CompaniesController : Controller {
 
         var fullDetailReports = new List<CompanyFullDetailReport>();
         foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(new CompanyFullDetailReport(
-                exchange: item.Exchange,
-                companySymbol: item.CompanySymbol,
-                instrumentSymbol: item.InstrumentSymbol,
-                companyName: item.CompanyName,
-                instrumentName: item.InstrumentName,
-                pricePerShare: item.PerSharePrice,
-                curLongTermDebt: item.CurrentLongTermDebt,
-                curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
-                curBookValue: item.CurrentBookValue,
-                curNumShares: item.CurrentNumShares,
-                averageNetCashFlow: item.AverageNetCashFlow,
-                averageOwnerEarnings: item.AverageOwnerEarnings,
-                curDividendsPaid: item.CurrentDividendsPaid,
-                curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
-                oldestRetainedEarnings: item.OldestRetainedEarnings,
-                numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
-                mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
-                mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
-                lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset()));
+            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
         }
 
         // Sort descending by overall score, then by average return
@@ -165,9 +104,7 @@ public class CompaniesController : Controller {
             if (scoreCompare != 0)
                 return scoreCompare;
 
-            decimal aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            decimal bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
-            return bAvgReturn.CompareTo(aAvgReturn);
+            return CompareAverageReturn(a, b, descending: true);
         });
 
         var pagingData = new PagingData(fullDetailReports.Count, pageNumber, pageSize);
@@ -189,26 +126,7 @@ public class CompaniesController : Controller {
         if (!reply.Success || reply.StockDetail is null)
             return NotFound(new { error = $"No data available for {instrumentSymbol} on {exchange}" });
 
-        var fullDetailReport = new CompanyFullDetailReport(
-            exchange: reply.StockDetail.Exchange,
-            companySymbol: reply.StockDetail.CompanySymbol,
-            instrumentSymbol: reply.StockDetail.InstrumentSymbol,
-            companyName: reply.StockDetail.CompanyName,
-            instrumentName: reply.StockDetail.InstrumentName,
-            pricePerShare: reply.StockDetail.PerSharePrice,
-            curLongTermDebt: reply.StockDetail.CurrentLongTermDebt,
-            curTotalShareholdersEquity: reply.StockDetail.CurrentTotalShareholdersEquity,
-            curBookValue: reply.StockDetail.CurrentBookValue,
-            curNumShares: reply.StockDetail.CurrentNumShares,
-            averageNetCashFlow: reply.StockDetail.AverageNetCashFlow,
-            averageOwnerEarnings: reply.StockDetail.AverageOwnerEarnings,
-            curDividendsPaid: reply.StockDetail.CurrentDividendsPaid,
-            curAdjustedRetainedEarnings: reply.StockDetail.CurrentAdjustedRetainedEarnings,
-            oldestRetainedEarnings: reply.StockDetail.OldestRetainedEarnings,
-            numAnnualProcessedCashFlowReports: reply.StockDetail.NumAnnualProcessedCashFlowReports,
-            mostRecentAnnualReportDate: reply.StockDetail.MostRecentAnnualReportDate?.ToDateTimeOffset(),
-            mostRecentQuarterlyReportDate: reply.StockDetail.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
-            lastUpdatedDate: reply.StockDetail.LastUpdatedDate?.ToDateTimeOffset());
+        var fullDetailReport = CompanyFullDetailReport.FromReplyItem(reply.StockDetail);
 
         return Ok(fullDetailReport);
     }
@@ -347,23 +265,7 @@ public class CompaniesController : Controller {
 
             var reports = new List<CompanyFullDetailReport>();
             foreach (GetStocksDataReplyItem item in reply.StocksData) {
-                reports.Add(new CompanyFullDetailReport(
-                    exchange: item.Exchange,
-                    companySymbol: item.CompanySymbol,
-                    instrumentSymbol: item.InstrumentSymbol,
-                    companyName: item.CompanyName,
-                    instrumentName: item.InstrumentName,
-                    pricePerShare: item.PerSharePrice,
-                    curLongTermDebt: item.CurrentLongTermDebt,
-                    curTotalShareholdersEquity: item.CurrentTotalShareholdersEquity,
-                    curBookValue: item.CurrentBookValue,
-                    curNumShares: item.CurrentNumShares,
-                    averageNetCashFlow: item.AverageNetCashFlow,
-                    averageOwnerEarnings: item.AverageOwnerEarnings,
-                    curDividendsPaid: item.CurrentDividendsPaid,
-                    curAdjustedRetainedEarnings: item.CurrentAdjustedRetainedEarnings,
-                    oldestRetainedEarnings: item.OldestRetainedEarnings,
-                    numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports));
+                reports.Add(CompanyFullDetailReport.FromReplyItem(item));
             }
 
             int totalCompanies = reports.Count;
@@ -378,11 +280,12 @@ public class CompaniesController : Controller {
             decimal medianReturnOwnerEarnings = 0M;
             decimal totalMarketCap = 0M;
             if (withPrice.Count > 0) {
-                avgReturnCashFlow = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow), 2);
-                avgReturnOwnerEarnings = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings), 2);
+                // Averages and medians skip null returns (decision 22); Average over decimal? already does.
+                avgReturnCashFlow = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow) ?? 0M, 2);
+                avgReturnOwnerEarnings = Math.Round(withPrice.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) ?? 0M, 2);
                 medianReturnCashFlow = Math.Round(Median(withPrice.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow)), 2);
                 medianReturnOwnerEarnings = Math.Round(Median(withPrice.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings)), 2);
-                totalMarketCap = withPrice.Sum(r => r.CurMarketCap);
+                totalMarketCap = withPrice.Sum(r => r.CurMarketCap) ?? 0M;
             }
 
             var scoreDistribution = reports
@@ -397,12 +300,12 @@ public class CompaniesController : Controller {
                 .Select(g => new ScoreCategoryStats(
                     Score: g.Key,
                     Count: g.Count(),
-                    SumMarketCap: Math.Round(g.Sum(r => r.CurMarketCap), 2),
-                    MeanMarketCap: Math.Round(g.Average(r => r.CurMarketCap), 2),
+                    SumMarketCap: Math.Round(g.Sum(r => r.CurMarketCap) ?? 0M, 2),
+                    MeanMarketCap: Math.Round(g.Average(r => r.CurMarketCap) ?? 0M, 2),
                     MedianMarketCap: Math.Round(Median(g.Select(r => r.CurMarketCap)), 2),
-                    MeanReturnFromCashFlow: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow), 2),
+                    MeanReturnFromCashFlow: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow) ?? 0M, 2),
                     MedianReturnFromCashFlow: Math.Round(Median(g.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromCashFlow)), 2),
-                    MeanReturnFromOwnerEarnings: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings), 2),
+                    MeanReturnFromOwnerEarnings: Math.Round(g.Average(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) ?? 0M, 2),
                     MedianReturnFromOwnerEarnings: Math.Round(Median(g.Select(r => r.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings)), 2)))
                 .OrderByDescending(s => s.Score)
                 .ToList();
@@ -426,8 +329,24 @@ public class CompaniesController : Controller {
         }
     }
 
-    private static decimal Median(IEnumerable<decimal> source) {
-        var sorted = source.OrderBy(x => x).ToList();
+    /// <summary>
+    /// Orders by the average of the two est. returns. A company with either return null sorts last in both
+    /// directions (decision 22).
+    /// </summary>
+    private static int CompareAverageReturn(CompanyFullDetailReport a, CompanyFullDetailReport b, bool descending) {
+        decimal? aAvgReturn = (a.EstimatedNextYearTotalReturnPercentage_FromCashFlow + a.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+        decimal? bAvgReturn = (b.EstimatedNextYearTotalReturnPercentage_FromCashFlow + b.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings) / 2M;
+        return (aAvgReturn, bAvgReturn) switch {
+            (null, null) => 0,
+            (null, _) => 1,
+            (_, null) => -1,
+            ({ } x, { } y) => descending ? y.CompareTo(x) : x.CompareTo(y),
+        };
+    }
+
+    /// <summary>Median of the non-null values; 0 when there are none.</summary>
+    private static decimal Median(IEnumerable<decimal?> source) {
+        var sorted = source.OfType<decimal>().OrderBy(x => x).ToList();
         int count = sorted.Count;
         if (count == 0) return 0M;
         if (count % 2 == 1) return sorted[count / 2];

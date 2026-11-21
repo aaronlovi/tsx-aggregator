@@ -40,8 +40,7 @@
               Max Buy Price
             </span>
           </th>
-          <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.maxPrice |
-          currency:'USD':'symbol':'1.2-2' }}</td>
+          <td class="mat-cell data-table__data data-table__data--numeric">{{ (companyDetails.maxPrice | currency:'USD':'symbol':'1.2-2') ?? 'n/a' }}</td>
         </tr>
         <tr class="mat-row data-table__row">
           <th class="mat-header-cell data-table__header">Company Symbol</th>
@@ -49,11 +48,10 @@
           <th class="mat-header-cell data-table__header">Instrument Symbol</th>
           <td class="mat-cell data-table__data">{{ companyDetails.instrumentSymbol }}</td>
           <th class="mat-header-cell data-table__header">Price Per Share</th>
-          <td class="mat-cell data-table__data data-table__data--numeric">{{ companyDetails.pricePerShare |
-          currency:'USD':'symbol':'1.2-2' }}</td>
+          <td class="mat-cell data-table__data data-table__data--numeric">{{ (companyDetails.pricePerShare | currency:'USD':'symbol':'1.2-2') ?? 'n/a' }}</td>
           <th class="mat-header-cell data-table__header">% Upside</th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.percentageUpside / 100.0 | percent:'1.2-2' }}
+            {{ companyDetails.percentageUpside === null ? 'n/a' : (companyDetails.percentageUpside / 100.0 | percent:'1.2-2') }}
           </td>
         </tr>
         <!-- Data Freshness -->
@@ -98,9 +96,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_DebtToEquitySmallEnough}">
-            {{ companyDetails.doesPassCheck_DebtToEquitySmallEnough ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_DebtToEquitySmallEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_DebtToEquitySmallEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Long-Term Debt To Book Ratio &lt; 1.0?">
@@ -108,9 +105,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_DebtToBookRatioSmallEnough}">
-            {{ companyDetails.doesPassCheck_DebtToBookRatioSmallEnough ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_DebtToBookRatioSmallEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_DebtToBookRatioSmallEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Book Value &gt; $150 million?">
@@ -118,9 +114,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_BookValueBigEnough}">
-            {{ companyDetails.doesPassCheck_BookValueBigEnough ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_BookValueBigEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_BookValueBigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Price-to-Book &lt;&equals; 3.0">
@@ -128,9 +123,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_PriceToBookSmallEnough}">
-            {{ companyDetails.doesPassCheck_PriceToBookSmallEnough ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_PriceToBookSmallEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_PriceToBookSmallEnough) }}
           </td>
         </tr>
         <tr class="mat-row data-table__row--alternating">
@@ -141,8 +135,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough}">
-            {{ companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -151,9 +145,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough}">
-            {{ companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough ?
-            'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -162,8 +155,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig}">
-            {{ companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig ? 'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig)">
+            {{ checkLabel(companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -172,9 +165,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
-            {{ companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig ?
-            'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig)">
+            {{ checkLabel(companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig) }}
           </td>
         </tr>
         <tr class="mat-row data-table__row--alternating">
@@ -184,9 +176,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_AvgCashFlow_Positive}">
-            {{ companyDetails.doesPassCheck_AvgCashFlow_Positive ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_AvgCashFlow_Positive)">
+            {{ checkLabel(companyDetails.doesPassCheck_AvgCashFlow_Positive) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Are the average owner earnings over the past 5 years positive?">
@@ -194,9 +185,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_AvgOwnerEarningsPositive}">
-            {{ companyDetails.doesPassCheck_AvgOwnerEarningsPositive ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_AvgOwnerEarningsPositive)">
+            {{ checkLabel(companyDetails.doesPassCheck_AvgOwnerEarningsPositive) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Are the lifetime retained earnings positive?">
@@ -204,9 +194,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_RetainedEarningsPositive}">
-            {{ companyDetails.doesPassCheck_RetainedEarningsPositive ? 'Yes'
-            : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_RetainedEarningsPositive)">
+            {{ checkLabel(companyDetails.doesPassCheck_RetainedEarningsPositive) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Have the retained earnings increased from 5 years ago up until the most recent annual or quarterly report?">
@@ -214,9 +203,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.didAdjustedRetainedEarningsIncrease}">
-            {{ companyDetails.didAdjustedRetainedEarningsIncrease ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.didAdjustedRetainedEarningsIncrease)">
+            {{ checkLabel(companyDetails.didAdjustedRetainedEarningsIncrease) }}
           </td>
         </tr>
         <tr class="mat-row data-table__row--alternating">
@@ -226,9 +214,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_IsHistoryLongEnough}">
-            {{ companyDetails.doesPassCheck_IsHistoryLongEnough ? 'Yes' :
-            'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_IsHistoryLongEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_IsHistoryLongEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Return on Equity from Cash Flow (Avg. Net Cash Flow / Total Shareholders Equity) &gt; 10%?">
@@ -236,8 +223,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough}">
-            {{ companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Return on Equity from Owner Earnings (Avg. Owner Earnings / Total Shareholders Equity) &gt; 10%?">
@@ -245,14 +232,17 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough}">
-            {{ companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="checkClass(companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough)">
+            {{ checkLabel(companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
             Overall Score
           </th>
           <td class="mat-cell data-table__data data-table__data--score">
             <strong>{{ companyDetails.overallScore }} / 15</strong>
+            @if (companyDetails.notAvailableCount > 0) {
+              <span class="na-count" matTooltip="Checks with missing source data earn no point.">({{ companyDetails.notAvailableCount }} n/a)</span>
+            }
           </td>
         </tr>
         <!-- Financials -->
@@ -266,7 +256,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curMarketCap | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curMarketCap | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Liabilities that are due in more than one year including loans, bonds, and other forms of debt with a maturity date beyond the next twelve months.">
@@ -274,7 +264,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curLongTermDebt | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curLongTermDebt | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Total value of assets minus liabilities.">
@@ -282,7 +272,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curTotalShareholdersEquity | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curTotalShareholdersEquity | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Dividends paid in the last 12 months">
@@ -290,7 +280,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curDividendsPaid | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curDividendsPaid | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
         </tr>
         <tr class="mat-row data-table__row">
@@ -300,7 +290,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.averageNetCashFlow | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.averageNetCashFlow | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Average amount of cash generated by a company's operations annually that is available for distribution to owners or reinvestment in the business over the past 5 years.">
@@ -308,7 +298,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.averageOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.averageOwnerEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Lifetime accumulated profits that have not been distributed to shareholders as dividends and are reinvested in the business.">
@@ -316,7 +306,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curAdjustedRetainedEarnings | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curAdjustedRetainedEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Accumulated profits that have not been distributed to shareholders as dividends and are reinvested in the business taken from the cash flow report 5 years ago. Used for comparison with 'Current Retained Earnings'.">
@@ -324,7 +314,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.oldestRetainedEarnings | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.oldestRetainedEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
         </tr>
         <tr class="mat-row data-table__row">
@@ -334,7 +324,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.debtToEquityRatio | number:'1.2-2' }}
+            {{ (companyDetails.debtToEquityRatio | number:'1.2-2') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Compares a company's current stock price to its book value per share. It is calculated by dividing the current market price per share by the book value per share.">
@@ -342,7 +332,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curPriceToBookRatio | number:'1.2-2' }}
+            {{ (companyDetails.curPriceToBookRatio | number:'1.2-2') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="The proportion of a company's long-term debt relative to its book value. It is calculated by dividing long-term debt by book value.">
@@ -350,7 +340,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.longTermDebtToBookRatio | number:'1.2-2' }}
+            {{ (companyDetails.longTermDebtToBookRatio | number:'1.2-2') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Average Net Cash Flow divided by Total Shareholders Equity. Measures how effectively the company generates cash flow relative to equity.">
@@ -358,7 +348,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.returnOnEquity_FromCashFlow | percent:'1.2-2' }}
+            {{ (companyDetails.returnOnEquity_FromCashFlow | percent:'1.2-2') ?? 'n/a' }}
           </td>
         </tr>
         <tr class="mat-row data-table__row">
@@ -368,7 +358,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.curBookValue | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.curBookValue | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -377,7 +367,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearBookValue_FromCashFlow | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.estimatedNextYearBookValue_FromCashFlow | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -386,7 +376,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearBookValue_FromOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
+            {{ (companyDetails.estimatedNextYearBookValue_FromOwnerEarnings | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Average Owner Earnings divided by Total Shareholders Equity. Measures how effectively the company generates owner earnings relative to equity.">
@@ -394,7 +384,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.returnOnEquity_FromOwnerEarnings | percent:'1.2-2' }}
+            {{ (companyDetails.returnOnEquity_FromOwnerEarnings | percent:'1.2-2') ?? 'n/a' }}
           </td>
         </tr>
         <tr class="mat-row data-table__row">
@@ -405,7 +395,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromCashFlow / 100.0 | percent:'1.2-2' }}
+            {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromCashFlow === null ? 'n/a' : (companyDetails.estimatedNextYearTotalReturnPercentage_FromCashFlow / 100.0 | percent:'1.2-2') }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -414,8 +404,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings / 100.0 | percent:'1.2-2'
-            }}
+            {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings === null ? 'n/a' : (companyDetails.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings / 100.0 | percent:'1.2-2') }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="The number of annual reports used to create this report. Never more than 5 (we never look back more than 5 years).">

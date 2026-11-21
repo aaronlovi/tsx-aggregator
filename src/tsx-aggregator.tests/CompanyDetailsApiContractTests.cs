@@ -15,7 +15,9 @@ namespace tsx_aggregator.tests;
 /// breaks the other fails a test. Set TSX_UPDATE_FIXTURES=1 to regenerate the fixture after a deliberate change.
 /// </summary>
 public class CompanyDetailsApiContractTests {
-    private const string FixtureRelativePath = "deep-value/src/testing/company-full-detail-report.json";
+    private const string FixtureDirectory = "deep-value/src/testing";
+    private const string FixtureFileName = "company-full-detail-report.json";
+    private const string MissingDataFixtureFileName = "company-full-detail-report-missing-data.json";
 
     // ASP.NET Core controllers serialize with JsonSerializerDefaults.Web (camelCase names).
     private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
@@ -50,15 +52,57 @@ public class CompanyDetailsApiContractTests {
         CompanyFullDetailReport report = SampleReport();
 
         _ = report.OverallScore.Should().Be(12);
-        _ = report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough.Should().BeFalse();
-        _ = report.DoesPassCheck_ROE_FromCashFlow_BigEnough.Should().BeFalse();
-        _ = report.DoesPassCheck_ROE_FromOwnerEarnings_BigEnough.Should().BeFalse();
+        _ = report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough.Should().Be(CheckResult.Fail);
+        _ = report.DoesPassCheck_ROE_FromCashFlow_BigEnough.Should().Be(CheckResult.Fail);
+        _ = report.DoesPassCheck_ROE_FromOwnerEarnings_BigEnough.Should().Be(CheckResult.Fail);
+    }
+
+    /// <summary>
+    /// The sample company with no equity (so no book value) and no oldest retained earnings in the source data:
+    /// checks 1, 2, 3, 10, 13, 14 and 15 are NotAvailable, and max price and upside are null (W1).
+    /// </summary>
+    internal static CompanyFullDetailReport MissingDataSampleReport() {
+        CompanyFullDetailReport sample = SampleReport();
+        return new CompanyFullDetailReport(
+            exchange: sample.Exchange,
+            companySymbol: sample.CompanySymbol,
+            instrumentSymbol: sample.InstrumentSymbol,
+            companyName: sample.CompanyName,
+            instrumentName: sample.InstrumentName,
+            pricePerShare: sample.PricePerShare,
+            curLongTermDebt: sample.CurLongTermDebt,
+            curTotalShareholdersEquity: null,
+            curBookValue: null,
+            curNumShares: sample.CurNumShares,
+            averageNetCashFlow: sample.AverageNetCashFlow,
+            averageOwnerEarnings: sample.AverageOwnerEarnings,
+            curDividendsPaid: sample.CurDividendsPaid,
+            curAdjustedRetainedEarnings: sample.CurAdjustedRetainedEarnings,
+            oldestRetainedEarnings: null,
+            numAnnualProcessedCashFlowReports: sample.NumAnnualProcessedCashFlowReports,
+            mostRecentAnnualReportDate: sample.MostRecentAnnualReportDate,
+            mostRecentQuarterlyReportDate: sample.MostRecentQuarterlyReportDate,
+            lastUpdatedDate: sample.LastUpdatedDate);
     }
 
     [Fact]
-    public void DetailsJson_MatchesSharedFixture() {
-        string actualJson = JsonSerializer.Serialize(SampleReport(), WebJsonOptions);
-        string fixturePath = Path.Combine(FindRepoRoot(), FixtureRelativePath);
+    public void MissingDataSampleReport_HasNotAvailableChecks() {
+        CompanyFullDetailReport report = MissingDataSampleReport();
+
+        _ = report.NotAvailableCount.Should().Be(7);
+        _ = report.OverallScore.Should().Be(7);
+        _ = report.MaxPrice.Should().BeNull();
+    }
+
+    [Fact]
+    public void DetailsJson_MatchesSharedFixture() => AssertMatchesFixture(SampleReport(), FixtureFileName);
+
+    [Fact]
+    public void MissingDataDetailsJson_MatchesSharedFixture() => AssertMatchesFixture(MissingDataSampleReport(), MissingDataFixtureFileName);
+
+    private static void AssertMatchesFixture(CompanyFullDetailReport report, string fixtureFileName) {
+        string actualJson = JsonSerializer.Serialize(report, WebJsonOptions);
+        string fixturePath = Path.Combine(FindRepoRoot(), FixtureDirectory, fixtureFileName);
 
         if (Environment.GetEnvironmentVariable("TSX_UPDATE_FIXTURES") == "1") {
             File.WriteAllText(fixturePath, actualJson + "\n");

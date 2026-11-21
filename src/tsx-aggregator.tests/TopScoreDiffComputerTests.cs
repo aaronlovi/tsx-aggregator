@@ -390,6 +390,18 @@ public class TopScoreDiffComputerTests {
     }
 
     [Fact]
+    public void FormatAlertBodyHtml_ShowsNotAvailableCountAndMissingValues() {
+        // W1: a score earned with missing data says so; missing figures show as N/A.
+        var company = new TopScoreCompany("ABC.TO", "ABC Corp", 50M, null, null, 500_000_000M, 7M, null, 13, NotAvailableCount: 2);
+        var diff = new TopScoreDiff(PreviousList: [], NewList: [company], Added: [company], Removed: []);
+
+        var html = TopScoreDiffComputer.FormatAlertBodyHtml(diff);
+
+        _ = html.Should().Contain(">13 (2 n/a)<");
+        _ = html.Should().Contain(">N/A<");
+    }
+
+    [Fact]
     public void FormatAlertBodyHtml_FormatsFinancialData() {
         var company = new TopScoreCompany("ABC.TO", "ABC Corp", 50M, 60M, 20M, 500_000_000M, 7M, 6M, 15);
         var diff = new TopScoreDiff(

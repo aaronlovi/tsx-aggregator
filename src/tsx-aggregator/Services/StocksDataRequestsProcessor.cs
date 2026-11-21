@@ -163,25 +163,17 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
     }
 
     private static GetStocksDataReplyItem BuildReplyItem(string exchange, ProcessedFullInstrumentReportDto dto, ProcessedReportFields fields) {
-        return new GetStocksDataReplyItem() {
+        var item = new GetStocksDataReplyItem() {
             Exchange = exchange,
             CompanySymbol = dto.CompanySymbol,
             InstrumentSymbol = dto.InstrumentSymbol,
             CompanyName = dto.CompanyName,
             InstrumentName = dto.InstrumentName,
             CreatedDate = Timestamp.FromDateTimeOffset(dto.ReportCreatedDate),
-            // W1a: the proto fields aren't optional yet, so a missing figure is sent as 0, as before.
             CurrentNumShares = fields.CurNumShares,
-            CurrentTotalShareholdersEquity = fields.CurTotalShareholdersEquity ?? 0,
             CurrentGoodwill = fields.CurGoodwill,
             CurrentIntangibles = fields.CurIntangibles,
             CurrentLongTermDebt = fields.CurLongTermDebt,
-            CurrentDividendsPaid = fields.CurDividendsPaid ?? 0,
-            CurrentAdjustedRetainedEarnings = fields.CurAdjustedRetainedEarnings ?? 0,
-            OldestRetainedEarnings = fields.OldestRetainedEarnings ?? 0,
-            CurrentBookValue = fields.CurBookValue ?? 0,
-            AverageNetCashFlow = fields.AverageNetCashFlow ?? 0,
-            AverageOwnerEarnings = fields.AverageOwnerEarnings ?? 0,
             PerSharePrice = 0M, // To be filled out later by the quotes service
             NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
             MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
@@ -191,6 +183,23 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             LastUpdatedDate = dto.LastUpdatedDate.HasValue
                 ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
         };
+
+        // Optional fields stay unset when the source data didn't have the figure (W1).
+        if (fields.CurTotalShareholdersEquity is long equity)
+            item.CurrentTotalShareholdersEquity = equity;
+        if (fields.CurDividendsPaid is long dividends)
+            item.CurrentDividendsPaid = dividends;
+        if (fields.CurAdjustedRetainedEarnings is long adjustedRetainedEarnings)
+            item.CurrentAdjustedRetainedEarnings = adjustedRetainedEarnings;
+        if (fields.OldestRetainedEarnings is long oldestRetainedEarnings)
+            item.OldestRetainedEarnings = oldestRetainedEarnings;
+        if (fields.CurBookValue is long bookValue)
+            item.CurrentBookValue = bookValue;
+        if (fields.AverageNetCashFlow is long netCashFlow)
+            item.AverageNetCashFlow = netCashFlow;
+        if (fields.AverageOwnerEarnings is long ownerEarnings)
+            item.AverageOwnerEarnings = ownerEarnings;
+        return item;
     }
 
     private async Task ProcessGetDashboardStatsRequest(GetDashboardStatsRequestInput request, CancellationToken ct) {
