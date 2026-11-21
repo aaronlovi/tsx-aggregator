@@ -354,6 +354,75 @@ public class CompanyReportTests {
 
     #endregion
 
+    #region B6 - current dividends from the latest annual cash flow
+
+    private static readonly DateOnly Q1Fy2022 = new(2022, 3, 31);
+    private static readonly DateOnly Q2Fy2022 = new(2022, 6, 30);
+
+    /// <summary>Adds a complete quarterly report set (cash flow, balance sheet, income statement) for the date.</summary>
+    private static void AddQuarter(CompanyReport report, DateOnly date, params (string Key, decimal Value)[] cashFlowFields) {
+        report.AddNonAnnualCashFlowStatement(date, CreateRawReport(cashFlowFields));
+        report.AddNonAnnualBalanceSheet(date, CreateRawReport(("StockholdersEquity", 1000m)));
+        report.AddNonAnnualIncomeStatement(date, CreateRawReport(("NetIncomeContinuousOperations", 10m)));
+    }
+
+    private static void AddAnnual(CompanyReport report, DateOnly date, params (string Key, decimal Value)[] cashFlowFields) {
+        report.AddAnnualCashFlowStatement(date, CreateRawReport(cashFlowFields));
+        report.AddAnnualBalanceSheet(date, CreateRawReport(("StockholdersEquity", 900m)));
+        report.AddAnnualIncomeStatement(date, CreateRawReport(("NetIncomeContinuousOperations", 40m)));
+    }
+
+    [Fact]
+    public void CurDividendsPaid_LatestReportIsAQuarter_UsesLatestAnnual() {
+        var report = NewReport();
+        AddAnnual(report, Fy2021, ("CashDividendsPaid", 20m));
+        AddQuarter(report, Q1Fy2022, ("CashDividendsPaid", 5m));
+
+        _ = Process(report).CurDividendsPaid.Should().Be(20m);
+    }
+
+    [Fact]
+    public void CurDividendsPaid_GlitchedLatestQuarter_UsesLatestAnnual() {
+        // The SU shape: June quarters hold a small negative value instead of a full quarter's dividends.
+        var report = NewReport();
+        AddAnnual(report, Fy2021, ("CashDividendsPaid", 2826m));
+        AddQuarter(report, Q1Fy2022, ("CashDividendsPaid", 716m));
+        AddQuarter(report, Q2Fy2022, ("CashDividendsPaid", -6m));
+
+        _ = Process(report).CurDividendsPaid.Should().Be(2826m);
+    }
+
+    [Fact]
+    public void CurDividendsPaid_UsesTheMostRecentAnnual() {
+        var report = NewReport();
+        AddAnnual(report, Fy2020, ("CashDividendsPaid", 10m));
+        AddAnnual(report, Fy2021, ("CashDividendsPaid", 20m));
+
+        _ = Process(report).CurDividendsPaid.Should().Be(20m);
+    }
+
+    [Fact]
+    public void CurDividendsPaid_LatestAnnualWithoutDividends_IsZero() {
+        var report = NewReport();
+        AddAnnual(report, Fy2020, ("CashDividendsPaid", 10m));
+        AddAnnual(report, Fy2021, ("ChangesInCash", 5m));
+        AddQuarter(report, Q1Fy2022, ("CashDividendsPaid", 5m));
+
+        _ = Process(report).CurDividendsPaid.Should().Be(0m);
+    }
+
+    [Fact]
+    public void CurDividendsPaid_AnnualCashFlowWithoutMatchingBalanceSheet_StillUsed() {
+        // The latest annual cash flow is used even when its balance sheet or income statement is missing.
+        var report = NewReport();
+        AddAnnual(report, Fy2020, ("CashDividendsPaid", 10m));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("CashDividendsPaid", 20m)));
+
+        _ = Process(report).CurDividendsPaid.Should().Be(20m);
+    }
+
+    #endregion
+
     #region B4 - working capital fallback
 
     /// <summary>

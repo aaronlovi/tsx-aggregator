@@ -225,6 +225,7 @@ public class CompanyReport
     {
         TransformOldestFinancialReports(warnings);
         TransformMostRecentFinancialReports(warnings);
+        TransformMostRecentAnnualDividends();
         TransformRawFinancialReports(warnings);
     }
 
@@ -298,6 +299,20 @@ public class CompanyReport
             LogMissingPropertyWarning(oldestReportDate, "RetainedEarnings", warnings);
     }
 
+    /// <summary>
+    /// Current dividends come from the most recent annual cash flow statement, so they cover a full year like the
+    /// annual averages they are combined with. Quarterly dividend figures are unreliable (decision 18). 0 when that
+    /// statement has no CashDividendsPaid.
+    /// </summary>
+    private void TransformMostRecentAnnualDividends()
+    {
+        if (_annualRawCashFlowReports.Count == 0)
+            return;
+
+        RawReportDataMap mostRecentAnnualCashFlow = _annualRawCashFlowReports.Values.Last();
+        CurDividendsPaid = mostRecentAnnualCashFlow["CashDividendsPaid"] ?? 0;
+    }
+
     private void TransformMostRecentFinancialReports(IList<string> warnings)
     {
         var mostRecentReportDate = DateOnly.MinValue;
@@ -345,9 +360,6 @@ public class CompanyReport
         {
             return;
         }
-
-        if (mostRecentCashFlowStatement.HasValue("CashDividendsPaid"))
-            CurDividendsPaid = mostRecentCashFlowStatement["CashDividendsPaid"]!.Value;
 
         if (mostRecentBalanceSheet.HasValue("StockholdersEquity"))
             CurTotalShareholdersEquity = mostRecentBalanceSheet["StockholdersEquity"]!.Value;
