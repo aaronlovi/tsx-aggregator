@@ -60,13 +60,13 @@ public class TsxOpsSnapshotTests {
     }
 
     [Fact]
-    public void RowBuilder_NegativeEquity_RecordsCurrentBehaviour() {
-        // Documents bug B7 as it stands today: negative equity passes debt-to-equity (c01).
+    public void RowBuilder_NegativeEquity_FailsDebtToEquity() {
+        // B7 sign rule: negative equity fails debt-to-equity (c01) instead of passing with a negative ratio.
         ProcessedReportFields fields = AllPassFields with { CurTotalShareholdersEquity = -200_000_000 };
 
         Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields);
 
-        _ = row["c01"].Should().Be("P");
+        _ = row["c01"].Should().Be("F");
     }
 
     [Fact]

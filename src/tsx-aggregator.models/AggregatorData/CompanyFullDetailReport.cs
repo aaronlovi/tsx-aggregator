@@ -141,20 +141,25 @@ public class CompanyFullDetailReport {
     }
 
     // Scores
-    public bool DoesPassCheck_DebtToEquitySmallEnough => DebtToEquityRatio < 0.5M;
+    // Sign rule (decision 4): a check whose denominator is equity or book value fails when that denominator is
+    // 0 or less. A negative denominator flips the ratio's meaning; the ratios themselves are left as they are.
+    private bool HasPositiveEquity => CurTotalShareholdersEquity > 0;
+    private bool HasPositiveBookValue => CurBookValue > 0;
+
+    public bool DoesPassCheck_DebtToEquitySmallEnough => HasPositiveEquity && DebtToEquityRatio < 0.5M;
     public bool DoesPassCheck_BookValueBigEnough => CurBookValue > 150_000_000M;
-    public bool DoesPassCheck_PriceToBookSmallEnough => CurPriceToBookRatio <= 3M;
+    public bool DoesPassCheck_PriceToBookSmallEnough => HasPositiveBookValue && CurPriceToBookRatio <= 3M;
     public bool DoesPassCheck_AvgCashFlow_Positive => AverageNetCashFlow > 0;
     public bool DoesPassCheck_AvgOwnerEarningsPositive => AverageOwnerEarnings > 0;
     public bool DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough => EstimatedNextYearTotalReturnPercentage_FromCashFlow > 5M;
     public bool DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough => EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings > 5M;
     public bool DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromCashFlow < 40M;
     public bool DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig => EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings < 40M;
-    public bool DoesPassCheck_DebtToBookRatioSmallEnough => LongTermDebtToBookRatio < 1M;
+    public bool DoesPassCheck_DebtToBookRatioSmallEnough => HasPositiveBookValue && LongTermDebtToBookRatio < 1M;
     public bool DoesPassCheck_RetainedEarningsPositive => CurAdjustedRetainedEarnings > 0;
     public bool DoesPassCheck_IsHistoryLongEnough => NumAnnualProcessedCashFlowReports >= 4;
-    public bool DoesPassCheck_ROE_FromCashFlow_BigEnough => ReturnOnEquity_FromCashFlow > 0.10M;
-    public bool DoesPassCheck_ROE_FromOwnerEarnings_BigEnough => ReturnOnEquity_FromOwnerEarnings > 0.10M;
+    public bool DoesPassCheck_ROE_FromCashFlow_BigEnough => HasPositiveEquity && ReturnOnEquity_FromCashFlow > 0.10M;
+    public bool DoesPassCheck_ROE_FromOwnerEarnings_BigEnough => HasPositiveEquity && ReturnOnEquity_FromOwnerEarnings > 0.10M;
     public bool DoesPassCheck_Overall =>
         DoesPassCheck_DebtToEquitySmallEnough
         && DoesPassCheck_BookValueBigEnough
