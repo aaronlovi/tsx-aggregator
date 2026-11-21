@@ -66,30 +66,14 @@ export class CompanyService {
     }
 
     getCompanyDetails(exchange: string, instrumentSymbol: string): Observable<CompanyDetails> {
-        return this.http.get<any>(`${this.config.apiEndpoint}/companies/${exchange}/${instrumentSymbol}`).pipe(
-            map(data => {
-                const details = new CompanyDetails(
-                    data.exchange,
-                    data.companySymbol,
-                    data.instrumentSymbol,
-                    data.companyName,
-                    data.instrumentName,
-                    data.pricePerShare,
-                    data.curLongTermDebt,
-                    data.curTotalShareholdersEquity,
-                    data.curBookValue,
-                    data.curNumShares,
-                    data.averageNetCashFlow,
-                    data.averageOwnerEarnings,
-                    data.curDividendsPaid,
-                    data.curAdjustedRetainedEarnings,
-                    data.oldestRetainedEarnings,
-                    data.numAnnualProcessedCashFlowReports);
-                details.mostRecentAnnualReportDate = data.mostRecentAnnualReportDate ?? null;
-                details.mostRecentQuarterlyReportDate = data.mostRecentQuarterlyReportDate ?? null;
-                details.lastUpdatedDate = data.lastUpdatedDate ?? null;
-                return details;
-            })
+        // The backend computes every ratio, check, the score and the max price; use them as sent.
+        return this.http.get<CompanyDetails>(`${this.config.apiEndpoint}/companies/${exchange}/${instrumentSymbol}`).pipe(
+            map(data => ({
+                ...data,
+                mostRecentAnnualReportDate: data.mostRecentAnnualReportDate ?? null,
+                mostRecentQuarterlyReportDate: data.mostRecentQuarterlyReportDate ?? null,
+                lastUpdatedDate: data.lastUpdatedDate ?? null,
+            }))
         );
     }
 

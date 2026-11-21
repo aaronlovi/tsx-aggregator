@@ -1,11 +1,20 @@
-import { Utilities } from "../shared/utilities";
-
-export class CompanyDetails {
+/**
+ * A company's full details as returned by GET companies/{exchange}/{instrumentSymbol}.
+ *
+ * Every ratio, check result, the score and the max price are computed by the backend
+ * (CompanyFullDetailReport.cs); this model only carries them for display. Property names match the
+ * API's JSON exactly. The contract is pinned by src/testing/company-full-detail-report.json, which
+ * both the backend (CompanyDetailsApiContractTests) and company.service.spec.ts test against.
+ */
+export interface CompanyDetails {
+    // Identity
     exchange: string;
     companySymbol: string;
     instrumentSymbol: string;
     companyName: string;
     instrumentName: string;
+
+    // Inputs
     pricePerShare: number;
     curLongTermDebt: number;
     curTotalShareholdersEquity: number;
@@ -17,148 +26,41 @@ export class CompanyDetails {
     curAdjustedRetainedEarnings: number;
     oldestRetainedEarnings: number;
     numAnnualProcessedCashFlowReports: number;
-    mostRecentAnnualReportDate: string | null = null;
-    mostRecentQuarterlyReportDate: string | null = null;
-    lastUpdatedDate: string | null = null;
+    mostRecentAnnualReportDate: string | null;
+    mostRecentQuarterlyReportDate: string | null;
+    lastUpdatedDate: string | null;
 
-    constructor(
-        exchange: string,
-        companySymbol: string,
-        instrumentSymbol: string,
-        companyName: string,
-        instrumentName: string,
-        pricePerShare: number,
-        curLongTermDebt: number,
-        curTotalShareholdersEquity: number,
-        curBookValue: number,
-        curNumShares: number,
-        averageNetCashFlow: number,
-        averageOwnerEarnings: number,
-        curDividendsPaid: number,
-        curAdjustedRetainedEarnings: number,
-        oldestRetainedEarnings: number,
-        numAnnualProcessedCashFlowReports: number) {
-        this.exchange = exchange;
-        this.companySymbol = companySymbol;
-        this.instrumentSymbol = instrumentSymbol;
-        this.companyName = companyName;
-        this.instrumentName = instrumentName;
-        this.pricePerShare = pricePerShare;
-        this.curLongTermDebt = curLongTermDebt;
-        this.curTotalShareholdersEquity = curTotalShareholdersEquity;
-        this.curBookValue = curBookValue;
-        this.curNumShares = curNumShares;
-        this.averageNetCashFlow = averageNetCashFlow;
-        this.averageOwnerEarnings = averageOwnerEarnings;
-        this.curDividendsPaid = curDividendsPaid;
-        this.curAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
-        this.oldestRetainedEarnings = oldestRetainedEarnings;
-        this.numAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
-    }
+    // Computed by the backend
+    curMarketCap: number;
+    debtToEquityRatio: number;
+    curPriceToBookRatio: number;
+    longTermDebtToBookRatio: number;
+    didAdjustedRetainedEarningsIncrease: boolean;
+    returnOnEquity_FromCashFlow: number;
+    returnOnEquity_FromOwnerEarnings: number;
+    estimatedNextYearBookValue_FromCashFlow: number;
+    estimatedNextYearTotalReturnPercentage_FromCashFlow: number;
+    estimatedNextYearBookValue_FromOwnerEarnings: number;
+    estimatedNextYearTotalReturnPercentage_FromOwnerEarnings: number;
+    maxPrice: number;
+    percentageUpside: number;
 
-    // Calculated Properties
-    public get curMarketCap() { return this.curNumShares * this.pricePerShare; }
-    public get debtToEquityRatio() { return Utilities.DivSafe(this.curLongTermDebt, this.curTotalShareholdersEquity); }
-    public get curPriceToBookRatio() { return Utilities.DivSafe(this.curMarketCap, this.curBookValue); }
-    public get longTermDebtToBookRatio() { return Utilities.DivSafe(this.curLongTermDebt, this.curBookValue); }
-    public get didAdjustedRetainedEarningsIncrease() { return this.curAdjustedRetainedEarnings > this.oldestRetainedEarnings; }
-    public get returnOnEquity_FromCashFlow() { return Utilities.DivSafe(this.averageNetCashFlow, this.curTotalShareholdersEquity); }
-    public get returnOnEquity_FromOwnerEarnings() { return Utilities.DivSafe(this.averageOwnerEarnings, this.curTotalShareholdersEquity); }
-    public get estimatedNextYearBookValue_FromCashFlow() {
-        return this.curBookValue === Number.MIN_VALUE || this.averageNetCashFlow === Number.MIN_VALUE
-            ? Number.MIN_VALUE
-            : this.curBookValue + this.averageNetCashFlow;
-    }
-    public get estimatedNextYearTotalReturnPercentage_FromCashFlow() {
-        if (this.curMarketCap === 0
-            || this.estimatedNextYearBookValue_FromCashFlow === Number.MIN_VALUE
-            || this.curBookValue === Number.MIN_VALUE) {
-            return Number.MIN_VALUE;
-        }
-
-        return 100.0 * (this.estimatedNextYearBookValue_FromCashFlow - this.curDividendsPaid - this.curBookValue) / this.curMarketCap;
-    }
-    public get estimatedNextYearBookValueFromOwnerEarnings() {
-        return this.curBookValue === Number.MIN_VALUE || this.averageOwnerEarnings === Number.MIN_VALUE
-            ? Number.MIN_VALUE
-            : this.curBookValue + this.averageOwnerEarnings;
-    }
-    public get estimatedNextYearTotalReturnPercentageFromOwnerEarnings() {
-        if (this.curMarketCap === 0
-            || this.estimatedNextYearBookValueFromOwnerEarnings === Number.MIN_VALUE
-            || this.curBookValue === Number.MIN_VALUE) {
-            return Number.MIN_VALUE;
-        }
-
-        return 100.0 * (this.estimatedNextYearBookValueFromOwnerEarnings - this.curDividendsPaid - this.curBookValue) / this.curMarketCap;
-    }
-
-    public get maxPrice() {
-        if (this.curNumShares <= 0
-            || this.estimatedNextYearBookValue_FromCashFlow === Number.MIN_VALUE
-            || this.estimatedNextYearBookValueFromOwnerEarnings === Number.MIN_VALUE
-            || this.curBookValue === Number.MIN_VALUE) {
-            return -1;
-        }
-        let maxPriceSoFar = 3.0 * this.curBookValue;
-        maxPriceSoFar = Math.min(maxPriceSoFar, 20.0 * (this.estimatedNextYearBookValue_FromCashFlow - this.curDividendsPaid - this.curBookValue));
-        maxPriceSoFar = Math.min(maxPriceSoFar, 20.0 * (this.estimatedNextYearBookValueFromOwnerEarnings - this.curDividendsPaid - this.curBookValue));
-        return maxPriceSoFar / this.curNumShares;
-    }
-
-    public get percentageUpside() {
-        if (this.pricePerShare <= 0 || this.maxPrice === -1)
-            return Number.MIN_VALUE;
-        return (this.maxPrice - this.pricePerShare) / this.pricePerShare * 100.0;
-    }
-
-    // Scores
-    public get doesPassCheckDebtToEquitySmallEnough() { return this.debtToEquityRatio < 0.5; }
-    public get doesPassCheckBookValueBigEnough() { return this.curBookValue > 150_000_000; }
-    public get doesPassCheckPriceToBookSmallEnough() { return this.curPriceToBookRatio <= 3; }
-    public get doesPassCheckAvgCashFlow_Positive() { return this.averageNetCashFlow > 0; }
-    public get doesPassCheckAvgOwnerEarningsPositive() { return this.averageOwnerEarnings > 0; }
-    public get doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough() { return this.estimatedNextYearTotalReturnPercentage_FromCashFlow > 5; }
-    public get doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough() { return this.estimatedNextYearTotalReturnPercentageFromOwnerEarnings > 5; }
-    public get doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig() { return this.estimatedNextYearTotalReturnPercentage_FromCashFlow < 40; }
-    public get doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig() { return this.estimatedNextYearTotalReturnPercentageFromOwnerEarnings < 40; }
-    public get doesPassCheckDebtToBookRatioSmallEnough() { return this.longTermDebtToBookRatio < 1; }
-    public get doesPassCheckAdjustedRetainedEarningsPositive() { return this.curAdjustedRetainedEarnings > 0; }
-    public get doesPassCheckIsHistoryLongEnough() { return this.numAnnualProcessedCashFlowReports >= 4; }
-    public get doesPassCheckROE_FromCashFlow_BigEnough() { return this.returnOnEquity_FromCashFlow > 0.10; }
-    public get doesPassCheckROE_FromOwnerEarnings_BigEnough() { return this.returnOnEquity_FromOwnerEarnings > 0.10; }
-    public get doesPassCheckOverall() {
-        return this.doesPassCheckDebtToEquitySmallEnough
-            && this.doesPassCheckBookValueBigEnough
-            && this.doesPassCheckPriceToBookSmallEnough
-            && this.doesPassCheckAvgCashFlow_Positive
-            && this.doesPassCheckAvgOwnerEarningsPositive
-            && this.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough
-            && this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough
-            && this.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig
-            && this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig
-            && this.doesPassCheckDebtToBookRatioSmallEnough
-            && this.doesPassCheckAdjustedRetainedEarningsPositive
-            && this.doesPassCheckIsHistoryLongEnough
-            && this.didAdjustedRetainedEarningsIncrease
-            && this.doesPassCheckROE_FromCashFlow_BigEnough
-            && this.doesPassCheckROE_FromOwnerEarnings_BigEnough;
-    }
-    public get overallScore() {
-        return (this.doesPassCheckDebtToEquitySmallEnough ? 1 : 0)
-            + (this.doesPassCheckBookValueBigEnough ? 1 : 0)
-            + (this.doesPassCheckPriceToBookSmallEnough ? 1 : 0)
-            + (this.doesPassCheckAvgCashFlow_Positive ? 1 : 0)
-            + (this.doesPassCheckAvgOwnerEarningsPositive ? 1 : 0)
-            + (this.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? 1 : 0)
-            + (this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough ? 1 : 0)
-            + (this.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? 1 : 0)
-            + (this.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ? 1 : 0)
-            + (this.doesPassCheckDebtToBookRatioSmallEnough ? 1 : 0)
-            + (this.doesPassCheckAdjustedRetainedEarningsPositive ? 1 : 0)
-            + (this.doesPassCheckIsHistoryLongEnough ? 1 : 0)
-            + (this.didAdjustedRetainedEarningsIncrease ? 1 : 0)
-            + (this.doesPassCheckROE_FromCashFlow_BigEnough ? 1 : 0)
-            + (this.doesPassCheckROE_FromOwnerEarnings_BigEnough ? 1 : 0);
-    }
+    // Checks, in the order the backend's OverallScore counts them
+    doesPassCheck_DebtToEquitySmallEnough: boolean;
+    doesPassCheck_BookValueBigEnough: boolean;
+    doesPassCheck_PriceToBookSmallEnough: boolean;
+    doesPassCheck_AvgCashFlow_Positive: boolean;
+    doesPassCheck_AvgOwnerEarningsPositive: boolean;
+    doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough: boolean;
+    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough: boolean;
+    doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig: boolean;
+    doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig: boolean;
+    doesPassCheck_DebtToBookRatioSmallEnough: boolean;
+    doesPassCheck_RetainedEarningsPositive: boolean;
+    doesPassCheck_IsHistoryLongEnough: boolean;
+    // didAdjustedRetainedEarningsIncrease (above) is the 13th check
+    doesPassCheck_ROE_FromCashFlow_BigEnough: boolean;
+    doesPassCheck_ROE_FromOwnerEarnings_BigEnough: boolean;
+    doesPassCheck_Overall: boolean;
+    overallScore: number;
 }

@@ -98,8 +98,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckDebtToEquitySmallEnough}">
-            {{ companyDetails.doesPassCheckDebtToEquitySmallEnough ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_DebtToEquitySmallEnough}">
+            {{ companyDetails.doesPassCheck_DebtToEquitySmallEnough ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -108,8 +108,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckDebtToBookRatioSmallEnough}">
-            {{ companyDetails.doesPassCheckDebtToBookRatioSmallEnough ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_DebtToBookRatioSmallEnough}">
+            {{ companyDetails.doesPassCheck_DebtToBookRatioSmallEnough ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -118,8 +118,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckBookValueBigEnough}">
-            {{ companyDetails.doesPassCheckBookValueBigEnough ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_BookValueBigEnough}">
+            {{ companyDetails.doesPassCheck_BookValueBigEnough ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -128,8 +128,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckPriceToBookSmallEnough}">
-            {{ companyDetails.doesPassCheckPriceToBookSmallEnough ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_PriceToBookSmallEnough}">
+            {{ companyDetails.doesPassCheck_PriceToBookSmallEnough ? 'Yes' :
             'No' }}
           </td>
         </tr>
@@ -141,8 +141,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough}">
-            {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough}">
+            {{ companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough ? 'Yes' : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -151,8 +151,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough}">
-            {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_BigEnough ?
+            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough}">
+            {{ companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough ?
             'Yes' : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -162,8 +162,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig}">
-            {{ companyDetails.doesPassCheckEstNextYearTotalReturn_CashFlow_NotTooBig ? 'Yes' : 'No' }}
+            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig}">
+            {{ companyDetails.doesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig ? 'Yes' : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span
@@ -172,8 +172,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
-            {{ companyDetails.doesPassCheckEstNextYeartotalReturn_OwnerEarnings_NotTooBig ?
+            [ngClass]="{no: !companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig}">
+            {{ companyDetails.doesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig ?
             'Yes' : 'No' }}
           </td>
         </tr>
@@ -184,8 +184,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckAvgCashFlow_Positive}">
-            {{ companyDetails.doesPassCheckAvgCashFlow_Positive ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_AvgCashFlow_Positive}">
+            {{ companyDetails.doesPassCheck_AvgCashFlow_Positive ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -194,8 +194,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckAvgOwnerEarningsPositive}">
-            {{ companyDetails.doesPassCheckAvgOwnerEarningsPositive ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_AvgOwnerEarningsPositive}">
+            {{ companyDetails.doesPassCheck_AvgOwnerEarningsPositive ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -204,8 +204,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckAdjustedRetainedEarningsPositive}">
-            {{ companyDetails.doesPassCheckAdjustedRetainedEarningsPositive ? 'Yes'
+            [ngClass]="{no: !companyDetails.doesPassCheck_RetainedEarningsPositive}">
+            {{ companyDetails.doesPassCheck_RetainedEarningsPositive ? 'Yes'
             : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -226,8 +226,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckIsHistoryLongEnough}">
-            {{ companyDetails.doesPassCheckIsHistoryLongEnough ? 'Yes' :
+            [ngClass]="{no: !companyDetails.doesPassCheck_IsHistoryLongEnough}">
+            {{ companyDetails.doesPassCheck_IsHistoryLongEnough ? 'Yes' :
             'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
@@ -236,8 +236,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckROE_FromCashFlow_BigEnough}">
-            {{ companyDetails.doesPassCheckROE_FromCashFlow_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="{no: !companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough}">
+            {{ companyDetails.doesPassCheck_ROE_FromCashFlow_BigEnough ? 'Yes' : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Is Return on Equity from Owner Earnings (Avg. Owner Earnings / Total Shareholders Equity) &gt; 10%?">
@@ -245,8 +245,8 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--score"
-            [ngClass]="{no: !companyDetails.doesPassCheckROE_FromOwnerEarnings_BigEnough}">
-            {{ companyDetails.doesPassCheckROE_FromOwnerEarnings_BigEnough ? 'Yes' : 'No' }}
+            [ngClass]="{no: !companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough}">
+            {{ companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough ? 'Yes' : 'No' }}
           </td>
           <th class="mat-header-cell data-table__header">
             Overall Score
@@ -386,7 +386,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearBookValueFromOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
+            {{ companyDetails.estimatedNextYearBookValue_FromOwnerEarnings | currency:'USD':'symbol':'1.0-0' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Average Owner Earnings divided by Total Shareholders Equity. Measures how effectively the company generates owner earnings relative to equity.">
@@ -414,7 +414,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ companyDetails.estimatedNextYearTotalReturnPercentageFromOwnerEarnings / 100.0 | percent:'1.2-2'
+            {{ companyDetails.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings / 100.0 | percent:'1.2-2'
             }}
           </td>
           <th class="mat-header-cell data-table__header">
