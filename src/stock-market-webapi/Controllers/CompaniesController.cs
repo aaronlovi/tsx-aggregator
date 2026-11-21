@@ -185,7 +185,7 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CompanyFullDetailReport>> GetCompany(string exchange, string instrumentSymbol) {
-        GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = "TSX", InstrumentSymbol = instrumentSymbol });
+        GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = exchange.ToUpperInvariant(), InstrumentSymbol = instrumentSymbol });
         if (!reply.Success || reply.StockDetail is null)
             return NotFound(new { error = $"No data available for {instrumentSymbol} on {exchange}" });
 

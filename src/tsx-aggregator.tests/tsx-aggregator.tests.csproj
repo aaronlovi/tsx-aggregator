@@ -26,6 +26,7 @@
 		<ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
 		<ProjectReference Include="..\tsx-aggregator\tsx-aggregator.csproj" />
 		<ProjectReference Include="..\tsx-ops\tsx-ops.csproj" />
+		<ProjectReference Include="..\stock-market-webapi\stock-market.webapi.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
