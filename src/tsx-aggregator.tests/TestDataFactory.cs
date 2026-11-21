@@ -67,6 +67,13 @@ public static class TestDataFactory {
         return registry;
     }
 
+    public static RawReportDataMap CreateRawReport(params (string Key, decimal Value)[] fields) {
+        var rpt = new RawReportDataMap();
+        foreach (var (key, value) in fields)
+            rpt[key] = value;
+        return rpt;
+    }
+
     public static void AssertMergedJsonContains(
         string mergedJson, params (string Key, decimal Value)[] expectedFields) {
         using var doc = JsonDocument.Parse(mergedJson);

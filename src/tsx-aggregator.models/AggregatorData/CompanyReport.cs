@@ -507,7 +507,7 @@ public class CompanyReport
         decimal? curDebt = CalcLongTermDebtFromRawBalanceSheet(reportDate, thisReport, warnings);
 
         decimal? debtDiff = null;
-        if (prevDebt is not null && curDebt is null)
+        if (prevDebt is not null && curDebt is not null)
             debtDiff = curDebt - prevDebt;
 
         return debtDiff;
