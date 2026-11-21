@@ -6,7 +6,6 @@ import { AppComponent } from './app.component';
 import { CompanyListComponent } from './company-list/company-list.component';
 
 import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfigService } from './app-config.service';
 
 import { CommonModule } from '@angular/common'; // Import CommonModule
@@ -22,7 +21,6 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AboutComponent } from './about/about.component';
 import { CompanyDetailsComponent } from './company-details/company-details.component';
 import { HeaderComponent } from './header/header.component';
@@ -53,9 +51,7 @@ import { MatCardModule } from '@angular/material/card';
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         AppRoutingModule,
-        NoopAnimationsModule,
         BrowserModule,
-        BrowserAnimationsModule,
         MatIconModule,
         MatButtonModule,
         MatTableModule,

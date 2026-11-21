@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -22,7 +21,7 @@ describe('QuickSearchComponent', () => {
       // The template's `#auto="matAutocomplete"` reference needs the real
       // Material modules; they can't be stubbed with NO_ERRORS_SCHEMA.
       imports: [
-        RouterTestingModule, FormsModule, NoopAnimationsModule,
+        RouterTestingModule, FormsModule,
         MatAutocompleteModule, MatFormFieldModule, MatInputModule, MatIconModule
       ],
       providers: [
