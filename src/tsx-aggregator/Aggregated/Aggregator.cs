@@ -62,6 +62,7 @@ public class Aggregator : BackgroundService, INamedService, IPausableService {
 
         try {
             await RestorePausedState(stoppingToken);
+            PostTimeoutRequest(DateTime.UtcNow); // Check for events right away, not after the first interval
 
             while (!stoppingToken.IsCancellationRequested) {
                 var utcNow = DateTime.UtcNow;
@@ -147,18 +148,25 @@ public class Aggregator : BackgroundService, INamedService, IPausableService {
                 return;
             }
 
-            // So long as aggregator is picking up events, it may be in "catch up" mode.
-            // So only wait the short interval before checking for the next event
             _logger.LogInformation("Aggregator: Found instrument event {@InstrumentEvent}", instrumentEvt);
-            await ProcessInstrumentEvent(instrumentEvt, ct);
-            _logger.LogInformation("Aggregator: Found instrument event. Sleeping only {Interval}", ShortInterval);
+            bool handled = await ProcessInstrumentEvent(instrumentEvt, ct);
             _intervalToNextTimeout = ShortInterval;
+
+            if (handled) {
+                // Catch-up: there may be more events queued, so check again right away. The check goes through the
+                // input channel and the FSM like any timeout, so pause requests and shutdown still get in between.
+                PostTimeoutRequest(DateTime.UtcNow);
+            } else {
+                // The event is still unprocessed and would come straight back: retry after the short interval.
+                _logger.LogInformation("Aggregator: Event not handled, retrying in {Interval}", ShortInterval);
+            }
         } catch (Exception ex) {
             _logger.LogError(ex, "ProcessCheckForInstrumentEvent - unexpected error");
         }
     }
 
-    internal async Task ProcessInstrumentEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
+    /// <returns>True if the event was handled and marked processed, so it won't come back.</returns>
+    internal async Task<bool> ProcessInstrumentEvent(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         _logger.LogInformation("Found instrument event: {InstrumentEvent}", instrumentEvt);
 
         CompanyEventTypes eventType = instrumentEvt.EventType.ToCompanyEventType();
@@ -185,16 +193,16 @@ public class Aggregator : BackgroundService, INamedService, IPausableService {
         // transient failure (e.g. a DB error during aggregation) leaves it
         // unprocessed so the next cycle retries it, rather than silently
         // dropping the update.
-        if (handled)
-            await MarkInstrumentEventAsProcessed(instrumentEvt, ct);
+        return handled && await MarkInstrumentEventAsProcessed(instrumentEvt, ct);
     }
 
-    private async Task MarkInstrumentEventAsProcessed(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
+    private async Task<bool> MarkInstrumentEventAsProcessed(InstrumentEventExDto instrumentEvt, CancellationToken ct) {
         InstrumentEventDto instrumentEventDto = instrumentEvt.InstrumentEvent with { IsProcessed = true };
         InstrumentEventExDto dto = instrumentEvt with { InstrumentEvent = instrumentEventDto };
         Result res = await _dbm.MarkInstrumentEventAsProcessed(dto, ct);
         if (!res.Success)
             _logger.LogWarning("MarkInstrumentEventAsProcessed - failed to mark instrument event as processed: {Error}", res.ErrMsg);
+        return res.Success;
     }
 
     /// <returns>
