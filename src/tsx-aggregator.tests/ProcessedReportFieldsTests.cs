@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using FluentAssertions;
+using tsx_aggregator.models;
+using static tsx_aggregator.shared.Constants;
+
+namespace tsx_aggregator.tests;
+
+public class ProcessedReportFieldsTests {
+    private const string CompleteJson = """
+        {
+          "CurNumShares": 1000,
+          "CurTotalShareholdersEquity": 500.5,
+          "CurGoodwill": 10.4,
+          "CurIntangibles": 20.6,
+          "CurLongTermDebt": 30,
+          "CurDividendsPaid": 2.5,
+          "CurAdjustedRetainedEarnings": 3.5,
+          "OldestRetainedEarnings": -4.5,
+          "CurBookValue": 470,
+          "AverageNetCashFlow": 50,
+          "AverageOwnerEarnings": 60
+        }
+        """;
+
+    [Fact]
+    public void TryParse_AllFieldsPresent_RoundsHalfToEven() {
+        bool ok = ProcessedReportFields.TryParse(CompleteJson, out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeTrue();
+        _ = fields.Should().Be(new ProcessedReportFields(
+            CurNumShares: 1000,
+            CurTotalShareholdersEquity: 500,
+            CurGoodwill: 10,
+            CurIntangibles: 21,
+            CurLongTermDebt: 30,
+            CurDividendsPaid: 2,
+            CurAdjustedRetainedEarnings: 4,
+            OldestRetainedEarnings: -4,
+            CurBookValue: 470,
+            AverageNetCashFlow: 50,
+            AverageOwnerEarnings: 60));
+    }
+
+    [Fact]
+    public void TryParse_MissingField_ReturnsFalse() {
+        string json = CompleteJson.Replace("\"AverageOwnerEarnings\": 60", "\"Other\": 60");
+
+        bool ok = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeFalse();
+        _ = fields.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonNumericField_ReturnsFalse() {
+        string json = CompleteJson.Replace("\"CurLongTermDebt\": 30", "\"CurLongTermDebt\": null");
+
+        _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryParse_DecimalMinValueSentinel_Throws() {
+        // decimal.MinValue does not fit in a long. Callers rely on this throwing so that they log and skip the company.
+        string json = CompleteJson.Replace("\"AverageNetCashFlow\": 50", $"\"AverageNetCashFlow\": {decimal.MinValue}");
+
+        Action act = () => ProcessedReportFields.TryParse(json, out _);
+
+        _ = act.Should().Throw<OverflowException>();
+    }
+
+    [Fact]
+    public void TryParse_SerializedCompanyReport_ReadsItsProperties() {
+        // Guards the field names against renames in CompanyReport.
+        var report = new CompanyReport("ABC", "Abc Corp", "TSX", curNumShares: 1234);
+        report.AddAnnualCashFlowStatement(new DateOnly(2025, 12, 31), new RawReportDataMap {
+            ["NetIncomeFromContinuingOperations"] = 100,
+            ["ChangesInCash"] = 40,
+        });
+        report.ProcessReports(new List<string>());
+        report.CurTotalShareholdersEquity = 900;
+        report.CurGoodwill = 50;
+        report.CurIntangibles = 25;
+        report.CurLongTermDebt = 300;
+        report.CurDividendsPaid = 12;
+        report.CurAdjustedRetainedEarnings = 77;
+        report.OldestRetainedEarnings = 33;
+
+        bool ok = ProcessedReportFields.TryParse(JsonSerializer.Serialize(report), out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeTrue();
+        _ = fields!.CurNumShares.Should().Be(1234);
+        _ = fields.CurTotalShareholdersEquity.Should().Be(900);
+        _ = fields.CurGoodwill.Should().Be(50);
+        _ = fields.CurIntangibles.Should().Be(25);
+        _ = fields.CurLongTermDebt.Should().Be(300);
+        _ = fields.CurDividendsPaid.Should().Be(12);
+        _ = fields.CurAdjustedRetainedEarnings.Should().Be(77);
+        _ = fields.OldestRetainedEarnings.Should().Be(33);
+        _ = fields.CurBookValue.Should().Be(825);
+        _ = fields.AverageNetCashFlow.Should().Be(40);
+        _ = fields.AverageOwnerEarnings.Should().Be(100);
+    }
+}

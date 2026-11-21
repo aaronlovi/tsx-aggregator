@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -101,66 +100,17 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
 
         static void AddCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, GetStocksDataReply getStocksDataReply, ILogger logger) {
             try {
-                using var doc = JsonDocument.Parse(dto.SerializedReport);
-                JsonElement root = doc.RootElement;
-                if (!GetDataPoint(root, "CurNumShares", out var curNumShares)
-                    || !GetDataPoint(root, "CurTotalShareholdersEquity", out var curTotalShareholdersEquity)
-                    || !GetDataPoint(root, "CurGoodwill", out var curGoodWill)
-                    || !GetDataPoint(root, "CurIntangibles", out var curIntangibles)
-                    || !GetDataPoint(root, "CurLongTermDebt", out var curLongTermDebt)
-                    || !GetDataPoint(root, "CurDividendsPaid", out var curDividendsPaid)
-                    || !GetDataPoint(root, "CurAdjustedRetainedEarnings", out var curAdjustedRetainedEarnings)
-                    || !GetDataPoint(root, "OldestRetainedEarnings", out var oldestRetainedEarnings)
-                    || !GetDataPoint(root, "CurBookValue", out var currentBookValue)
-                    || !GetDataPoint(root, "AverageNetCashFlow", out var averageNetCashFlow)
-                    || !GetDataPoint(root, "AverageOwnerEarnings", out var averageOwnerEarnings)) {
+                if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
                     logger.LogWarning("ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
                         dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
                     return;
                 }
 
-                var item = new GetStocksDataReplyItem() {
-                    Exchange = exchange,
-                    CompanySymbol = dto.CompanySymbol,
-                    InstrumentSymbol = dto.InstrumentSymbol,
-                    CompanyName = dto.CompanyName,
-                    InstrumentName = dto.InstrumentName,
-                    CreatedDate = Timestamp.FromDateTimeOffset(dto.ReportCreatedDate),
-                    CurrentNumShares = curNumShares,
-                    CurrentTotalShareholdersEquity = curTotalShareholdersEquity,
-                    CurrentGoodwill = curGoodWill,
-                    CurrentIntangibles = curIntangibles,
-                    CurrentLongTermDebt = curLongTermDebt,
-                    CurrentDividendsPaid = curDividendsPaid,
-                    CurrentAdjustedRetainedEarnings = curAdjustedRetainedEarnings,
-                    OldestRetainedEarnings = oldestRetainedEarnings,
-                    CurrentBookValue = currentBookValue,
-                    AverageNetCashFlow = averageNetCashFlow,
-                    AverageOwnerEarnings = averageOwnerEarnings,
-                    PerSharePrice = 0M, // To be filled out later by the quotes service
-                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
-                    MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
-                    MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.MostRecentQuarterlyReportDate.Value) : null,
-                    LastUpdatedDate = dto.LastUpdatedDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
-                };
-                getStocksDataReply.StocksData.Add(item);
+                getStocksDataReply.StocksData.Add(BuildReplyItem(exchange, dto, fields));
             }
             catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
                     dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
-            }
-        }
-
-        static bool GetDataPoint(JsonElement root, string fieldName, out long retVal) {
-            if (root.TryGetProperty(fieldName, out JsonElement jsonVal) && jsonVal.ValueKind == JsonValueKind.Number) {
-                retVal = (long)Math.Round(jsonVal.GetDecimal(), 0, MidpointRounding.ToEven);
-                return true;
-            } else {
-                retVal = 0;
-                return false;
             }
         }
     }
@@ -197,67 +147,49 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
 
         static GetStocksDataReplyItem? TransformCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, ILogger logger) {
             try {
-                using var doc = JsonDocument.Parse(dto.SerializedReport);
-                JsonElement root = doc.RootElement;
-                if (!GetDataPoint(root, "CurNumShares", out var curNumShares)
-                    || !GetDataPoint(root, "CurTotalShareholdersEquity", out var curTotalShareholdersEquity)
-                    || !GetDataPoint(root, "CurGoodwill", out var curGoodWill)
-                    || !GetDataPoint(root, "CurIntangibles", out var curIntangibles)
-                    || !GetDataPoint(root, "CurLongTermDebt", out var curLongTermDebt)
-                    || !GetDataPoint(root, "CurDividendsPaid", out var curDividendsPaid)
-                    || !GetDataPoint(root, "CurAdjustedRetainedEarnings", out var curAdjustedRetainedEarnings)
-                    || !GetDataPoint(root, "OldestRetainedEarnings", out var oldestRetainedEarnings)
-                    || !GetDataPoint(root, "CurBookValue", out var currentBookValue)
-                    || !GetDataPoint(root, "AverageNetCashFlow", out var averageNetCashFlow)
-                    || !GetDataPoint(root, "AverageOwnerEarnings", out var averageOwnerEarnings)) {
+                if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
                     logger.LogWarning("ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
                         dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
                     return null;
                 }
 
-                return new GetStocksDataReplyItem() {
-                    Exchange = exchange,
-                    CompanySymbol = dto.CompanySymbol,
-                    InstrumentSymbol = dto.InstrumentSymbol,
-                    CompanyName = dto.CompanyName,
-                    InstrumentName = dto.InstrumentName,
-                    CreatedDate = Timestamp.FromDateTimeOffset(dto.ReportCreatedDate),
-                    CurrentNumShares = curNumShares,
-                    CurrentTotalShareholdersEquity = curTotalShareholdersEquity,
-                    CurrentGoodwill = curGoodWill,
-                    CurrentIntangibles = curIntangibles,
-                    CurrentLongTermDebt = curLongTermDebt,
-                    CurrentDividendsPaid = curDividendsPaid,
-                    CurrentAdjustedRetainedEarnings = curAdjustedRetainedEarnings,
-                    OldestRetainedEarnings = oldestRetainedEarnings,
-                    CurrentBookValue = currentBookValue,
-                    AverageNetCashFlow = averageNetCashFlow,
-                    AverageOwnerEarnings = averageOwnerEarnings,
-                    PerSharePrice = 0M, // To be filled out later by the quotes service
-                    NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
-                    MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
-                    MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.MostRecentQuarterlyReportDate.Value) : null,
-                    LastUpdatedDate = dto.LastUpdatedDate.HasValue
-                        ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
-                };
+                return BuildReplyItem(exchange, dto, fields);
             } catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
                     dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
                 return null;
             }
         }
+    }
 
-        static bool GetDataPoint(JsonElement root, string fieldName, out long retVal) {
-            if (root.TryGetProperty(fieldName, out JsonElement jsonVal) && jsonVal.ValueKind == JsonValueKind.Number) {
-                retVal = (long)Math.Round(jsonVal.GetDecimal(), 0, MidpointRounding.ToEven);
-                return true;
-            } else {
-                retVal = 0;
-                return false;
-            }
-        }
+    private static GetStocksDataReplyItem BuildReplyItem(string exchange, ProcessedFullInstrumentReportDto dto, ProcessedReportFields fields) {
+        return new GetStocksDataReplyItem() {
+            Exchange = exchange,
+            CompanySymbol = dto.CompanySymbol,
+            InstrumentSymbol = dto.InstrumentSymbol,
+            CompanyName = dto.CompanyName,
+            InstrumentName = dto.InstrumentName,
+            CreatedDate = Timestamp.FromDateTimeOffset(dto.ReportCreatedDate),
+            CurrentNumShares = fields.CurNumShares,
+            CurrentTotalShareholdersEquity = fields.CurTotalShareholdersEquity,
+            CurrentGoodwill = fields.CurGoodwill,
+            CurrentIntangibles = fields.CurIntangibles,
+            CurrentLongTermDebt = fields.CurLongTermDebt,
+            CurrentDividendsPaid = fields.CurDividendsPaid,
+            CurrentAdjustedRetainedEarnings = fields.CurAdjustedRetainedEarnings,
+            OldestRetainedEarnings = fields.OldestRetainedEarnings,
+            CurrentBookValue = fields.CurBookValue,
+            AverageNetCashFlow = fields.AverageNetCashFlow,
+            AverageOwnerEarnings = fields.AverageOwnerEarnings,
+            PerSharePrice = 0M, // To be filled out later by the quotes service
+            NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
+            MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
+                ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
+            MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
+                ? Timestamp.FromDateTimeOffset(dto.MostRecentQuarterlyReportDate.Value) : null,
+            LastUpdatedDate = dto.LastUpdatedDate.HasValue
+                ? Timestamp.FromDateTimeOffset(dto.LastUpdatedDate.Value) : null
+        };
     }
 
     private async Task ProcessGetDashboardStatsRequest(GetDashboardStatsRequestInput request, CancellationToken ct) {
