@@ -66,8 +66,13 @@ public class CompanyReport
     {
         get
         {
-            decimal totalGrossOwnerEarnings = _annualProcessedCashFlowItems.Sum(cashFlowItem => cashFlowItem.Value.OwnerEarnings);
-            return Utilities.DivSafe(totalGrossOwnerEarnings, _annualProcessedCashFlowItems.Count, decimal.MinValue);
+            if (_annualProcessedCashFlowItems.Count == 0)
+                return decimal.MinValue;
+
+            // Years without capex data are left out. If none is left, 0 until W1 makes this NotAvailable.
+            List<CashFlowItem> usableItems = [.. _annualProcessedCashFlowItems.Values.Where(item => item.IsUsableForOwnerEarnings)];
+            decimal totalGrossOwnerEarnings = usableItems.Sum(item => item.OwnerEarnings);
+            return Utilities.DivSafe(totalGrossOwnerEarnings, usableItems.Count, 0M);
         }
     }
     public decimal EstimatedNextYearBookValue_FromCashFlow
@@ -506,20 +511,31 @@ public class CompanyReport
             LogMissingPropertyWarning(reportDate, "depreciation and amortization", warnings);
         }
 
-        if (hasDepletion)
+        // When DepreciationAmortizationDepletion equals the D&A figure, depletion is already inside it.
+        bool depletionIncludedInDA = rawCashFlowReport["DepreciationAmortizationDepletion"] == cashFlowReport.DepreciationAndAmortization;
+
+        if (hasDepletion && !depletionIncludedInDA)
             cashFlowReport.Depletion = rawCashFlowReport["Depletion"]!.Value;
-        else
+        else if (!hasDepletion)
             LogMissingPropertyWarning(reportDate, "depletion", warnings);
     }
 
     /// <summary>
-    /// Net PP&amp;E purchases and sales, negative for a net outflow. Falls back to PurchaseOfPPE + SaleOfPPE,
-    /// then PurchaseOfPPE alone, then -CapitalExpenditureReported (which is reported as a positive amount).
+    /// Net PP&amp;E purchases and sales, negative for a net outflow. Uses NetPPEPurchaseAndSale, or
+    /// PurchaseOfPPE + SaleOfPPE when that is the larger outflow (NetPPEPurchaseAndSale sometimes misses most of
+    /// the purchases). Falls back to PurchaseOfPPE + SaleOfPPE, then PurchaseOfPPE alone, then
+    /// -CapitalExpenditureReported (which is reported as a positive amount).
     /// </summary>
     private static void SetNetPPEPurchaseAndSale(
         DateOnly reportDate, RawReportDataMap rawCashFlowReport, CashFlowItem cashFlowReport, IList<string> warnings)
     {
-        if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale"))
+        cashFlowReport.HasCapExData = true;
+
+        if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale") && rawCashFlowReport.HasValue("PurchaseOfPPE"))
+            cashFlowReport.NetPPEPurchaseAndSale = Math.Min(
+                rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value,
+                rawCashFlowReport["PurchaseOfPPE"]!.Value + (rawCashFlowReport["SaleOfPPE"] ?? 0));
+        else if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale"))
             cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["NetPPEPurchaseAndSale"]!.Value;
         else if (rawCashFlowReport.HasValue("PurchaseOfPPE") && rawCashFlowReport.HasValue("SaleOfPPE"))
             cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["PurchaseOfPPE"]!.Value + rawCashFlowReport["SaleOfPPE"]!.Value;
@@ -528,7 +544,10 @@ public class CompanyReport
         else if (rawCashFlowReport.HasValue("CapitalExpenditureReported"))
             cashFlowReport.NetPPEPurchaseAndSale = -rawCashFlowReport["CapitalExpenditureReported"]!.Value;
         else
+        {
+            cashFlowReport.HasCapExData = false;
             LogMissingPropertyWarning(reportDate, "NetPPEPurchaseAndSale", warnings);
+        }
     }
 
     /// <summary>

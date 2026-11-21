@@ -138,11 +138,11 @@ public class CompanyReportTests {
     // PurchaseOfPPE + SaleOfPPE -> PurchaseOfPPE -> -CapitalExpenditureReported (decision 1).
 
     [Fact]
-    public void OwnerEarnings_CapEx_PrefersNetPPEPurchaseAndSale() {
+    public void OwnerEarnings_CapEx_PrefersNetPPEPurchaseAndSale_OverCapitalExpenditureReported() {
         _ = OwnerEarningsOf(
             ("NetPPEPurchaseAndSale", -30m),
-            ("PurchaseOfPPE", -99m),
-            ("SaleOfPPE", 1m),
+            ("PurchaseOfPPE", -35m),
+            ("SaleOfPPE", 5m),
             ("CapitalExpenditureReported", 99m))
             .Should().Be(70m);
     }
@@ -185,60 +185,171 @@ public class CompanyReportTests {
 
     // B10: prefer DepreciationAndAmortization, else Depreciation + Amortization,
     // else DepreciationAmortizationDepletion (without adding Depletion again).
+    // Each case has capex 10, since a year with D&A but no capex key is left out of the average (B12).
+
+    private static decimal OwnerEarningsWithCapEx10(params (string Key, decimal Value)[] fields) =>
+        OwnerEarningsOf([.. fields, ("NetPPEPurchaseAndSale", -10m)]);
 
     [Fact]
     public void OwnerEarnings_DepreciationAndAmortizationWithAmortization_CountsAmortizationOnce() {
         // The common B10 case: D&A and Amortization both present (often equal), no Depreciation key.
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("DepreciationAndAmortization", 50m),
             ("Amortization", 50m))
-            .Should().Be(150m);
+            .Should().Be(140m);
     }
 
     [Fact]
     public void OwnerEarnings_DepreciationAndAmortization_PreferredOverDepreciation() {
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("DepreciationAndAmortization", 50m),
             ("Depreciation", 30m),
             ("Amortization", 20m))
-            .Should().Be(150m);
+            .Should().Be(140m);
     }
 
     [Fact]
     public void OwnerEarnings_NoDepreciationAndAmortization_UsesDepreciationPlusAmortization() {
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("Depreciation", 30m),
             ("Amortization", 10m))
-            .Should().Be(140m);
+            .Should().Be(130m);
     }
 
     [Fact]
     public void OwnerEarnings_DepreciationAndAmortization_StillAddsDepletion() {
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("DepreciationAndAmortization", 50m),
             ("Depletion", 5m))
-            .Should().Be(155m);
+            .Should().Be(145m);
     }
 
     [Fact]
     public void OwnerEarnings_OnlyDepreciationAmortizationDepletion_UsesIt() {
-        _ = OwnerEarningsOf(("DepreciationAmortizationDepletion", 40m)).Should().Be(140m);
+        _ = OwnerEarningsWithCapEx10(("DepreciationAmortizationDepletion", 40m)).Should().Be(130m);
     }
 
     [Fact]
     public void OwnerEarnings_DepreciationAmortizationDepletionFallback_DoesNotAddDepletionAgain() {
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("DepreciationAmortizationDepletion", 40m),
             ("Depletion", 40m))
-            .Should().Be(140m);
+            .Should().Be(130m);
     }
 
     [Fact]
     public void OwnerEarnings_DepreciationAmortizationDepletion_IgnoredWhenDepreciationAndAmortizationPresent() {
-        _ = OwnerEarningsOf(
+        _ = OwnerEarningsWithCapEx10(
             ("DepreciationAndAmortization", 50m),
             ("DepreciationAmortizationDepletion", 70m))
-            .Should().Be(150m);
+            .Should().Be(140m);
+    }
+
+    #endregion
+
+    #region B12 - missing or incomplete capex
+
+    // Decision 14: when NetPPEPurchaseAndSale and PurchaseOfPPE are both present, use the larger outflow.
+
+    [Fact]
+    public void OwnerEarnings_CapEx_NetPPEMissesPurchases_UsesPurchasePlusSale() {
+        // The SU 2024 shape: NetPPE +5 (just some proceeds) while purchases were -60.
+        _ = OwnerEarningsOf(
+            ("NetPPEPurchaseAndSale", 5m),
+            ("PurchaseOfPPE", -60m),
+            ("SaleOfPPE", 4m))
+            .Should().Be(44m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_NetPPESmallerOutflow_NoSaleKey_UsesPurchase() {
+        _ = OwnerEarningsOf(
+            ("NetPPEPurchaseAndSale", -30m),
+            ("PurchaseOfPPE", -50m))
+            .Should().Be(50m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_NetPPELargerOutflow_KeepsNetPPE() {
+        // NetPPE = PurchaseOfPPE, ignoring the sale proceeds: the larger outflow is kept.
+        _ = OwnerEarningsOf(
+            ("NetPPEPurchaseAndSale", -40m),
+            ("PurchaseOfPPE", -40m),
+            ("SaleOfPPE", 10m))
+            .Should().Be(60m);
+    }
+
+    // Decision 15: a year with D&A > 0 but no capex key is left out of the owner-earnings average.
+
+    [Fact]
+    public void OwnerEarnings_YearWithDepreciationButNoCapEx_LeftOutOfOwnerEarningsAverageOnly() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("ChangesInCash", 10m),
+            ("DepreciationAndAmortization", 20m),
+            ("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("ChangesInCash", 30m),
+            ("DepreciationAndAmortization", 50m)));
+
+        _ = Process(report);
+
+        _ = report.AverageOwnerEarnings.Should().Be(90m);
+        _ = report.AverageNetCashFlow.Should().Be(20m);
+        _ = report.NumAnnualProcessedCashFlowReports.Should().Be(2);
+    }
+
+    [Fact]
+    public void OwnerEarnings_YearWithNeitherDepreciationNorCapEx_IsKept() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 80m)));
+
+        _ = Process(report).AverageOwnerEarnings.Should().Be(75m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_YearWithDepletionButNoCapEx_IsLeftOut() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("Depletion", 10m)));
+
+        _ = Process(report).AverageOwnerEarnings.Should().Be(70m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_NoYearHasCapEx_IsZero() {
+        // Interim until W1, which makes this NotAvailable.
+        _ = OwnerEarningsOf(("DepreciationAndAmortization", 50m)).Should().Be(0m);
+    }
+
+    // Decision 16: Depletion is not added again when DepreciationAmortizationDepletion equals D&A.
+
+    [Fact]
+    public void OwnerEarnings_DepletionAlreadyInsideDepreciationAndAmortization_NotAddedAgain() {
+        _ = OwnerEarningsWithCapEx10(
+            ("DepreciationAndAmortization", 50m),
+            ("DepreciationAmortizationDepletion", 50m),
+            ("Depletion", 5m))
+            .Should().Be(140m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_DepletionSeparateFromDepreciationAndAmortization_IsAdded() {
+        _ = OwnerEarningsWithCapEx10(
+            ("DepreciationAndAmortization", 50m),
+            ("DepreciationAmortizationDepletion", 55m),
+            ("Depletion", 5m))
+            .Should().Be(145m);
     }
 
     #endregion
