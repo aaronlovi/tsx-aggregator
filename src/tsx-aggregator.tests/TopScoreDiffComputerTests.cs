@@ -26,7 +26,11 @@ public class TopScoreDiffComputerTests {
             curDividendsPaid: 5_000_000M,
             curAdjustedRetainedEarnings: 50_000_000M,
             oldestRetainedEarnings: 30_000_000M,
-            numAnnualProcessedCashFlowReports: 5);
+            numAnnualProcessedCashFlowReports: 5,
+            roeCashFlowNumerator: 60_000_000M,
+            roeCashFlowEquity: 500_000_000M,
+            roeOwnerEarningsNumerator: 55_000_000M,
+            roeOwnerEarningsEquity: 500_000_000M);
     }
 
     /// <summary>
@@ -50,7 +54,11 @@ public class TopScoreDiffComputerTests {
             curDividendsPaid: 5_000_000M,
             curAdjustedRetainedEarnings: 50_000_000M,
             oldestRetainedEarnings: 30_000_000M,
-            numAnnualProcessedCashFlowReports: 5);
+            numAnnualProcessedCashFlowReports: 5,
+            roeCashFlowNumerator: 40_000_000M,
+            roeCashFlowEquity: 500_000_000M,
+            roeOwnerEarningsNumerator: 35_000_000M,
+            roeOwnerEarningsEquity: 500_000_000M);
     }
 
     /// <summary>

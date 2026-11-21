@@ -19,6 +19,10 @@ public class CompanyReport
 
     private readonly SortedDictionary<DateOnly, CashFlowItem> _annualProcessedCashFlowItems;
 
+    // An opening annual balance sheet counts for ROE only if it is about a year before the closing one (decision 24).
+    private const int MinDaysBetweenAnnualBalanceSheets = 330;
+    private const int MaxDaysBetweenAnnualBalanceSheets = 400;
+
     // Dates of the report sets the current and oldest balance sheet figures come from.
     private DateOnly? _mostRecentReportDate;
     private DateOnly? _oldestReportDate;
@@ -86,6 +90,16 @@ public class CompanyReport
         }
     }
     public int NumAnnualProcessedCashFlowReports => _annualProcessedCashFlowItems.Count;
+    // Return on equity inputs (B11, decisions 8 and 24): a numerator sum and an equity sum per ROE, so the checks can
+    // fail a non-positive equity. Null when there is no figure to use.
+    /// <summary>Net cash flow + dividends over the ROE years (pre-dividend, like owner earnings).</summary>
+    public decimal? RoeCashFlowNumerator { get; private set; }
+    /// <summary>Equity the <see cref="RoeCashFlowNumerator"/> years were earned on.</summary>
+    public decimal? RoeCashFlowEquity { get; private set; }
+    /// <summary>Owner earnings over the ROE years that count for owner earnings (decision 15).</summary>
+    public decimal? RoeOwnerEarningsNumerator { get; private set; }
+    /// <summary>Equity the <see cref="RoeOwnerEarningsNumerator"/> years were earned on.</summary>
+    public decimal? RoeOwnerEarningsEquity { get; private set; }
     [JsonIgnore] public string ToShortString => $"{Symbol}/{Name}";
 
     #endregion
@@ -191,6 +205,7 @@ public class CompanyReport
         TransformMostRecentFinancialReports(warnings);
         TransformMostRecentAnnualDividends();
         TransformRawFinancialReports(warnings);
+        CalcReturnOnEquityInputs();
     }
 
     #endregion
@@ -464,6 +479,63 @@ public class CompanyReport
         EstimateMissingRetainedEarnings();
 
         CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
+    }
+
+    /// <summary>
+    /// Return on equity over matched annual years (B11, decisions 8 and 24): Σ numerator / Σ average equity, where a
+    /// year's average equity is the mean of its opening and closing annual equity. Annual balance sheets only.
+    /// ROE (CF) uses net cash flow + dividends in every year; ROE (OE) owner earnings in the years that count for them.
+    /// </summary>
+    private void CalcReturnOnEquityInputs()
+    {
+        (RoeCashFlowNumerator, RoeCashFlowEquity) =
+            CalcReturnOnEquityInputs(_ => true, item => item.NetCashFlow + item.DividendsPaid);
+        (RoeOwnerEarningsNumerator, RoeOwnerEarningsEquity) =
+            CalcReturnOnEquityInputs(item => item.IsUsableForOwnerEarnings, item => item.OwnerEarnings);
+    }
+
+    private (decimal? Numerator, decimal? Equity) CalcReturnOnEquityInputs(
+        Func<CashFlowItem, bool> isRoeYear, Func<CashFlowItem, decimal> numeratorOf)
+    {
+        List<KeyValuePair<DateOnly, CashFlowItem>> years = [.. _annualProcessedCashFlowItems.Where(kv => isRoeYear(kv.Value))];
+        if (years.Count == 0)
+            return (null, null);
+
+        decimal numeratorSum = 0;
+        decimal equitySum = 0;
+        int matchedYears = 0;
+        foreach ((DateOnly date, CashFlowItem item) in years)
+        {
+            // A year without closing equity is skipped in both sums.
+            if (!_annualRawBalanceSheets.TryGetValue(date, out RawReportDataMap? closingSheet)
+                || closingSheet["StockholdersEquity"] is not decimal closing)
+            {
+                continue;
+            }
+
+            // The opening is the previous annual balance sheet, if it is about a year earlier and has equity;
+            // otherwise the closing equity stands alone.
+            KeyValuePair<DateOnly, RawReportDataMap> opening = _annualRawBalanceSheets.LastOrDefault(kv => kv.Key < date);
+            int daysBetween = date.DayNumber - opening.Key.DayNumber;
+            decimal averageEquity = opening.Value is not null
+                && daysBetween is >= MinDaysBetweenAnnualBalanceSheets and <= MaxDaysBetweenAnnualBalanceSheets
+                && opening.Value["StockholdersEquity"] is decimal openingEquity
+                    ? (openingEquity + closing) / 2
+                    : closing;
+
+            numeratorSum += numeratorOf(item);
+            equitySum += averageEquity;
+            matchedYears++;
+        }
+
+        if (matchedYears >= 2)
+            return (numeratorSum, equitySum);
+
+        // Fewer than 2 usable years: the average over all the ROE's years / the latest annual equity.
+        RawReportDataMap? latestWithEquity = _annualRawBalanceSheets.Values.LastOrDefault(bs => bs.HasValue("StockholdersEquity"));
+        if (latestWithEquity is null)
+            return (null, null);
+        return (years.Average(kv => numeratorOf(kv.Value)), latestWithEquity["StockholdersEquity"]);
     }
 
     /// <summary>

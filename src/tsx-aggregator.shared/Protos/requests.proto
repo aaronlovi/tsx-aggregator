@@ -64,6 +64,11 @@ message GetStocksDataReplyItem {
     // Retained earnings estimated with net income - dividends because the balance sheet lacks them (decision 23).
     bool current_retained_earnings_estimated = 23;
     bool oldest_retained_earnings_estimated = 24;
+    // Return on equity inputs (B11): numerator and equity sums; ROE = numerator / equity.
+    optional int64 roe_cash_flow_numerator = 25;
+    optional int64 roe_cash_flow_equity = 26;
+    optional int64 roe_owner_earnings_numerator = 27;
+    optional int64 roe_owner_earnings_equity = 28;
 }
 
 message GetStockSearchResultsRequest {

@@ -201,6 +201,14 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             item.AverageNetCashFlow = netCashFlow;
         if (fields.AverageOwnerEarnings is long ownerEarnings)
             item.AverageOwnerEarnings = ownerEarnings;
+        if (fields.RoeCashFlowNumerator is long roeCashFlowNumerator)
+            item.RoeCashFlowNumerator = roeCashFlowNumerator;
+        if (fields.RoeCashFlowEquity is long roeCashFlowEquity)
+            item.RoeCashFlowEquity = roeCashFlowEquity;
+        if (fields.RoeOwnerEarningsNumerator is long roeOwnerEarningsNumerator)
+            item.RoeOwnerEarningsNumerator = roeOwnerEarningsNumerator;
+        if (fields.RoeOwnerEarningsEquity is long roeOwnerEarningsEquity)
+            item.RoeOwnerEarningsEquity = roeOwnerEarningsEquity;
         return item;
     }
 

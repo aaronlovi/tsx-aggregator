@@ -43,6 +43,11 @@ public class CompanyDetailsApiContractTests {
         curAdjustedRetainedEarnings: 400_000_000M,
         oldestRetainedEarnings: 250_000_000M,
         numAnnualProcessedCashFlowReports: 6,
+        // ROE over matched years (B11): 6.7% from cash flow (NCF + dividends), exactly 10% from owner earnings.
+        roeCashFlowNumerator: 360_000_000M,
+        roeCashFlowEquity: 5_400_000_000M,
+        roeOwnerEarningsNumerator: 540_000_000M,
+        roeOwnerEarningsEquity: 5_400_000_000M,
         mostRecentAnnualReportDate: new DateTimeOffset(2025, 12, 31, 0, 0, 0, TimeSpan.Zero),
         mostRecentQuarterlyReportDate: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero),
         lastUpdatedDate: new DateTimeOffset(2026, 8, 26, 2, 2, 35, TimeSpan.Zero));
@@ -81,6 +86,10 @@ public class CompanyDetailsApiContractTests {
             curAdjustedRetainedEarnings: sample.CurAdjustedRetainedEarnings,
             oldestRetainedEarnings: null,
             numAnnualProcessedCashFlowReports: sample.NumAnnualProcessedCashFlowReports,
+            roeCashFlowNumerator: sample.RoeCashFlowNumerator,
+            roeCashFlowEquity: null,
+            roeOwnerEarningsNumerator: sample.RoeOwnerEarningsNumerator,
+            roeOwnerEarningsEquity: null,
             mostRecentAnnualReportDate: sample.MostRecentAnnualReportDate,
             mostRecentQuarterlyReportDate: sample.MostRecentQuarterlyReportDate,
             lastUpdatedDate: sample.LastUpdatedDate,

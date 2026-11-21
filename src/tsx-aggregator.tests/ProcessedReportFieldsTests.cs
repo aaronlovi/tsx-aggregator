@@ -40,7 +40,31 @@ public class ProcessedReportFieldsTests {
             OldestRetainedEarnings: -4,
             CurBookValue: 470,
             AverageNetCashFlow: 50,
-            AverageOwnerEarnings: 60));
+            AverageOwnerEarnings: 60,
+            // A report written before B11 has no ROE inputs: the old formula, average / current equity.
+            RoeCashFlowNumerator: 50,
+            RoeCashFlowEquity: 500,
+            RoeOwnerEarningsNumerator: 60,
+            RoeOwnerEarningsEquity: 500));
+    }
+
+    [Fact]
+    public void TryParse_RoeInputsPresent_ReadsThem() {
+        string json = CompleteJson.Replace("\"AverageOwnerEarnings\": 60", """
+            "AverageOwnerEarnings": 60,
+            "RoeCashFlowNumerator": 300.4,
+            "RoeCashFlowEquity": 2500,
+            "RoeOwnerEarningsNumerator": null,
+            "RoeOwnerEarningsEquity": null
+            """);
+
+        bool ok = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields);
+
+        _ = ok.Should().BeTrue();
+        _ = fields!.RoeCashFlowNumerator.Should().Be(300);
+        _ = fields.RoeCashFlowEquity.Should().Be(2500);
+        _ = fields.RoeOwnerEarningsNumerator.Should().BeNull();
+        _ = fields.RoeOwnerEarningsEquity.Should().BeNull();
     }
 
     [Fact]

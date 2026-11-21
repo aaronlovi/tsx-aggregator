@@ -24,7 +24,7 @@
   "debtToEquityRatio": 0.3333333333333333333333333333,
   "curPriceToBookRatio": 1.5625,
   "longTermDebtToBookRatio": 0.375,
-  "returnOnEquity_FromCashFlow": 0.0444444444444444444444444444,
+  "returnOnEquity_FromCashFlow": 0.0666666666666666666666666667,
   "returnOnEquity_FromOwnerEarnings": 0.1,
   "estimatedNextYearBookValue_FromCashFlow": 840000000,
   "estimatedNextYearBookValue_FromOwnerEarnings": 890000000,

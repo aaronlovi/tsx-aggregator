@@ -23,7 +23,11 @@ public sealed record ProcessedReportFields(
     long? AverageNetCashFlow,
     long? AverageOwnerEarnings,
     bool CurRetainedEarningsEstimated = false,
-    bool OldestRetainedEarningsEstimated = false) {
+    bool OldestRetainedEarningsEstimated = false,
+    long? RoeCashFlowNumerator = null,
+    long? RoeCashFlowEquity = null,
+    long? RoeOwnerEarningsNumerator = null,
+    long? RoeOwnerEarningsEquity = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -50,6 +54,18 @@ public sealed record ProcessedReportFields(
             return false;
         }
 
+        // ROE inputs (B11). Reports written before B11 don't have them: use the old formula, average / current equity.
+        long? roeCashFlowNumerator = averageNetCashFlow, roeCashFlowEquity = curTotalShareholdersEquity;
+        long? roeOwnerEarningsNumerator = averageOwnerEarnings, roeOwnerEarningsEquity = curTotalShareholdersEquity;
+        if (root.TryGetProperty("RoeCashFlowEquity", out _)
+            && (!GetNullableDataPoint(root, "RoeCashFlowNumerator", out roeCashFlowNumerator)
+                || !GetNullableDataPoint(root, "RoeCashFlowEquity", out roeCashFlowEquity)
+                || !GetNullableDataPoint(root, "RoeOwnerEarningsNumerator", out roeOwnerEarningsNumerator)
+                || !GetNullableDataPoint(root, "RoeOwnerEarningsEquity", out roeOwnerEarningsEquity))) {
+            fields = null;
+            return false;
+        }
+
         fields = new ProcessedReportFields(
             curNumShares,
             curTotalShareholdersEquity,
@@ -64,7 +80,11 @@ public sealed record ProcessedReportFields(
             averageOwnerEarnings,
             // Optional: reports written before decision 23 don't have the flags.
             GetFlag(root, "CurRetainedEarningsEstimated"),
-            GetFlag(root, "OldestRetainedEarningsEstimated"));
+            GetFlag(root, "OldestRetainedEarningsEstimated"),
+            roeCashFlowNumerator,
+            roeCashFlowEquity,
+            roeOwnerEarningsNumerator,
+            roeOwnerEarningsEquity);
         return true;
     }
 

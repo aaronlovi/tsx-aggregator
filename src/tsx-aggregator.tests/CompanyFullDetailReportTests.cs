@@ -30,7 +30,11 @@ public class CompanyFullDetailReportTests {
         curDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
-        numAnnualProcessedCashFlowReports: 5);
+        numAnnualProcessedCashFlowReports: 5,
+        roeCashFlowNumerator: averageNetCashFlow,
+        roeCashFlowEquity: 1_000M,
+        roeOwnerEarningsNumerator: averageOwnerEarnings,
+        roeOwnerEarningsEquity: 1_000M);
 
     #region B5 - dividends in the est. return and max price
 
@@ -96,7 +100,11 @@ public class CompanyFullDetailReportTests {
         curDividendsPaid: 0M,
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
-        numAnnualProcessedCashFlowReports: 5);
+        numAnnualProcessedCashFlowReports: 5,
+        roeCashFlowNumerator: averageNetCashFlow,
+        roeCashFlowEquity: equity,
+        roeOwnerEarningsNumerator: averageOwnerEarnings,
+        roeOwnerEarningsEquity: equity);
 
     [Fact]
     public void NegativeEquity_FailsDebtToEquityAndBothRoeChecks() {
@@ -197,7 +205,11 @@ public class CompanyFullDetailReportTests {
         curDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: curAdjustedRetainedEarnings,
         oldestRetainedEarnings: oldestRetainedEarnings,
-        numAnnualProcessedCashFlowReports: 5);
+        numAnnualProcessedCashFlowReports: 5,
+        roeCashFlowNumerator: averageNetCashFlow,
+        roeCashFlowEquity: equity,
+        roeOwnerEarningsNumerator: averageOwnerEarnings,
+        roeOwnerEarningsEquity: equity);
 
     /// <summary>The 1-based numbers of the checks with the given result.</summary>
     private static int[] ChecksWith(CompanyFullDetailReport report, CheckResult result) =>

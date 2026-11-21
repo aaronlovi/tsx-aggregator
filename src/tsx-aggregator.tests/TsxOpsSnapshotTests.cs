@@ -34,7 +34,11 @@ public class TsxOpsSnapshotTests {
         OldestRetainedEarnings: 100_000_000,
         CurBookValue: 1_000_000_000,
         AverageNetCashFlow: 150_000_000,
-        AverageOwnerEarnings: 150_000_000);
+        AverageOwnerEarnings: 150_000_000,
+        RoeCashFlowNumerator: 750_000_000,
+        RoeCashFlowEquity: 5_000_000_000,
+        RoeOwnerEarningsNumerator: 750_000_000,
+        RoeOwnerEarningsEquity: 5_000_000_000);
 
     [Fact]
     public void Csv_RoundTripsQuotesCommasAndEmptyFields() {
@@ -71,8 +75,10 @@ public class TsxOpsSnapshotTests {
 
     [Fact]
     public void RowBuilder_MissingEquity_WritesNotAvailableAndEmptyCells() {
-        // W1: no equity (so no book value) makes checks 1, 2, 3, 10, 14 and 15 N; the missing figures are empty cells.
-        ProcessedReportFields fields = AllPassFields with { CurTotalShareholdersEquity = null, CurBookValue = null };
+        // W1: no equity (so no book value, and no ROE equity) makes checks 1, 2, 3, 10, 14 and 15 N; the missing
+        // figures are empty cells.
+        ProcessedReportFields fields = AllPassFields with {
+            CurTotalShareholdersEquity = null, CurBookValue = null, RoeCashFlowEquity = null, RoeOwnerEarningsEquity = null };
 
         Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields);
 

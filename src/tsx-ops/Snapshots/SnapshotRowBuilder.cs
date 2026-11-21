@@ -93,7 +93,11 @@ internal static class SnapshotRowBuilder {
             curDividendsPaid: fields.CurDividendsPaid,
             curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings,
             oldestRetainedEarnings: fields.OldestRetainedEarnings,
-            numAnnualProcessedCashFlowReports: instrument.NumAnnualCashFlowReports);
+            numAnnualProcessedCashFlowReports: instrument.NumAnnualCashFlowReports,
+            roeCashFlowNumerator: fields.RoeCashFlowNumerator,
+            roeCashFlowEquity: fields.RoeCashFlowEquity,
+            roeOwnerEarningsNumerator: fields.RoeOwnerEarningsNumerator,
+            roeOwnerEarningsEquity: fields.RoeOwnerEarningsEquity);
 
         // Same order as CompanyFullDetailReport.OverallScore.
         CheckResult[] checks = report.AllChecks;

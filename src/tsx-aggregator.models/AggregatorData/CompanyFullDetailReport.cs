@@ -24,6 +24,10 @@ public class CompanyFullDetailReport {
         decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
         decimal? oldestRetainedEarnings,
         int numAnnualProcessedCashFlowReports,
+        decimal? roeCashFlowNumerator,
+        decimal? roeCashFlowEquity,
+        decimal? roeOwnerEarningsNumerator,
+        decimal? roeOwnerEarningsEquity,
         DateTimeOffset? mostRecentAnnualReportDate = null,
         DateTimeOffset? mostRecentQuarterlyReportDate = null,
         DateTimeOffset? lastUpdatedDate = null,
@@ -46,6 +50,10 @@ public class CompanyFullDetailReport {
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
+        RoeCashFlowNumerator = roeCashFlowNumerator;
+        RoeCashFlowEquity = roeCashFlowEquity;
+        RoeOwnerEarningsNumerator = roeOwnerEarningsNumerator;
+        RoeOwnerEarningsEquity = roeOwnerEarningsEquity;
         MostRecentAnnualReportDate = mostRecentAnnualReportDate;
         MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
         LastUpdatedDate = lastUpdatedDate;
@@ -74,6 +82,10 @@ public class CompanyFullDetailReport {
         curAdjustedRetainedEarnings: item.HasCurrentAdjustedRetainedEarnings ? item.CurrentAdjustedRetainedEarnings : null,
         oldestRetainedEarnings: item.HasOldestRetainedEarnings ? item.OldestRetainedEarnings : null,
         numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
+        roeCashFlowNumerator: item.HasRoeCashFlowNumerator ? item.RoeCashFlowNumerator : null,
+        roeCashFlowEquity: item.HasRoeCashFlowEquity ? item.RoeCashFlowEquity : null,
+        roeOwnerEarningsNumerator: item.HasRoeOwnerEarningsNumerator ? item.RoeOwnerEarningsNumerator : null,
+        roeOwnerEarningsEquity: item.HasRoeOwnerEarningsEquity ? item.RoeOwnerEarningsEquity : null,
         mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
         mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
         lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset(),
@@ -97,6 +109,12 @@ public class CompanyFullDetailReport {
     public decimal? CurAdjustedRetainedEarnings { get; init; }
     public decimal? OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
+    // ROE inputs (B11, decisions 8 and 24): numerator and equity sums over matched annual years, from CompanyReport.
+    // Not part of the REST contract: the API serves the ROE ratios.
+    [JsonIgnore] public decimal? RoeCashFlowNumerator { get; init; }
+    [JsonIgnore] public decimal? RoeCashFlowEquity { get; init; }
+    [JsonIgnore] public decimal? RoeOwnerEarningsNumerator { get; init; }
+    [JsonIgnore] public decimal? RoeOwnerEarningsEquity { get; init; }
     public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
     public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
     public DateTimeOffset? LastUpdatedDate { get; init; }
@@ -115,8 +133,10 @@ public class CompanyFullDetailReport {
     public decimal? DebtToEquityRatio => Utilities.DivOrNull(CurLongTermDebt, CurTotalShareholdersEquity);
     public decimal? CurPriceToBookRatio => Utilities.DivOrNull(CurMarketCap, CurBookValue);
     public decimal? LongTermDebtToBookRatio => Utilities.DivOrNull(CurLongTermDebt, CurBookValue);
-    public decimal? ReturnOnEquity_FromCashFlow => Utilities.DivOrNull(AverageNetCashFlow, CurTotalShareholdersEquity);
-    public decimal? ReturnOnEquity_FromOwnerEarnings => Utilities.DivOrNull(AverageOwnerEarnings, CurTotalShareholdersEquity);
+    /// <summary>Net cash flow + dividends over the equity it was earned on (B11).</summary>
+    public decimal? ReturnOnEquity_FromCashFlow => Utilities.DivOrNull(RoeCashFlowNumerator, RoeCashFlowEquity);
+    /// <summary>Owner earnings over the equity they were earned on (B11).</summary>
+    public decimal? ReturnOnEquity_FromOwnerEarnings => Utilities.DivOrNull(RoeOwnerEarningsNumerator, RoeOwnerEarningsEquity);
     public decimal? EstimatedNextYearBookValue_FromCashFlow => CurBookValue + AverageNetCashFlow;
     public decimal? EstimatedNextYearBookValue_FromOwnerEarnings => CurBookValue + AverageOwnerEarnings;
     /// <summary>
@@ -181,9 +201,9 @@ public class CompanyFullDetailReport {
             ? (current > oldest ? CheckResult.Pass : CheckResult.Fail)
             : CheckResult.NotAvailable;
     public CheckResult DoesPassCheck_ROE_FromCashFlow_BigEnough =>
-        CheckWithPositiveDenominator(CurTotalShareholdersEquity, ReturnOnEquity_FromCashFlow, roe => roe > 0.10M);
+        CheckWithPositiveDenominator(RoeCashFlowEquity, ReturnOnEquity_FromCashFlow, roe => roe > 0.10M);
     public CheckResult DoesPassCheck_ROE_FromOwnerEarnings_BigEnough =>
-        CheckWithPositiveDenominator(CurTotalShareholdersEquity, ReturnOnEquity_FromOwnerEarnings, roe => roe > 0.10M);
+        CheckWithPositiveDenominator(RoeOwnerEarningsEquity, ReturnOnEquity_FromOwnerEarnings, roe => roe > 0.10M);
 
     /// <summary>The 15 checks, in the order the score has always listed them. Not serialized: each has its own field.</summary>
     [JsonIgnore]
