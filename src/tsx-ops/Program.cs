@@ -18,6 +18,7 @@ public static class Program {
         new ServiceCommand(),
         new EventsCommand(),
         new RequeueCommand(),
+        new PriorityCommand(),
     ];
 
     public static async Task<int> Main(string[] args) {

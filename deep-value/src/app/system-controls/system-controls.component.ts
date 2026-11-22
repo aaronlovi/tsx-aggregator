@@ -1,6 +1,17 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CompanyService } from '../services/company.service';
 
+/** Shown when the web API refuses a change because it is read-only (production on the deploy laptop). */
+export const READ_ONLY_MESSAGE =
+    'This site is read-only, so it cannot change the priority queue. On the deploy laptop, use the tsx menu '
+    + '(17 to 19) or tsx-ops priority.';
+
+/** The message for a failed change: the read-only explanation for a 405, otherwise the given fallback. */
+export function changeErrorMessage(error: unknown, fallback: string): string {
+    const status = (error as { status?: number } | null)?.status;
+    return status === 405 ? READ_ONLY_MESSAGE : fallback;
+}
+
 @Component({
     selector: 'app-system-controls',
     templateUrl: './system-controls.component.html',
@@ -62,7 +73,7 @@ export class SystemControlsComponent implements OnInit {
                 this.loadPriorityQueue();
             },
             error: (error: any) => {
-                this.errorMsg = 'Failed to set priority companies';
+                this.errorMsg = changeErrorMessage(error, 'Failed to set priority companies');
                 this.loading = false;
             }
         });
@@ -79,7 +90,7 @@ export class SystemControlsComponent implements OnInit {
                 this.loadPriorityQueue();
             },
             error: (error: any) => {
-                this.errorMsg = 'Failed to clear priority queue';
+                this.errorMsg = changeErrorMessage(error, 'Failed to clear priority queue');
                 this.loading = false;
             }
         });

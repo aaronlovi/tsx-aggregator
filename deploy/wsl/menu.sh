@@ -94,6 +94,11 @@ while :; do
   15  Back up the database
   16  Start-up check (after a reboot)
 
+  Priority companies (scraped next; the read-only site cannot change them)
+  17  Show the priority queue
+  18  Set the priority queue
+  19  Clear the priority queue
+
    q  Quit
 EOF
     read -rp "Choice: " choice
@@ -123,6 +128,15 @@ EOF
             echo "Copy it off this laptop now and then (e.g. to OneDrive under /mnt/c/Users/...)."
             pause_for_enter ;;
         16) bash "$repo/deploy/wsl/check-startup.sh" tsx-web 5080; pause_for_enter ;;
+        17) tsx_ops priority show; pause_for_enter ;;
+        18) read -rp "Company symbols, comma-separated (e.g. RY,TD): " symbols
+            if [ -n "${symbols// /}" ]; then
+                tsx_ops priority set "$symbols"
+                echo
+                confirm "Replace the queue with these?" && tsx_ops priority set "$symbols" --execute
+            fi
+            pause_for_enter ;;
+        19) confirm "Empty the priority queue?" && tsx_ops priority clear --execute; pause_for_enter ;;
         q|Q) exit 0 ;;
         *) echo "Unknown choice: $choice" ;;
     esac
