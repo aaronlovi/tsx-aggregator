@@ -27,9 +27,7 @@ public sealed class RawCollectorLoopTests : IAsyncLifetime {
 
     public RawCollectorLoopTests() {
         // Saved state with both fetches a day away, so no timeout scrapes during the test.
-        DateTime farAway = DateTime.UtcNow.AddDays(1);
-        _ = _dbm.Setup(d => d.GetApplicationCommonState(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Result.SUCCESS, new ApplicationCommonState(false, farAway, farAway, null, InstrumentKey.Empty)));
+        SetupSavedFetchTimes(DateTime.UtcNow.AddDays(1));
         _ = _dbm.Setup(d => d.GetCommonServiceState("RawCollector", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Result.SUCCESS, false));
         _ = _dbm.Setup(d => d.PersistStateFsmState(It.IsAny<ApplicationCommonState>(), It.IsAny<CancellationToken>()))
@@ -37,6 +35,10 @@ public sealed class RawCollectorLoopTests : IAsyncLifetime {
         _ = _dbm.Setup(d => d.PersistCommonServiceState(It.IsAny<bool>(), "RawCollector", It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.SUCCESS);
     }
+
+    private void SetupSavedFetchTimes(DateTime nextFetch) =>
+        _dbm.Setup(d => d.GetApplicationCommonState(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Result.SUCCESS, new ApplicationCommonState(false, nextFetch, nextFetch, null, InstrumentKey.Empty)));
 
     public Task InitializeAsync() => Task.CompletedTask;
 
@@ -74,6 +76,17 @@ public sealed class RawCollectorLoopTests : IAsyncLifetime {
 
         // And the loop is still alive.
         await collector.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+        collector.IsPaused.Should().BeTrue();
+    }
+
+    // Review R93: CancellationTokenSource.CancelAfter throws for waits over about 49.7 days, which ended the loop at startup.
+    [Fact]
+    public async Task NextFetchFarInTheFuture_DoesNotStopTheLoop() {
+        SetupSavedFetchTimes(DateTime.UtcNow.AddYears(1));
+        RawCollector collector = await StartCollector();
+
+        await collector.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+
         collector.IsPaused.Should().BeTrue();
     }
 }

@@ -18,6 +18,9 @@ namespace tsx_aggregator;
 internal partial class RawCollector : BackgroundService, INamedService, IPausableService {
     private const string _serviceName = "RawCollector";
 
+    /// <summary>The longest the loop sleeps before checking its timers again; waking early is harmless.</summary>
+    private static readonly TimeSpan MaxWaitBetweenChecks = TimeSpan.FromDays(1);
+
     private long _reqId;
     private readonly ILogger _logger;
     private readonly IDbmService _dbm;
@@ -68,6 +71,8 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
                 var utcNow = DateTime.UtcNow;
                 var nextTimeout = _stateFsm.NextTimeout;
                 TimeSpan interval = Utilities.CalculateTimeDifference(utcNow, nextTimeout);
+                if (interval > MaxWaitBetweenChecks)
+                    interval = MaxWaitBetweenChecks; // CancelAfter throws beyond about 49.7 days
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                 cts.CancelAfter(interval);
