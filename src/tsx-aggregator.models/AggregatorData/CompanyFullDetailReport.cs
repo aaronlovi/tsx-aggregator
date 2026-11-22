@@ -78,7 +78,7 @@ public class CompanyFullDetailReport {
         instrumentSymbol: item.InstrumentSymbol,
         companyName: item.CompanyName,
         instrumentName: item.InstrumentName,
-        pricePerShare: item.PerSharePrice,
+        pricePerShare: item.PerSharePrice is null ? 0M : item.PerSharePrice, // unset: no quote (decision 20)
         curLongTermDebt: item.CurrentLongTermDebt,
         curShortTermDebt: item.CurrentShortTermDebt,
         curTotalShareholdersEquity: item.HasCurrentTotalShareholdersEquity ? item.CurrentTotalShareholdersEquity : null,

@@ -395,6 +395,20 @@ public class CompanyFullDetailReportTests {
     }
 
     [Fact]
+    public void FromReplyItem_UnsetPrice_IsZeroAndHasNoMarketCap() {
+        // Threw a NullReferenceException in the DecimalValue conversion (found during step 6 of the code review).
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", CurrentNumShares = 100, NumAnnualProcessedCashFlowReports = 5,
+        };
+
+        var report = CompanyFullDetailReport.FromReplyItem(item);
+
+        _ = report.PricePerShare.Should().Be(0M);
+        _ = report.CurMarketCap.Should().BeNull("no quote means no market cap (decision 20)");
+    }
+
+    [Fact]
     public void FromReplyItem_ReadsShortTermDebt() {
         var item = new GetStocksDataReplyItem {
             Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
