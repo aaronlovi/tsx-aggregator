@@ -17,6 +17,7 @@ public static class Program {
         new DiffCommand(),
         new ServiceCommand(),
         new EventsCommand(),
+        new RequeueCommand(),
     ];
 
     public static async Task<int> Main(string[] args) {

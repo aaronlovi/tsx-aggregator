@@ -79,6 +79,20 @@ public sealed class DbmInMemory : IDbmService {
 
     #region RAW
 
+    public ValueTask<(Result, IReadOnlyList<RequeueCandidateDto>)> GetRequeueCandidates(CancellationToken ct) {
+        lock (_data) {
+            return ValueTask.FromResult<(Result, IReadOnlyList<RequeueCandidateDto>)>((Result.SUCCESS, _data.GetRequeueCandidates()));
+        }
+    }
+
+    public ValueTask<Result> InsertRawDataChangedEvents(IReadOnlyCollection<long> instrumentIds, CancellationToken ct) {
+        lock (_data) {
+            foreach (long instrumentId in instrumentIds)
+                _data.InsertInstrumentEvent(new InstrumentEventDto(instrumentId, DateTimeOffset.UtcNow, (int)Constants.CompanyEventTypes.RawDataChanged, false));
+        }
+        return ValueTask.FromResult(Result.SUCCESS);
+    }
+
     public ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct) {
         lock (_data) {
             IReadOnlyList<InstrumentDto> instrumentList = _data.GetInstrumentList();

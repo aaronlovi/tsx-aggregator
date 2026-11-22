@@ -11,6 +11,10 @@ service AdminService {
     // Pause or resume a pausable service. If the service runs in this process the change takes effect now;
     // otherwise it is saved and applies when the service next starts. Either way it is persisted.
     rpc SetServicePaused(SetServicePausedRequest) returns (SetServicePausedReply);
+
+    // Queue a RawDataChanged event for listed instruments with raw data, so the Aggregator rebuilds their processed
+    // reports (O1). Without execute it only reports what it would queue. Unknown symbols queue nothing.
+    rpc RequeueInstruments(RequeueInstrumentsRequest) returns (RequeueInstrumentsReply);
 }
 
 message GetServiceStatusRequest {}
@@ -38,4 +42,21 @@ message SetServicePausedReply {
     bool was_paused = 3;
     bool is_paused = 4;
     bool applied_to_running_service = 5;  // False: saved for the next start
+}
+
+message RequeueInstrumentsRequest {
+    bool all = 1;                          // Every listed instrument with raw data
+    repeated string instrument_symbols = 2; // Or these (case-insensitive); ignored when all is set
+    bool execute = 3;                      // False: dry run
+}
+
+message RequeueInstrumentsReply {
+    bool success = 1;
+    string error_message = 2;
+    bool executed = 3;                       // True when events were inserted
+    repeated string queued_symbols = 4;      // Queued, or would be on a dry run
+    repeated string already_pending_symbols = 5; // A RawDataChanged event is already waiting: not queued again
+    repeated string no_raw_data_symbols = 6; // Listed but no raw reports: nothing to rebuild
+    repeated string unknown_symbols = 7;     // Not a listed instrument
+    bool aggregator_woken = 8;               // The Aggregator runs here and was told to check now
 }

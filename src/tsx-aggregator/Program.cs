@@ -83,7 +83,8 @@ public class Program {
                 // Pausable services, for AdminSvc. Same singletons as above.
                 _ = services
                     .AddSingleton<IPausableService>(p => p.GetRequiredService<Aggregator>())
-                    .AddSingleton<IPausableService>(p => p.GetRequiredService<RawCollector>());
+                    .AddSingleton<IPausableService>(p => p.GetRequiredService<RawCollector>())
+                    .AddSingleton<IEventQueueWaker>(p => p.GetRequiredService<Aggregator>());
 
                 if (DoesConfigContainConnectionString(context.Configuration))
                     _ = services.AddSingleton<IDbmService, DbmService>();

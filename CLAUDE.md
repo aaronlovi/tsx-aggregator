@@ -41,6 +41,7 @@ dotnet run --project tsx-ops -- diff <a.csv> <b.csv>        # Markdown summary o
 dotnet run --project tsx-ops -- service status               # pausable services (needs tsx-aggregator running)
 dotnet run --project tsx-ops -- service pause RawCollector --execute   # dry run without --execute
 dotnet run --project tsx-ops -- events                       # Aggregator event queue: pending/stuck by type
+dotnet run --project tsx-ops -- requeue --all --execute       # rebuild processed reports (dry run without --execute)
 ```
 
 ### Frontend (Angular)
@@ -98,7 +99,7 @@ Each can be toggled on/off via `HostedServices` in appsettings.json:
 
 ### Operations CLI (tsx-ops/)
 
-Separate executable for operations-support work against a running system, with one subcommand per task (`snapshot`, `diff`, `service`, `events`). Add new operational tools as `tsx-ops` commands rather than new executables. Conventions:
+Separate executable for operations-support work against a running system, with one subcommand per task (`snapshot`, `diff`, `service`, `events`, `requeue`). Add new operational tools as `tsx-ops` commands rather than new executables. Conventions:
 - Read-only commands run all queries in one `REPEATABLE READ READ ONLY` transaction (`Db/OpsDb.cs`).
 - Never use `DbmService`: its constructor runs migrations.
 - Data goes to stdout or files, logs go to stderr. Exit codes: 0 ok, 1 error, 2 usage.

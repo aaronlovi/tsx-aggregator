@@ -19,6 +19,10 @@ public interface IDbmService {
     ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetCurrentInstrumentReports(long instrumentId, CancellationToken ct);
     ValueTask<Result> MarkInstrumentEventAsProcessed(InstrumentEventExDto dto, CancellationToken ct);
     ValueTask<Result> InsertProcessedCompanyReport(ProcessedInstrumentReportDto dto, CancellationToken ct);
+    /// <summary>Listed instruments, with raw-data and pending-RawDataChanged flags (tsx-ops requeue).</summary>
+    ValueTask<(Result, IReadOnlyList<RequeueCandidateDto>)> GetRequeueCandidates(CancellationToken ct);
+    /// <summary>Queues one unprocessed RawDataChanged event per instrument, so the Aggregator rebuilds its report.</summary>
+    ValueTask<Result> InsertRawDataChangedEvents(IReadOnlyCollection<long> instrumentIds, CancellationToken ct);
 
     // Raw
     ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct);

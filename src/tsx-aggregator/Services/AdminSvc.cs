@@ -20,18 +20,23 @@ namespace tsx_aggregator.Services;
 internal sealed class AdminSvc : AdminService.AdminServiceBase {
     private readonly IReadOnlyList<IPausableService> _services;
     private readonly HashSet<string> _runningServiceNames;
+    private readonly bool _aggregatorRuns;
     private readonly IDbmService _dbm;
     private readonly ILogger<AdminSvc> _logger;
+    private readonly IEventQueueWaker? _eventQueueWaker;
 
     public AdminSvc(
         IEnumerable<IPausableService> services,
         IOptions<HostedServicesOptions> hostedServices,
         IDbmService dbm,
-        ILogger<AdminSvc> logger) {
+        ILogger<AdminSvc> logger,
+        IEventQueueWaker? eventQueueWaker = null) {
 
         _services = services.ToList();
         _dbm = dbm;
         _logger = logger;
+        _eventQueueWaker = eventQueueWaker;
+        _aggregatorRuns = hostedServices.Value.RunAggregator ?? false;
 
         HostedServicesOptions options = hostedServices.Value;
         _runningServiceNames = new HashSet<string>(StringComparer.Ordinal);
@@ -101,6 +106,52 @@ internal sealed class AdminSvc : AdminService.AdminServiceBase {
         } catch (Exception ex) {
             _logger.LogError(ex, "AdminSvc - SetServicePaused failed for {ServiceName}", service.ServiceName);
             return new SetServicePausedReply { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    public override async Task<RequeueInstrumentsReply> RequeueInstruments(RequeueInstrumentsRequest request, ServerCallContext context) {
+        CancellationToken ct = context.CancellationToken;
+        if (!request.All && request.InstrumentSymbols.Count == 0)
+            return new RequeueInstrumentsReply { Success = false, ErrorMessage = "Give instrument symbols, or all" };
+
+        try {
+            (Result res, IReadOnlyList<RequeueCandidateDto> candidates) = await _dbm.GetRequeueCandidates(ct);
+            if (!res.Success)
+                return new RequeueInstrumentsReply { Success = false, ErrorMessage = res.ErrMsg };
+
+            RequeuePlan plan = RequeuePlanner.Plan(candidates, request.All ? null : request.InstrumentSymbols);
+            var reply = new RequeueInstrumentsReply { Success = true };
+            reply.QueuedSymbols.AddRange(plan.ToQueue.Select(c => c.InstrumentSymbol));
+            reply.AlreadyPendingSymbols.AddRange(plan.AlreadyPending);
+            reply.NoRawDataSymbols.AddRange(plan.NoRawData);
+            reply.UnknownSymbols.AddRange(plan.Unknown);
+
+            // A typo shouldn't half-run a requeue: unknown symbols queue nothing.
+            if (plan.Unknown.Count > 0) {
+                reply.Success = false;
+                reply.ErrorMessage = $"Not listed instruments: {string.Join(", ", plan.Unknown)}. Nothing queued.";
+                return reply;
+            }
+
+            if (!request.Execute || plan.ToQueue.Count == 0)
+                return reply;
+
+            _logger.LogWarning("AdminSvc - requeue: queueing RawDataChanged for {Count} instruments", plan.ToQueue.Count);
+            res = await _dbm.InsertRawDataChangedEvents([.. plan.ToQueue.Select(c => c.InstrumentId)], ct);
+            if (!res.Success)
+                return new RequeueInstrumentsReply { Success = false, ErrorMessage = res.ErrMsg };
+
+            reply.Executed = true;
+            if (_aggregatorRuns && _eventQueueWaker is not null) {
+                _eventQueueWaker.CheckForEventsNow();
+                reply.AggregatorWoken = true;
+            }
+            return reply;
+        } catch (OperationCanceledException) {
+            return new RequeueInstrumentsReply { Success = false, ErrorMessage = "Canceled" };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "AdminSvc - RequeueInstruments failed");
+            return new RequeueInstrumentsReply { Success = false, ErrorMessage = ex.Message };
         }
     }
 

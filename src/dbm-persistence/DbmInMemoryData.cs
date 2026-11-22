@@ -380,6 +380,20 @@ internal class DbmInMemoryData {
         }
     }
 
+    public IReadOnlyList<RequeueCandidateDto> GetRequeueCandidates() {
+        var candidates = new List<RequeueCandidateDto>();
+        foreach (InstrumentDto instrument in _instrumentsByInstrumentId.Values) {
+            if (instrument.ObsoletedDate is not null)
+                continue;
+            bool hasRaw = _rawDataReportsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentRawDataReportDto>? reports)
+                && reports.Exists(r => r.ObsoletedDate is null);
+            bool hasPending = _instrumentEventsByInstrumentId.TryGetValue(instrument.InstrumentId, out List<InstrumentEventDto>? events)
+                && events.Exists(e => !e.IsProcessed && e.EventType == (int)CompanyEventTypes.RawDataChanged);
+            candidates.Add(new RequeueCandidateDto(instrument.InstrumentId, instrument.InstrumentSymbol, hasRaw, hasPending));
+        }
+        return candidates;
+    }
+
     public void InsertInstrumentEvent(InstrumentEventDto dto) {
         if (!_instrumentEventsByInstrumentId.TryGetValue(dto.InstrumentId, out List<InstrumentEventDto>? instrumentEvents))
             instrumentEvents = _instrumentEventsByInstrumentId[dto.InstrumentId] = [];

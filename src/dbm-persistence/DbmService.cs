@@ -116,6 +116,19 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
+    public async ValueTask<(Result, IReadOnlyList<RequeueCandidateDto>)> GetRequeueCandidates(CancellationToken ct) {
+        var stmt = new GetRequeueCandidatesStmt();
+        DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
+        return (res, stmt.Candidates);
+    }
+
+    public async ValueTask<Result> InsertRawDataChangedEvents(IReadOnlyCollection<long> instrumentIds, CancellationToken ct) {
+        if (instrumentIds.Count == 0)
+            return Result.SUCCESS;
+        var stmt = new InsertRawDataChangedEventsStmt(instrumentIds, DateTimeOffset.UtcNow);
+        return await _exec.ExecuteWithRetry(stmt, ct);
+    }
+
     #endregion
 
     #region Raw

@@ -415,3 +415,10 @@ public class ApplicationCommonState {
         return dt1 < dt2 ? dt1 : dt2;
     }
 }
+
+/// <summary>A listed instrument as <c>tsx-ops requeue</c> sees it (O1, decision 26).</summary>
+public record RequeueCandidateDto(
+    long InstrumentId,
+    string InstrumentSymbol,
+    bool HasRawReports,
+    bool HasPendingRawDataChanged);

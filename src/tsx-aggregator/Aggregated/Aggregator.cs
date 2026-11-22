@@ -16,7 +16,7 @@ using static tsx_aggregator.shared.Constants;
 
 namespace tsx_aggregator;
 
-public class Aggregator : BackgroundService, INamedService, IPausableService {
+public class Aggregator : BackgroundService, INamedService, IPausableService, IEventQueueWaker {
     private const string _serviceName = "Aggregator";
     private static readonly TimeSpan ShortInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LongInterval = TimeSpan.FromMinutes(2);
@@ -48,6 +48,9 @@ public class Aggregator : BackgroundService, INamedService, IPausableService {
     public bool PostRequest(AggregatorInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     public bool IsPaused => _stateFsm.IsPaused;
+
+    /// <summary>Checks the event queue now (through the FSM, so a paused Aggregator ignores it).</summary>
+    public void CheckForEventsNow() => PostTimeoutRequest(DateTime.UtcNow);
 
     public async Task SetPausedAsync(bool paused, CancellationToken ct) {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
