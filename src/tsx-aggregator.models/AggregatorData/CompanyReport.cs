@@ -114,98 +114,22 @@ public class CompanyReport
 
     #region PUBLIC API
 
-    public void AddBalanceSheet(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt)
-    {
-        switch (rptPeriodType)
-        {
-            case ReportPeriodTypes.Annual:
-                AddAnnualBalanceSheet(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Quarterly:
-            case ReportPeriodTypes.SemiAnnual: // Treat the same as quarterly
-                AddNonAnnualBalanceSheet(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Undefined:
-            default:
-                break;
-        }
-    }
+    public void AddBalanceSheet(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt) =>
+        _ = ByPeriodType(rptPeriodType, _annualRawBalanceSheets, _nonAnnualRawBalanceSheets)?.TryAdd(reportDate, rpt);
 
-    public void AddCashFlowStatement(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt)
-    {
-        switch (rptPeriodType)
-        {
-            case ReportPeriodTypes.Annual:
-                AddAnnualCashFlowStatement(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Quarterly:
-            case ReportPeriodTypes.SemiAnnual: // Treat the same as quarterly
-                AddNonAnnualCashFlowStatement(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Undefined:
-            default:
-                break;
-        }
-    }
+    public void AddCashFlowStatement(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt) =>
+        _ = ByPeriodType(rptPeriodType, _annualRawCashFlowReports, _nonAnnualRawCashFlowReports)?.TryAdd(reportDate, rpt);
 
-    public void AddIncomeStatement(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt)
-    {
-        switch (rptPeriodType)
-        {
-            case ReportPeriodTypes.Annual:
-                AddAnnualIncomeStatement(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Quarterly:
-            case ReportPeriodTypes.SemiAnnual: // Treat the same as quarterly
-                AddNonAnnualIncomeStatement(reportDate, rpt);
-                break;
-            case ReportPeriodTypes.Undefined:
-            default:
-                break;
-        }
-    }
+    public void AddIncomeStatement(ReportPeriodTypes rptPeriodType, DateOnly reportDate, RawReportDataMap rpt) =>
+        _ = ByPeriodType(rptPeriodType, _annualRawIncomeStatements, _nonAnnualRawIncomeStatements)?.TryAdd(reportDate, rpt);
 
-    public void AddAnnualIncomeStatement(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_annualRawIncomeStatements.ContainsKey(reportDate))
-            return;
-        _annualRawIncomeStatements.Add(reportDate, rpt);
-    }
-
-    public void AddAnnualBalanceSheet(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_annualRawBalanceSheets.ContainsKey(reportDate))
-            return;
-        _annualRawBalanceSheets.Add(reportDate, rpt);
-    }
-
-    public void AddAnnualCashFlowStatement(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_annualRawCashFlowReports.ContainsKey(reportDate))
-            return;
-        _annualRawCashFlowReports.Add(reportDate, rpt);
-    }
-
-    public void AddNonAnnualIncomeStatement(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_nonAnnualRawIncomeStatements.ContainsKey(reportDate))
-            return;
-        _nonAnnualRawIncomeStatements.Add(reportDate, rpt);
-    }
-
-    public void AddNonAnnualBalanceSheet(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_nonAnnualRawBalanceSheets.ContainsKey(reportDate))
-            return;
-        _nonAnnualRawBalanceSheets.Add(reportDate, rpt);
-    }
-
-    public void AddNonAnnualCashFlowStatement(DateOnly reportDate, RawReportDataMap rpt)
-    {
-        if (_nonAnnualRawCashFlowReports.ContainsKey(reportDate))
-            return;
-        _nonAnnualRawCashFlowReports.Add(reportDate, rpt);
-    }
+    // A second report for a date already added is ignored.
+    public void AddAnnualIncomeStatement(DateOnly reportDate, RawReportDataMap rpt) => _ = _annualRawIncomeStatements.TryAdd(reportDate, rpt);
+    public void AddAnnualBalanceSheet(DateOnly reportDate, RawReportDataMap rpt) => _ = _annualRawBalanceSheets.TryAdd(reportDate, rpt);
+    public void AddAnnualCashFlowStatement(DateOnly reportDate, RawReportDataMap rpt) => _ = _annualRawCashFlowReports.TryAdd(reportDate, rpt);
+    public void AddNonAnnualIncomeStatement(DateOnly reportDate, RawReportDataMap rpt) => _ = _nonAnnualRawIncomeStatements.TryAdd(reportDate, rpt);
+    public void AddNonAnnualBalanceSheet(DateOnly reportDate, RawReportDataMap rpt) => _ = _nonAnnualRawBalanceSheets.TryAdd(reportDate, rpt);
+    public void AddNonAnnualCashFlowStatement(DateOnly reportDate, RawReportDataMap rpt) => _ = _nonAnnualRawCashFlowReports.TryAdd(reportDate, rpt);
 
     public void ProcessReports(IList<string> warnings)
     {
@@ -222,60 +146,10 @@ public class CompanyReport
 
     private void TransformOldestFinancialReports(IList<string> warnings)
     {
-        var oldestReportDate = DateOnly.MaxValue;
-        RawReportDataMap? oldestBalanceSheet = null;
-        RawReportDataMap? oldestCashFlowStatement = null;
-        RawReportDataMap? oldestIncomeStatement = null;
-
-        foreach ((DateOnly reportDate, RawReportDataMap rawBalanceSheet) in _nonAnnualRawBalanceSheets)
-        {
-            bool foundMatchingCashFlow = _nonAnnualRawCashFlowReports.ContainsKey(reportDate);
-            bool foundMatchingIncome = _nonAnnualRawIncomeStatements.ContainsKey(reportDate);
-            // All statement types must contain the given report date
-            if (reportDate > oldestReportDate
-                || !foundMatchingCashFlow
-                || !foundMatchingIncome)
-            {
-                if (!foundMatchingCashFlow)
-                    warnings.Add($"Non-annual balance sheet for {reportDate} but no matching cash flow statement");
-                if (!foundMatchingIncome)
-                    warnings.Add($"Non-annual balance sheet for {reportDate} but no matching income statement");
-                continue;
-            }
-
-            oldestReportDate = reportDate;
-            oldestBalanceSheet = rawBalanceSheet;
-            oldestCashFlowStatement = _nonAnnualRawCashFlowReports[reportDate];
-            oldestIncomeStatement = _nonAnnualRawIncomeStatements[reportDate];
-        }
-
-        // Maybe one of the annual reports is the oldest?
-        foreach ((DateOnly reportDate, RawReportDataMap rawBalanceSheet) in _annualRawBalanceSheets)
-        {
-            bool foundMatchingCashFlow = _annualRawCashFlowReports.ContainsKey(reportDate);
-            bool foundMatchingIncome = _annualRawIncomeStatements.ContainsKey(reportDate);
-            // All statement types must contain the given report date
-            if (reportDate > oldestReportDate
-                || !_annualRawCashFlowReports.ContainsKey(reportDate)
-                || !_annualRawIncomeStatements.ContainsKey(reportDate))
-            {
-                if (!foundMatchingCashFlow)
-                    warnings.Add($"Annual balance sheet for {reportDate} but no matching cash flow statement");
-                if (!foundMatchingIncome)
-                    warnings.Add($"Annual balance sheet for {reportDate} but no matching income statement");
-                continue;
-            }
-
-            oldestReportDate = reportDate;
-            oldestBalanceSheet = rawBalanceSheet;
-            oldestCashFlowStatement = _annualRawCashFlowReports[reportDate];
-            oldestIncomeStatement = _annualRawIncomeStatements[reportDate];
-        }
-
-        if (oldestReportDate == DateOnly.MaxValue
-            || oldestBalanceSheet is null
-            || oldestCashFlowStatement is null
-            || oldestIncomeStatement is null)
+        // The earliest complete report set; an annual set wins a tie with a non-annual one. Every balance sheet
+        // without a matching cash flow or income statement is warned about.
+        if (FindReportSet((candidate, pick) => candidate <= pick, warnings) is not (DateOnly oldestReportDate, var oldestBalanceSheet)
+            || oldestReportDate == DateOnly.MaxValue) // The old loops' "none found" sentinel, kept as it was
         {
             return;
         }
@@ -286,6 +160,64 @@ public class CompanyReport
         else
             LogMissingPropertyWarning(oldestReportDate, "RetainedEarnings", warnings);
     }
+
+    /// <summary>
+    /// The complete report set (a balance sheet with a cash flow and an income statement of the same date) that
+    /// <paramref name="replaces"/> picks: non-annual sets oldest first, then annual sets oldest first, each one
+    /// replacing the pick so far when replaces(its date, the pick's date) is true. Null when there is no complete
+    /// set. With <paramref name="warnings"/>, every balance sheet missing a matching statement is warned about.
+    /// </summary>
+    private (DateOnly Date, RawReportDataMap BalanceSheet)? FindReportSet(
+        Func<DateOnly, DateOnly, bool> replaces, IList<string>? warnings)
+    {
+        List<(DateOnly Date, RawReportDataMap BalanceSheet)> nonAnnual = CompleteReportSets(
+            _nonAnnualRawBalanceSheets, _nonAnnualRawCashFlowReports, _nonAnnualRawIncomeStatements, "Non-annual", warnings);
+        List<(DateOnly Date, RawReportDataMap BalanceSheet)> annual = CompleteReportSets(
+            _annualRawBalanceSheets, _annualRawCashFlowReports, _annualRawIncomeStatements, "Annual", warnings);
+
+        (DateOnly Date, RawReportDataMap BalanceSheet)? pick = null;
+        foreach ((DateOnly Date, RawReportDataMap BalanceSheet) set in nonAnnual.Concat(annual))
+        {
+            if (pick is not (DateOnly pickDate, _) || replaces(set.Date, pickDate))
+                pick = set;
+        }
+        return pick;
+    }
+
+    /// <summary>The balance sheets, oldest first, that have a cash flow and an income statement of the same date.</summary>
+    private static List<(DateOnly Date, RawReportDataMap BalanceSheet)> CompleteReportSets(
+        SortedDictionary<DateOnly, RawReportDataMap> balanceSheets,
+        SortedDictionary<DateOnly, RawReportDataMap> cashFlowStatements,
+        SortedDictionary<DateOnly, RawReportDataMap> incomeStatements,
+        string periodLabel,
+        IList<string>? warnings)
+    {
+        List<(DateOnly Date, RawReportDataMap BalanceSheet)> sets = [];
+        foreach ((DateOnly reportDate, RawReportDataMap balanceSheet) in balanceSheets)
+        {
+            bool foundMatchingCashFlow = cashFlowStatements.ContainsKey(reportDate);
+            bool foundMatchingIncome = incomeStatements.ContainsKey(reportDate);
+            if (!foundMatchingCashFlow)
+                warnings?.Add($"{periodLabel} balance sheet for {reportDate} but no matching cash flow statement");
+            if (!foundMatchingIncome)
+                warnings?.Add($"{periodLabel} balance sheet for {reportDate} but no matching income statement");
+            if (foundMatchingCashFlow && foundMatchingIncome)
+                sets.Add((reportDate, balanceSheet));
+        }
+        return sets;
+    }
+
+    /// <summary>The annual or non-annual collection for a period type; null for an undefined period type.</summary>
+    private static SortedDictionary<DateOnly, RawReportDataMap>? ByPeriodType(
+        ReportPeriodTypes rptPeriodType,
+        SortedDictionary<DateOnly, RawReportDataMap> annual,
+        SortedDictionary<DateOnly, RawReportDataMap> nonAnnual) =>
+        rptPeriodType switch
+        {
+            ReportPeriodTypes.Annual => annual,
+            ReportPeriodTypes.Quarterly or ReportPeriodTypes.SemiAnnual => nonAnnual, // Semi-annual is treated as quarterly
+            _ => null,
+        };
 
     /// <summary>
     /// Current dividends come from the most recent annual cash flow statement, so they cover a full year like the
@@ -303,48 +235,9 @@ public class CompanyReport
 
     private void TransformMostRecentFinancialReports(IList<string> warnings)
     {
-        var mostRecentReportDate = DateOnly.MinValue;
-        RawReportDataMap? mostRecentBalanceSheet = null;
-        RawReportDataMap? mostRecentCashFlowStatement = null;
-        RawReportDataMap? mostRecentIncomeStatement = null;
-
-        foreach ((DateOnly reportDate, RawReportDataMap rawBalanceSheet) in _nonAnnualRawBalanceSheets)
-        {
-            // All statement types must contain the given report date
-            if (reportDate < mostRecentReportDate
-                || !_nonAnnualRawCashFlowReports.ContainsKey(reportDate)
-                || !_nonAnnualRawIncomeStatements.ContainsKey(reportDate))
-            {
-                continue;
-            }
-
-            mostRecentReportDate = reportDate;
-            mostRecentBalanceSheet = rawBalanceSheet;
-            mostRecentCashFlowStatement = _nonAnnualRawCashFlowReports[reportDate];
-            mostRecentIncomeStatement = _nonAnnualRawIncomeStatements[reportDate];
-        }
-
-        // Maybe one of the annual reports is the most recent?
-        foreach ((DateOnly reportDate, RawReportDataMap rawBalanceSheet) in _annualRawBalanceSheets)
-        {
-            // All statement types must contain the given report date
-            if (reportDate < mostRecentReportDate
-                || !_annualRawCashFlowReports.ContainsKey(reportDate)
-                || !_annualRawIncomeStatements.ContainsKey(reportDate))
-            {
-                continue;
-            }
-
-            mostRecentReportDate = reportDate;
-            mostRecentBalanceSheet = rawBalanceSheet;
-            mostRecentCashFlowStatement = _annualRawCashFlowReports[reportDate];
-            mostRecentIncomeStatement = _annualRawIncomeStatements[reportDate];
-        }
-
-        if (mostRecentReportDate == DateOnly.MinValue
-            || mostRecentBalanceSheet is null
-            || mostRecentCashFlowStatement is null
-            || mostRecentIncomeStatement is null)
+        // The latest complete report set; an annual set wins a tie with a non-annual one.
+        if (FindReportSet((candidate, pick) => candidate >= pick, warnings: null) is not (DateOnly mostRecentReportDate, var mostRecentBalanceSheet)
+            || mostRecentReportDate == DateOnly.MinValue) // The old loops' "none found" sentinel, kept as it was
         {
             return;
         }
