@@ -155,6 +155,19 @@ public class Program {
         Microsoft.Extensions.Logging.ILogger logger,
         string section) {
         foreach (var child in config.GetSection(section).GetChildren())
-            logger.LogInformation("[{Section}] {Key} = {Value}", section, child.Key, child.Value);
+            logger.LogInformation("[{Section}] {Key} = {Value}", section, child.Key, FormatConfigValueForLog(child.Key, child.Value));
+    }
+
+    private static readonly string[] SecretKeyParts = ["password", "secret", "token", "apikey"];
+
+    /// <summary>
+    /// A configuration value as the startup log shows it: secrets (passwords, secrets, tokens, API keys) only say
+    /// whether they are set, since the log also goes to a file.
+    /// </summary>
+    internal static string FormatConfigValueForLog(string key, string? value) {
+        bool isSecret = Array.Exists(SecretKeyParts, part => key.Contains(part, StringComparison.OrdinalIgnoreCase));
+        if (!isSecret)
+            return value ?? string.Empty;
+        return string.IsNullOrEmpty(value) ? "(not set)" : "(set, masked)";
     }
 }
