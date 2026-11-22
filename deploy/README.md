@@ -1,87 +1,208 @@
 # Deploy Laptop Setup
 
-Scripts and steps for running the stack in Docker inside Ubuntu on WSL on the Windows deploy laptop. The plan and its decisions are in the vault note "Deploy Laptop Plan". This file covers **step 1 only**: proving that Ubuntu, Docker Engine and a container start after a reboot with nobody logged in, before any tsx code goes there.
+Scripts and steps for running the stack in Docker inside Ubuntu on WSL on the Windows deploy laptop, reachable on the home wifi. The plan and its decisions are in the vault note "Deploy Laptop Plan". On the deploy laptop the Windows account is `EMILY` and the Ubuntu user `aaron`; the repo is at `~/dev/tsx-aggregator` in Ubuntu.
 
 ## Table of Contents
 
 - [1. What Gets Installed](#1-what-gets-installed)
-- [2. Setup](#2-setup)
-  - [2.1. Setup - Get the Scripts onto the Laptop](#21-setup---get-the-scripts-onto-the-laptop)
-  - [2.2. Setup - Install Ubuntu on WSL](#22-setup---install-ubuntu-on-wsl)
-  - [2.3. Setup - Docker Engine and the Test Container](#23-setup---docker-engine-and-the-test-container)
-  - [2.4. Setup - The Scheduled Task and Memory Cap](#24-setup---the-scheduled-task-and-memory-cap)
-- [3. The Reboot Test](#3-the-reboot-test)
-- [4. Undo](#4-undo)
+- [2. Start-Up Without a Login (Step 1, Done)](#2-start-up-without-a-login-step-1-done)
+  - [2.1. Start-Up Without a Login (Step 1, Done) - Install Ubuntu on WSL](#21-start-up-without-a-login-step-1-done---install-ubuntu-on-wsl)
+  - [2.2. Start-Up Without a Login (Step 1, Done) - Docker Engine and the Test Container](#22-start-up-without-a-login-step-1-done---docker-engine-and-the-test-container)
+  - [2.3. Start-Up Without a Login (Step 1, Done) - The Scheduled Task and Memory Cap](#23-start-up-without-a-login-step-1-done---the-scheduled-task-and-memory-cap)
+  - [2.4. Start-Up Without a Login (Step 1, Done) - The Reboot Test](#24-start-up-without-a-login-step-1-done---the-reboot-test)
+- [3. Home Wifi Access](#3-home-wifi-access)
+- [4. Prepare the Stack](#4-prepare-the-stack)
+  - [4.1. Prepare the Stack - Update the Repo](#41-prepare-the-stack---update-the-repo)
+  - [4.2. Prepare the Stack - .NET SDK for tsx-ops](#42-prepare-the-stack---net-sdk-for-tsx-ops)
+  - [4.3. Prepare the Stack - Settings and Secrets](#43-prepare-the-stack---settings-and-secrets)
+  - [4.4. Prepare the Stack - Build the Images](#44-prepare-the-stack---build-the-images)
+- [5. Move Over](#5-move-over)
+  - [5.1. Move Over - Stop the Dev Laptop and Dump](#51-move-over---stop-the-dev-laptop-and-dump)
+  - [5.2. Move Over - Restore and Start](#52-move-over---restore-and-start)
+  - [5.3. Move Over - Verify](#53-move-over---verify)
+  - [5.4. Move Over - Reboot Test](#54-move-over---reboot-test)
+  - [5.5. Move Over - The Dev Laptop Afterwards](#55-move-over---the-dev-laptop-afterwards)
+- [6. Day to Day](#6-day-to-day)
+- [7. Undo](#7-undo)
 
 ## 1. What Gets Installed
 
 | Where | What | Script |
 |---|---|---|
 | Windows | Ubuntu on WSL | `wsl --install` (by hand) |
-| Ubuntu | systemd on, Docker Engine (not Docker Desktop), a throwaway `nginx` container on `127.0.0.1:5080` | `wsl/setup-ubuntu.sh` |
-
-Port 5080, not 5060: Chrome and Edge refuse 5060 (`ERR_UNSAFE_PORT`, the SIP port).
+| Ubuntu | systemd on, Docker Engine (not Docker Desktop) | `wsl/setup-ubuntu.sh` |
 | Windows | `.wslconfig` memory cap (default half the RAM), scheduled task "WSL keep-alive" | `windows/setup-wsl-host.ps1` |
+| Windows | `.wslconfig` mirrored networking, firewall rules for TCP 5080 from Private networks | `windows/setup-home-network.ps1` |
+| Ubuntu | .NET SDK in `~/.dotnet` (for `tsx-ops`) | `dotnet-install.sh` (4.2) |
+| Docker | `tsx-postgres`, `tsx-aggregator`, `tsx-webapi`, `tsx-web` | `wsl/stack.sh` |
 
-The "WSL keep-alive" task runs `wsl.exe -d Ubuntu --exec /bin/sleep infinity` at startup, whether or not anyone is logged on, with no time limit. That starts Ubuntu, systemd starts Docker, and Docker restarts the container. The task tracker and ngrok are not touched.
+The "WSL keep-alive" task runs `wsl.exe -d Ubuntu --exec /bin/sleep infinity` at startup, whether or not anyone is logged on, with no time limit. That starts Ubuntu, systemd starts Docker, and Docker restarts the containers. The task tracker and its ngrok tunnel are not touched.
 
-## 2. Setup
+The site uses port 5080, not 5060: Chrome and Edge refuse 5060 (`ERR_UNSAFE_PORT`, the SIP port).
 
-### 2.1. Setup - Get the Scripts onto the Laptop
+## 2. Start-Up Without a Login (Step 1, Done)
 
-Either clone the repo inside Ubuntu once it is installed (2.2), or, before the repo is pushed, copy the `deploy` folder over with Chrome Remote Desktop's **Upload file** (session menu on the right). Uploaded files land in the deploy laptop's `Downloads` folder, which Ubuntu sees as `/mnt/c/Users/<windows user>/Downloads`.
+Passed on 2026-11-21. Kept for a rebuild of the laptop.
 
-### 2.2. Setup - Install Ubuntu on WSL
+### 2.1. Start-Up Without a Login (Step 1, Done) - Install Ubuntu on WSL
 
-In an **Administrator** PowerShell:
+In an **Administrator** PowerShell: `wsl --install -d Ubuntu`. Reboot if asked; if `wsl -l -v` still lists no distribution, run the command again. It asks for the Linux user and password. If WSL complains about virtualization, turn on VT-x / AMD-V ("SVM") in the BIOS. Then in Ubuntu: `git clone https://github.com/aaronlovi/tsx-aggregator.git ~/dev/tsx-aggregator`.
+
+### 2.2. Start-Up Without a Login (Step 1, Done) - Docker Engine and the Test Container
+
+In Ubuntu: `bash ~/dev/tsx-aggregator/deploy/wsl/setup-ubuntu.sh`. If it turns on systemd and stops, run `wsl --shutdown` in PowerShell, reopen Ubuntu and run it again. It installs Docker Engine and starts a throwaway `nginx` container on `127.0.0.1:5080`. Close and reopen Ubuntu once so `docker` works without `sudo`.
+
+### 2.3. Start-Up Without a Login (Step 1, Done) - The Scheduled Task and Memory Cap
+
+In an **Administrator** PowerShell (the window title says Administrator, the prompt is `C:\WINDOWS\system32`). Type only the command, not the `PS ...>` prompt:
 
 ```powershell
-wsl --install -d Ubuntu
+powershell -ExecutionPolicy Bypass -File \\wsl$\Ubuntu\home\aaron\dev\tsx-aggregator\deploy\windows\setup-wsl-host.ps1
 ```
 
-Reboot when asked, then open **Ubuntu** from the Start menu and create the Linux user and password. If WSL complains about virtualization, turn on virtualization (VT-x / AMD-V, "SVM") in the laptop's BIOS.
+Answer **R** if asked about a network location. It asks for the Windows password of the account (for a Microsoft account, that password, not the PIN). `267009` at the end means the task is running. If the account password changes, run it again.
 
-### 2.3. Setup - Docker Engine and the Test Container
+### 2.4. Start-Up Without a Login (Step 1, Done) - The Reboot Test
 
-In Ubuntu:
+Restart, don't log in, wait 5 minutes, connect with Chrome Remote Desktop and log in, then in Ubuntu `bash ~/dev/tsx-aggregator/deploy/wsl/check-startup.sh` and in PowerShell:
+
+```powershell
+(Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+(Get-ScheduledTaskInfo -TaskName 'WSL keep-alive').LastRunTime
+(Get-Process explorer).StartTime
+```
+
+Pass: the task time and the container start are before the `explorer` start (the login).
+
+## 3. Home Wifi Access
+
+1. In an **Administrator** PowerShell:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File \\wsl$\Ubuntu\home\aaron\dev\tsx-aggregator\deploy\windows\setup-home-network.ps1
+   ```
+   It turns on mirrored networking for WSL and allows TCP 5080 in from **Private** networks only, then prints each network's type and the laptop's address.
+2. If it warns that the home wifi is **Public**: Settings → Network & internet → Wi-Fi → your network → Network profile type → **Private network**. Only for your own home network.
+3. Apply it: `wsl --shutdown` in PowerShell (the keep-alive task restarts WSL within a minute, or open Ubuntu).
+4. In the router, reserve the address it printed for this laptop (DHCP reservation), so the phone bookmark keeps working.
+5. Repeat the reboot test (2.4) once: mirrored networking changes how WSL starts.
+
+## 4. Prepare the Stack
+
+All in Ubuntu unless stated. Nothing here touches the live system on the dev laptop.
+
+### 4.1. Prepare the Stack - Update the Repo
 
 ```bash
-bash deploy/wsl/setup-ubuntu.sh
+cd ~/dev/tsx-aggregator && git pull --ff-only
 ```
 
-The first run only turns on systemd and stops. Then, in Windows PowerShell, run `wsl --shutdown`, open Ubuntu again and run the script a second time. It installs Docker Engine, starts it, and starts the test container. It ends with "http://127.0.0.1:5080 answers inside Ubuntu."
+### 4.2. Prepare the Stack - .NET SDK for tsx-ops
 
-### 2.4. Setup - The Scheduled Task and Memory Cap
-
-In an **Administrator** PowerShell (path to wherever the `deploy` folder is):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File deploy\windows\setup-wsl-host.ps1
-```
-
-It asks for your Windows account password (for a Microsoft account, the Microsoft account password, not the PIN); Task Scheduler needs it to run the task with nobody logged on. It ends with the task state; `267009` means running. Options: `-WslMemoryGB 8` to choose the cap, `-SkipWslConfig` to leave `.wslconfig` alone.
-
-Then open `http://localhost:5080` in a Windows browser: it should show "Welcome to nginx!". That checks that Windows reaches Docker's ports in Ubuntu.
-
-## 3. The Reboot Test
-
-1. Restart the laptop (Start → Power → Restart). **Don't log in.**
-2. Wait 5 minutes. Note the time.
-3. Connect with Chrome Remote Desktop and log in. Note the time.
-4. Open Ubuntu and run `bash deploy/wsl/check-startup.sh`.
-5. **Pass** if "Ubuntu (WSL) up since" and "Container started" are both before the login time, and `http://localhost:5080` shows the nginx page in a Windows browser.
-6. Check the task tracker still works (its ngrok address from a phone).
-
-If it fails, Task Scheduler → "WSL keep-alive" → History and "Last Run Result" show why.
-
-## 4. Undo
+`tsx-ops` (snapshots, event queue, pause/resume, requeue) runs with `dotnet run`, so Ubuntu needs the SDK version in `src/global.json`:
 
 ```bash
-docker rm -f startup-test
+curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+bash /tmp/dotnet-install.sh --jsonfile ~/dev/tsx-aggregator/src/global.json
+echo 'export DOTNET_ROOT=$HOME/.dotnet; export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+source ~/.bashrc && dotnet --version
+```
+
+### 4.3. Prepare the Stack - Settings and Secrets
+
+1. The Google service-account key (the `linear-hangar-…json` file from the dev laptop's `C:\work\tsx-aggregator`), uploaded with Chrome Remote Desktop's **Upload file**:
+   ```bash
+   mkdir -p ~/tsx-secrets && chmod 700 ~/tsx-secrets
+   mv /mnt/c/Users/EMILY/Downloads/linear-hangar-*.json ~/tsx-secrets/google.json
+   chmod 600 ~/tsx-secrets/google.json
+   ```
+2. A Gmail app password for this laptop (Google account → Security → App passwords, e.g. "tsx deploy laptop").
+3. The settings file:
+   ```bash
+   cd ~/dev/tsx-aggregator/docker-scripts
+   cp local.env.example local.env && chmod 600 local.env
+   nano local.env
+   ```
+   Set `GOOGLE_CREDENTIALS_FILE=/home/aaron/tsx-secrets/google.json`, the four Gmail lines, `WEB_BIND=0.0.0.0` and `POSTGRES_BIND=127.0.0.1`. Leave the dev-testing lines commented out.
+
+### 4.4. Prepare the Stack - Build the Images
+
+```bash
+bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh build
+```
+
+The first build downloads the base images and Google Chrome and takes 10–20 minutes. It builds one image at a time: each build peaks at about 1.5 GB, and WSL here has 2.8 GiB.
+
+## 5. Move Over
+
+The live system moves from the dev laptop to this one. Only one may run the scraper, the quote sheet and the alerts at a time (plan 2.7), so the dev laptop stops first.
+
+### 5.1. Move Over - Stop the Dev Laptop and Dump
+
+On the **dev laptop**:
+
+1. Stop tsx-aggregator and the web API: `./run.sh`, option 3.
+2. Dump the database and put it where Windows can see it:
+   ```bash
+   f=~/backups/tsx-deploy-$(date +%Y%m%d-%H%M).dump
+   docker exec tsx-postgres pg_dump -U postgres -Fc postgres > "$f" && ls -la "$f"
+   cp "$f" /mnt/c/Users/aaron/Desktop/
+   ```
+3. Take a snapshot to compare with later: `cd src && dotnet run --project tsx-ops -- snapshot --source processed --label pre-move`.
+
+Upload the `.dump` file to the deploy laptop with Chrome Remote Desktop's **Upload file**. Not a GitHub release: the repo is public.
+
+### 5.2. Move Over - Restore and Start
+
+On the **deploy laptop**, in Ubuntu:
+
+```bash
+docker rm -f startup-test                       # frees port 5080
+bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh db # PostgreSQL only; wait until 'docker ps' shows it healthy
+docker exec -i tsx-postgres pg_restore -U postgres -d postgres --no-owner --clean --if-exists \
+    < /mnt/c/Users/EMILY/Downloads/tsx-deploy-*.dump
+bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh up
+```
+
+### 5.3. Move Over - Verify
+
+1. `bash deploy/wsl/stack.sh status`: four containers up; then `bash deploy/wsl/stack.sh logs` for a minute: no `ERR`/`FTL` lines.
+2. From `~/dev/tsx-aggregator/src`:
+   - `dotnet run --project tsx-ops -- events`: the queue drains.
+   - `dotnet run --project tsx-ops -- service status`: Aggregator and RawCollector running.
+   - `dotnet run --project tsx-ops -- snapshot --source processed --label post-move`: the same counts as the dev laptop's `pre-move` snapshot (scored, 14+, 15+, 16/16).
+3. `http://localhost:5080` in Chrome on this laptop, then `http://<address from 3>:5080` on a phone on the wifi.
+4. Writes are refused: `curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:5080/api/companies/priority` prints `405`.
+5. With the phone's wifi off (mobile data), the address does not load.
+6. Quotes: within two hours the log shows `Found … new quotes` (`stack.sh logs | grep quotes`).
+
+### 5.4. Move Over - Reboot Test
+
+As in 2.4, then check that `http://localhost:5080` and the phone both load without anyone having logged in.
+
+### 5.5. Move Over - The Dev Laptop Afterwards
+
+From now on, run dev with `PASSIVE=1 ./run.sh`: no scraping, no quote-sheet writes, no alert emails. Known gap: with the quote service off, pages that need prices (top list, company details) wait forever; a read-only quote mode is on the plan's list. Copy the deploy database back now and then for realistic dev data (the same dump and restore, the other way).
+
+## 6. Day to Day
+
+| Task | Command (Ubuntu, in `~/dev/tsx-aggregator`) |
+|---|---|
+| Status and memory | `bash deploy/wsl/stack.sh status` |
+| Logs | `bash deploy/wsl/stack.sh logs [tsx-aggregator\|tsx-webapi\|tsx-web\|postgres]` |
+| Update to the latest code | `bash deploy/wsl/stack.sh update` |
+| Stop / start the app | `bash deploy/wsl/stack.sh down` / `up` |
+| Pause or resume scraping | `cd src && dotnet run --project tsx-ops -- service pause RawCollector --execute` |
+| Back up | `docker exec tsx-postgres pg_dump -U postgres -Fc postgres > ~/backups/tsx-$(date +%Y%m%d).dump` |
+
+## 7. Undo
+
+```bash
+bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh down
 ```
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File \\wsl$\Ubuntu\home\aaron\dev\tsx-aggregator\deploy\windows\setup-home-network.ps1 -Remove
 Unregister-ScheduledTask -TaskName "WSL keep-alive" -Confirm:$false
 ```
 
-Remove the `memory=` line from `%UserProfile%\.wslconfig` if not wanted.
+Remove the `memory=` and `networkingMode=` lines from `%UserProfile%\.wslconfig` if not wanted. The database stays in the Docker volume `tsx-aggregator_postgres-data` until `docker volume rm` removes it.

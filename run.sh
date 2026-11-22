@@ -16,6 +16,15 @@ WEB_DIR="$REPO_DIR/src/stock-market-webapi"
 WEBAPI_PORT="${WEBAPI_PORT:-5050}"
 GRPC_PORT="${GRPC_PORT:-7001}"
 
+# PASSIVE=1 ./run.sh: no scraping, no quote-sheet writes, no alert emails. For dev once the deploy laptop runs
+# the live stack (Deploy Laptop Plan 2.7): those must run in one place only. Passed inline because terminals
+# opened by gnome-terminal do not reliably inherit this shell's environment.
+PASSIVE="${PASSIVE:-0}"
+AGG_PASSIVE_ENV=""
+if [ "$PASSIVE" = "1" ]; then
+    AGG_PASSIVE_ENV="HostedServices__RunRawCollector=false HostedServices__RunQuoteService=false HostedServices__RunTopScoreAlertService=false "
+fi
+
 # Patterns that uniquely identify processes belonging to *this* repo's
 # tsx-aggregator and webapi runs (so we don't kill unrelated dotnet apps).
 TSX_PATTERN="$TSX_DIR/bin/.*/tsx-aggregator(\\.dll)?\$"
@@ -113,7 +122,7 @@ preflight_port() {
 start_aggregator() {
     preflight_port "$GRPC_PORT" "aggregator(gRPC)" || return 1
     run_in_new_terminal "tsx-aggregator" \
-        "cd '$TSX_DIR' && Ports__Grpc=$GRPC_PORT dotnet run"
+        "cd '$TSX_DIR' && ${AGG_PASSIVE_ENV}Ports__Grpc=$GRPC_PORT dotnet run"
 }
 
 start_webapi() {
@@ -128,7 +137,7 @@ start_webapi() {
 show_status() {
     echo
     echo "=== Status ==="
-    echo "  configured WEBAPI_PORT=$WEBAPI_PORT  GRPC_PORT=$GRPC_PORT"
+    echo "  configured WEBAPI_PORT=$WEBAPI_PORT  GRPC_PORT=$GRPC_PORT  PASSIVE=$PASSIVE"
     if pgrep -af -- "$TSX_PATTERN" >/dev/null; then
         pgrep -af -- "$TSX_PATTERN" | sed 's/^/  aggregator: /'
     else
