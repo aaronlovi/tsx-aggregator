@@ -17,8 +17,29 @@ using tsx_aggregator.Services;
 namespace tsx_aggregator;
 
 public class Program {
-    private const string DefaultPortStr = "7001";
-    
+    private const int DefaultGrpcPort = 7001;
+    internal const string GrpcPortKey = "Ports:Grpc";
+    internal const string GrpcListenOnAllInterfacesKey = "Ports:GrpcListenOnAllInterfaces";
+
+    /// <summary>
+    /// The gRPC port and whether it listens on every network interface (<c>Ports:GrpcListenOnAllInterfaces</c>,
+    /// default false: localhost only). Throws on a value that is not a port number or a boolean.
+    /// </summary>
+    internal static GrpcListener GetGrpcListener(IConfiguration configuration) {
+        int port = DefaultGrpcPort;
+        string? portValue = configuration[GrpcPortKey];
+        if (portValue is not null
+            && (!int.TryParse(portValue, NumberStyles.None, CultureInfo.InvariantCulture, out port) || port is < 1 or > 65535))
+            throw new InvalidOperationException($"{GrpcPortKey} must be a port number from 1 to 65535, got '{portValue}'");
+
+        bool allInterfaces = false;
+        string? allValue = configuration[GrpcListenOnAllInterfacesKey];
+        if (allValue is not null && !bool.TryParse(allValue, out allInterfaces))
+            throw new InvalidOperationException($"{GrpcListenOnAllInterfacesKey} must be true or false, got '{allValue}'");
+
+        return new GrpcListener(port, allInterfaces);
+    }
+
     public static async Task<int> Main(string[] args) {
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
@@ -48,10 +69,14 @@ public class Program {
             .ConfigureWebHostDefaults(webBuilder => { _ = webBuilder.UseStartup<TStartup>(); })
             .ConfigureServices((context, services) => {
 
-                var grpcPort = int.Parse(context.Configuration!.GetSection("Ports")["Grpc"] ?? DefaultPortStr, CultureInfo.InvariantCulture);
+                GrpcListener grpcListener = GetGrpcListener(context.Configuration!);
                 _ = services
                     .Configure<KestrelServerOptions>(opt => {
-                        opt.ListenAnyIP(grpcPort, options => options.Protocols = HttpProtocols.Http2);
+                        // Localhost by default: the AdminService (pause, requeue) has no authentication.
+                        if (grpcListener.AllInterfaces)
+                            opt.ListenAnyIP(grpcListener.Port, options => options.Protocols = HttpProtocols.Http2);
+                        else
+                            opt.ListenLocalhost(grpcListener.Port, options => options.Protocols = HttpProtocols.Http2);
                         opt.AllowAlternateSchemes = true;
                     })
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
@@ -178,3 +203,6 @@ public class Program {
         return string.IsNullOrEmpty(value) ? "(not set)" : "(set, masked)";
     }
 }
+
+/// <summary>Where tsx-aggregator's gRPC server listens.</summary>
+internal sealed record GrpcListener(int Port, bool AllInterfaces);

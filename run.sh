@@ -11,8 +11,8 @@ WEB_DIR="$REPO_DIR/src/stock-market-webapi"
 # Default ports. Override by exporting before running:
 #   WEBAPI_PORT=5060 GRPC_PORT=7002 ./run.sh
 # 5050 was chosen because port 5000 on this machine is taken by an unrelated
-# StocksScraper webapi. 7001 is the default in tsx-aggregator/appsettings.json
-# and the value the webapi's gRPC client hardcodes in Program.cs.
+# StocksScraper webapi. 7001 is the default in tsx-aggregator/appsettings.json;
+# GRPC_PORT is passed to both processes (Ports__Grpc, Aggregator__GrpcUrl).
 WEBAPI_PORT="${WEBAPI_PORT:-5050}"
 GRPC_PORT="${GRPC_PORT:-7001}"
 
@@ -122,7 +122,7 @@ start_webapi() {
     # beats both launchSettings.json and ASPNETCORE_URLS. --no-launch-profile
     # keeps launchSettings from forcing its own URL/env.
     run_in_new_terminal "stock-market-webapi" \
-        "cd '$WEB_DIR' && dotnet run --no-launch-profile -- --urls http://localhost:$WEBAPI_PORT"
+        "cd '$WEB_DIR' && Aggregator__GrpcUrl=http://localhost:$GRPC_PORT dotnet run --no-launch-profile -- --urls http://localhost:$WEBAPI_PORT"
 }
 
 show_status() {

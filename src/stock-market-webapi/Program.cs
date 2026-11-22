@@ -30,10 +30,13 @@ public class Program {
             c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo { Title = "Stock Market API", Version = "v1" });
         });
 
+        Uri aggregatorGrpcUrl = AggregatorClientSettings.GetGrpcUrl(builder.Configuration);
+        Console.WriteLine($"tsx-aggregator gRPC address ({AggregatorClientSettings.GrpcUrlKey}): {aggregatorGrpcUrl}");
+
         _ = builder.Services.AddGrpc();
         _ = builder.Services.AddGrpcReflection();
         _ = builder.Services.AddGrpcClient<StockDataServiceClient>(options => {
-            options.Address = new Uri("http://localhost:7001");
+            options.Address = aggregatorGrpcUrl;
         });
 
         var app = builder.Build();

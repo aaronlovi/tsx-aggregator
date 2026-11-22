@@ -135,7 +135,8 @@ Google Sheets --> QuoteService (prices)       v
 ### Key Configuration (appsettings.json)
 
 - `ConnectionStrings.tsx-scraper` -- PostgreSQL connection (default port 5433)
-- `Ports.Grpc` -- gRPC listen port (default 7001)
+- `Ports.Grpc` -- gRPC listen port (default 7001); `Ports.GrpcListenOnAllInterfaces` (default false: localhost only, since `AdminService` has no authentication)
+- `Aggregator.GrpcUrl` (stock-market-webapi) -- tsx-aggregator's gRPC address (default `http://localhost:7001`); `run.sh` sets it from `GRPC_PORT`
 - `HostedServices` -- Toggle individual background services
 - `FeatureFlags` -- Feature toggles (e.g., `CheckExistingRawReportUpdates`)
 - `Scoring` -- Check 16 settings: `RoeConsistencyMinYears` (4), `RoeConsistencyWindowYears` (5), `RoeConsistencyMinUsableYears` (3); tsx-ops reads the same keys. Top-score cutoff is 14 of 16 (`ScoringOptions.TopScoreCutoff`)
