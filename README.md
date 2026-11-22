@@ -50,16 +50,16 @@ Checks every `CheckIntervalMinutes` (default 60) which companies score 13 or mor
 2. Set the SMTP credentials and recipients with .NET User Secrets, so no address or password goes into git (from the `src/tsx-aggregator` directory):
    ```bash
    cd src/tsx-aggregator
-   dotnet user-secrets set "AlertSettings:SmtpUsername" "your-email@hotmail.com"
+   dotnet user-secrets set "AlertSettings:SmtpUsername" "your-address@gmail.com"
    dotnet user-secrets set "AlertSettings:SmtpPassword" "your-app-password"
-   dotnet user-secrets set "AlertSettings:SenderEmail" "your-email@hotmail.com"
+   dotnet user-secrets set "AlertSettings:SenderEmail" "your-address@gmail.com"
    dotnet user-secrets set "AlertSettings:Recipients:0" "where-alerts-go@example.com"
    ```
    Add more recipients as `Recipients:1`, `Recipients:2`, and so on. The startup configuration log masks the password.
 
-   The default SMTP host is `smtp-mail.outlook.com` (port 587, STARTTLS). To use a different provider, update `SmtpHost` and `SmtpPort` in `appsettings.json`.
+   The default SMTP host is `smtp.gmail.com` (port 587, STARTTLS). Gmail needs an **app password**, not your account password: turn on 2-Step Verification, then create one at https://myaccount.google.com/apppasswords. To use another provider, set `AlertSettings:SmtpHost` and `AlertSettings:SmtpPort` (user secrets or `appsettings.json`); it must accept a username and password over SMTP.
 
-   **Note:** If your Microsoft account has two-factor authentication enabled, you must create an app password at https://account.microsoft.com/security instead of using your regular password.
+   **Outlook.com / Hotmail no longer works:** Microsoft has disabled basic authentication for SMTP, app passwords included (`535 5.7.139 Authentication unsuccessful, basic authentication is disabled`). It would need OAuth, which the service doesn't support.
 
 3. To test the setup, start once with `AlertSettings__SendTestEmailOnStartup=true`: it emails the current list on the first check. To run without alerts, set `HostedServices__RunTopScoreAlertService=false`.
 
