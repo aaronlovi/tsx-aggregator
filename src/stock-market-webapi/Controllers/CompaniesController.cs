@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +21,18 @@ public class CompaniesController : Controller {
 
     private readonly StockDataServiceClient _client;
 
+    /// <summary>How long a call to tsx-aggregator may take before the page gets an error instead of waiting forever.</summary>
+    public static readonly TimeSpan AggregatorCallTimeout = TimeSpan.FromSeconds(30);
+
     public CompaniesController(StockDataServiceClient client) => _client = client;
+
+    private static DateTime AggregatorDeadline() => DateTime.UtcNow + AggregatorCallTimeout;
 
     [HttpGet("companies")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetCompanies() {
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetCompanies(CancellationToken ct = default) {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
             return BadRequest("abc");
 
@@ -56,8 +62,8 @@ public class CompaniesController : Controller {
     [HttpGet("companies/bottom")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetBottomCompanies() {
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+    public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetBottomCompanies(CancellationToken ct = default) {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
             return BadRequest("abc");
 
@@ -88,8 +94,8 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedCompanySummaryReports>> GetAllCompanies(
-        [FromQuery] int pageNumber, [FromQuery] int pageSize) {
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+        [FromQuery] int pageNumber, [FromQuery] int pageSize, CancellationToken ct = default) {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
             return BadRequest("abc");
 
@@ -121,8 +127,8 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<CompanyFullDetailReport>> GetCompany(string exchange, string instrumentSymbol) {
-        GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = exchange.ToUpperInvariant(), InstrumentSymbol = instrumentSymbol });
+    public async Task<ActionResult<CompanyFullDetailReport>> GetCompany(string exchange, string instrumentSymbol, CancellationToken ct = default) {
+        GetStocksDetailReply reply = await _client.GetStocksDetailAsync(new GetStocksDetailRequest() { Exchange = exchange.ToUpperInvariant(), InstrumentSymbol = instrumentSymbol }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success || reply.StockDetail is null)
             return NotFound(new { error = $"No data available for {instrumentSymbol} on {exchange}" });
 
@@ -134,8 +140,8 @@ public class CompaniesController : Controller {
     [HttpGet("companies/quicksearch/{searchTerm}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<CompanySearchResult>>> SearchCompanies(string searchTerm) {
-        GetStockSearchResultsReply reply = await _client.GetStockSearchResultsAsync(new GetStockSearchResultsRequest() { SearchTerm = searchTerm });
+    public async Task<ActionResult<IEnumerable<CompanySearchResult>>> SearchCompanies(string searchTerm, CancellationToken ct = default) {
+        GetStockSearchResultsReply reply = await _client.GetStockSearchResultsAsync(new GetStockSearchResultsRequest() { SearchTerm = searchTerm }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
             return BadRequest("abc");
 
@@ -151,7 +157,7 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedInstrumentInfoReports>> GetMissingDataCompanies(
-        [FromQuery] string exchange, [FromQuery] int pageNumber, [FromQuery] int pageSize) {
+        [FromQuery] string exchange, [FromQuery] int pageNumber, [FromQuery] int pageSize, CancellationToken ct = default) {
         try {
             var request = new GetInstrumentsWithNoRawReportsRequest {
                 Exchange = exchange,
@@ -159,7 +165,7 @@ public class CompaniesController : Controller {
                 PageSize = pageSize
             };
 
-            GetInstrumentsWithNoRawReportsReply response = await _client.GetInstrumentsWithNoRawReportsAsync(request);
+            GetInstrumentsWithNoRawReportsReply response = await _client.GetInstrumentsWithNoRawReportsAsync(request, deadline: AggregatorDeadline(), cancellationToken: ct);
             if (!response.Success)
                 return BadRequest(new { error = response.ErrorMessage });
 
@@ -185,7 +191,7 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> SetPriorityCompanies([FromBody] List<string> companySymbols) {
+    public async Task<ActionResult> SetPriorityCompanies([FromBody] List<string> companySymbols, CancellationToken ct = default) {
         try {
             if (companySymbols == null)
                 return BadRequest(new { error = "Request body must be a JSON array of company symbols" });
@@ -193,7 +199,7 @@ public class CompaniesController : Controller {
             var request = new SetPriorityCompaniesRequest();
             request.CompanySymbols.AddRange(companySymbols);
 
-            StockDataServiceReply reply = await _client.SetPriorityCompaniesAsync(request);
+            StockDataServiceReply reply = await _client.SetPriorityCompaniesAsync(request, deadline: AggregatorDeadline(), cancellationToken: ct);
             if (!reply.Success)
                 return BadRequest(new { error = reply.ErrorMessage });
 
@@ -206,9 +212,9 @@ public class CompaniesController : Controller {
     [HttpGet("companies/priority")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<string>>> GetPriorityCompanies() {
+    public async Task<ActionResult<IEnumerable<string>>> GetPriorityCompanies(CancellationToken ct = default) {
         try {
-            GetPriorityCompaniesReply reply = await _client.GetPriorityCompaniesAsync(new GetPriorityCompaniesRequest());
+            GetPriorityCompaniesReply reply = await _client.GetPriorityCompaniesAsync(new GetPriorityCompaniesRequest(), deadline: AggregatorDeadline(), cancellationToken: ct);
             if (!reply.Success)
                 return BadRequest(new { error = reply.ErrorMessage });
 
@@ -222,9 +228,9 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<DashboardStatsResponse>> GetDashboardStats() {
+    public async Task<ActionResult<DashboardStatsResponse>> GetDashboardStats(CancellationToken ct = default) {
         try {
-            GetDashboardStatsReply reply = await _client.GetDashboardStatsAsync(new GetDashboardStatsRequest());
+            GetDashboardStatsReply reply = await _client.GetDashboardStatsAsync(new GetDashboardStatsRequest(), deadline: AggregatorDeadline(), cancellationToken: ct);
             if (!reply.Success)
                 return BadRequest(new { error = reply.ErrorMessage });
 
@@ -257,9 +263,9 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<DashboardAggregatesResponse>> GetDashboardAggregates() {
+    public async Task<ActionResult<DashboardAggregatesResponse>> GetDashboardAggregates(CancellationToken ct = default) {
         try {
-            GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" });
+            GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
             if (!reply.Success)
                 return BadRequest(new { error = reply.ErrorMessage });
 
