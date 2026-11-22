@@ -193,6 +193,14 @@ From now on, run dev with `PASSIVE=1 ./run.sh`: no scraping, no quote-sheet writ
 
 ## 6. Day to Day
 
+**The menu:** type `tsx` in Ubuntu. It lists every task below by number (status, logs, errors, quote fetches, start/stop, update, pause/resume scraping, event queue, snapshots, rebuild, backup, start-up check). Set it up once:
+
+```bash
+bash ~/dev/tsx-aggregator/deploy/wsl/menu.sh --install-alias && source ~/.bashrc
+```
+
+The same tasks as commands, for scripts:
+
 | Task | Command (Ubuntu, in `~/dev/tsx-aggregator`) |
 |---|---|
 | Status and memory | `bash deploy/wsl/stack.sh status` |
