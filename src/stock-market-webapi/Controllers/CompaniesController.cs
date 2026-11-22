@@ -28,6 +28,9 @@ public class CompaniesController : Controller {
 
     private static DateTime AggregatorDeadline() => DateTime.UtcNow + AggregatorCallTimeout;
 
+    // Review R80: unchecked, 0 or negative values returned page 1 or an empty page claiming about 2.1 billion pages.
+    private const string PagingError = "pageNumber and pageSize must be at least 1";
+
     [HttpGet("companies")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -95,6 +98,9 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedCompanySummaryReports>> GetAllCompanies(
         [FromQuery] int pageNumber, [FromQuery] int pageSize, CancellationToken ct = default) {
+        if (pageNumber < 1 || pageSize < 1)
+            return BadRequest(PagingError);
+
         GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
             return BadRequest("abc");
@@ -158,6 +164,9 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedInstrumentInfoReports>> GetMissingDataCompanies(
         [FromQuery] string exchange, [FromQuery] int pageNumber, [FromQuery] int pageSize, CancellationToken ct = default) {
+        if (pageNumber < 1 || pageSize < 1)
+            return BadRequest(PagingError);
+
         try {
             var request = new GetInstrumentsWithNoRawReportsRequest {
                 Exchange = exchange,
