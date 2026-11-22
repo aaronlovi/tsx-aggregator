@@ -253,4 +253,45 @@ public class TopScoreAlertServiceTests {
         // Assert - no email, no crash
         emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    private static async Task<Mock<IEmailService>> RunFirstCycleWithTestEmail(GetStocksDataReply reply, IDictionary<string, decimal> prices) {
+        var emailService = new Mock<IEmailService>();
+        _ = emailService.Setup(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var settings = CreateValidSettings();
+        settings.SendTestEmailOnStartup = true;
+        var service = new TopScoreAlertService(
+            SetupRequestProcessor(reply).Object, SetupQuoteService(prices).Object, emailService.Object,
+            Options.Create(settings), new Mock<ILogger<TopScoreAlertService>>().Object);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await service.StartAsync(cts.Token);
+        await Task.Delay(500);
+        await service.StopAsync(CancellationToken.None);
+        return emailService;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CompanyWithoutAQuote_IsLeftOutOfTheList() {
+        // Both companies carry a price of 50 from the request processor, but only ABC has a quote, so DEF is dropped.
+        var reply = CreateReplyWithItems(("ABC.TO", "ABC Corp"), ("DEF.TO", "DEF Inc"));
+
+        Mock<IEmailService> emailService = await RunFirstCycleWithTestEmail(reply, new Dictionary<string, decimal> { ["ABC.TO"] = 50M });
+
+        emailService.Verify(m => m.SendEmailAsync(
+            It.IsAny<string>(),
+            It.Is<string>(b => b.Contains("ABC.TO") && !b.Contains("DEF.TO")),
+            It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_QuotedPrice_ReplacesTheProcessorPrice() {
+        // At 50 ABC scores 16 of 16; at the quoted 100,000 it is far too expensive to be a top-score company.
+        var reply = CreateReplyWithItems(("ABC.TO", "ABC Corp"));
+
+        Mock<IEmailService> emailService = await RunFirstCycleWithTestEmail(reply, new Dictionary<string, decimal> { ["ABC.TO"] = 100_000M });
+
+        emailService.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

@@ -89,4 +89,39 @@ public sealed class RawCollectorLoopTests : IAsyncLifetime {
 
         collector.IsPaused.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task Pause_SavesThePausedState() {
+        // (A resume would wait behind the paused loop's one-minute sleep, so only the pause is checked.)
+        RawCollector collector = await StartCollector();
+
+        await collector.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+
+        collector.IsPaused.Should().BeTrue();
+        _dbm.Verify(d => d.PersistCommonServiceState(true, "RawCollector", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Pause_WhenSavingFails_FailsTheCallerWithTheError() {
+        _ = _dbm.Setup(d => d.PersistCommonServiceState(It.IsAny<bool>(), "RawCollector", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.SetFailure("disk full"));
+        RawCollector collector = await StartCollector();
+
+        Func<Task> pause = () => collector.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+
+        _ = await pause.Should().ThrowAsync<InvalidOperationException>().WithMessage("disk full");
+    }
+
+    [Fact]
+    public async Task SavedPausedState_IsRestoredAtStartup() {
+        _ = _dbm.Setup(d => d.GetCommonServiceState("RawCollector", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Result.SUCCESS, true));
+        RawCollector collector = await StartCollector();
+
+        // Already paused, so this changes nothing and saves nothing; it only waits until the loop has started.
+        await collector.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+
+        collector.IsPaused.Should().BeTrue();
+        _dbm.Verify(d => d.PersistCommonServiceState(It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

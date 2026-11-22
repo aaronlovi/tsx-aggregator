@@ -92,4 +92,16 @@ public sealed class AggregatorLoopTests : IAsyncLifetime {
         await aggregator.SetPausedAsync(false, CancellationToken.None).WaitAsync(Deadline);
         aggregator.IsPaused.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task PauseRequest_WhenSavingFails_FailsTheCallerWithTheError() {
+        _ = _dbm.Setup(d => d.PersistCommonServiceState(true, "Aggregator", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.SetFailure("disk full"));
+        Aggregator aggregator = await StartAggregator();
+        _releaseEventCheck.SetResult();
+
+        Func<Task> pause = () => aggregator.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+
+        _ = await pause.Should().ThrowAsync<InvalidOperationException>().WithMessage("disk full");
+    }
 }
