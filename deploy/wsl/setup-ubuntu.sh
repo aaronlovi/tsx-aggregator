@@ -2,7 +2,7 @@
 # Ubuntu side of the deploy-laptop setup (Deploy Laptop Plan, step 1).
 #   1. Turns on systemd in /etc/wsl.conf.
 #   2. Installs Docker Engine from Docker's apt repository (not Docker Desktop) and starts it with systemd.
-#   3. Starts a throwaway test container on 127.0.0.1:5060 with restart=unless-stopped.
+#   3. Starts a throwaway test container on 127.0.0.1:5080 with restart=unless-stopped.
 #
 # Run inside Ubuntu on the deploy laptop (not on the dev laptop, which uses Docker Desktop):
 #   bash deploy/wsl/setup-ubuntu.sh
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 TEST_CONTAINER=startup-test
-TEST_PORT=5060
+TEST_PORT=5080
 
 if docker version --format '{{.Server.Platform.Name}}' 2>/dev/null | grep -qi 'desktop'; then
     echo "This machine uses Docker Desktop. This script is for the deploy laptop (Docker Engine inside Ubuntu)." >&2

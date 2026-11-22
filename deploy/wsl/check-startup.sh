@@ -6,7 +6,7 @@
 set -uo pipefail
 
 TEST_CONTAINER=${1:-startup-test}
-TEST_PORT=${2:-5060}
+TEST_PORT=${2:-5080}
 
 now=$(date +%s)
 wsl_up=$(date -d "$(uptime -s)" +%s)

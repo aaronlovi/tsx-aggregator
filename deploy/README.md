@@ -18,7 +18,9 @@ Scripts and steps for running the stack in Docker inside Ubuntu on WSL on the Wi
 | Where | What | Script |
 |---|---|---|
 | Windows | Ubuntu on WSL | `wsl --install` (by hand) |
-| Ubuntu | systemd on, Docker Engine (not Docker Desktop), a throwaway `nginx` container on `127.0.0.1:5060` | `wsl/setup-ubuntu.sh` |
+| Ubuntu | systemd on, Docker Engine (not Docker Desktop), a throwaway `nginx` container on `127.0.0.1:5080` | `wsl/setup-ubuntu.sh` |
+
+Port 5080, not 5060: Chrome and Edge refuse 5060 (`ERR_UNSAFE_PORT`, the SIP port).
 | Windows | `.wslconfig` memory cap (default half the RAM), scheduled task "WSL keep-alive" | `windows/setup-wsl-host.ps1` |
 
 The "WSL keep-alive" task runs `wsl.exe -d Ubuntu --exec /bin/sleep infinity` at startup, whether or not anyone is logged on, with no time limit. That starts Ubuntu, systemd starts Docker, and Docker restarts the container. The task tracker and ngrok are not touched.
@@ -47,7 +49,7 @@ In Ubuntu:
 bash deploy/wsl/setup-ubuntu.sh
 ```
 
-The first run only turns on systemd and stops. Then, in Windows PowerShell, run `wsl --shutdown`, open Ubuntu again and run the script a second time. It installs Docker Engine, starts it, and starts the test container. It ends with "http://127.0.0.1:5060 answers inside Ubuntu."
+The first run only turns on systemd and stops. Then, in Windows PowerShell, run `wsl --shutdown`, open Ubuntu again and run the script a second time. It installs Docker Engine, starts it, and starts the test container. It ends with "http://127.0.0.1:5080 answers inside Ubuntu."
 
 ### 2.4. Setup - The Scheduled Task and Memory Cap
 
@@ -59,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File deploy\windows\setup-wsl-host.ps1
 
 It asks for your Windows account password (for a Microsoft account, the Microsoft account password, not the PIN); Task Scheduler needs it to run the task with nobody logged on. It ends with the task state; `267009` means running. Options: `-WslMemoryGB 8` to choose the cap, `-SkipWslConfig` to leave `.wslconfig` alone.
 
-Then open `http://localhost:5060` in a Windows browser: it should show "Welcome to nginx!". That checks that Windows reaches Docker's ports in Ubuntu.
+Then open `http://localhost:5080` in a Windows browser: it should show "Welcome to nginx!". That checks that Windows reaches Docker's ports in Ubuntu.
 
 ## 3. The Reboot Test
 
@@ -67,7 +69,7 @@ Then open `http://localhost:5060` in a Windows browser: it should show "Welcome 
 2. Wait 5 minutes. Note the time.
 3. Connect with Chrome Remote Desktop and log in. Note the time.
 4. Open Ubuntu and run `bash deploy/wsl/check-startup.sh`.
-5. **Pass** if "Ubuntu (WSL) up since" and "Container started" are both before the login time, and `http://localhost:5060` shows the nginx page in a Windows browser.
+5. **Pass** if "Ubuntu (WSL) up since" and "Container started" are both before the login time, and `http://localhost:5080` shows the nginx page in a Windows browser.
 6. Check the task tracker still works (its ngrok address from a phone).
 
 If it fails, Task Scheduler → "WSL keep-alive" → History and "Last Run Result" show why.
