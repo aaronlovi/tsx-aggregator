@@ -29,11 +29,13 @@ public class TopScoreDiffComputerTests {
             curAdjustedRetainedEarnings: 50_000_000M,
             oldestRetainedEarnings: oldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: numYears,
-            roeCashFlowNumerator: 60_000_000M,
-            roeCashFlowEquity: 500_000_000M,
-            roeOwnerEarningsNumerator: 55_000_000M,
-            roeOwnerEarningsEquity: 500_000_000M,
-            roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears(roeEachYear));
+            roe: new RoeInputs(
+                CashFlowNumerator: 60_000_000M,
+                CashFlowEquity: 500_000_000M,
+                OwnerEarningsNumerator: 55_000_000M,
+                OwnerEarningsEquity: 500_000_000M,
+                OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears(roeEachYear)),
+            scoring: new ScoringOptions());
     }
 
     /// <summary>
@@ -58,11 +60,13 @@ public class TopScoreDiffComputerTests {
             curAdjustedRetainedEarnings: 50_000_000M,
             oldestRetainedEarnings: 30_000_000M,
             numAnnualProcessedCashFlowReports: 5,
-            roeCashFlowNumerator: 40_000_000M,
-            roeCashFlowEquity: 500_000_000M,
-            roeOwnerEarningsNumerator: 35_000_000M,
-            roeOwnerEarningsEquity: 500_000_000M,
-            roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
+            roe: new RoeInputs(
+                CashFlowNumerator: 40_000_000M,
+                CashFlowEquity: 500_000_000M,
+                OwnerEarningsNumerator: 35_000_000M,
+                OwnerEarningsEquity: 500_000_000M,
+                OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears()),
+            scoring: new ScoringOptions());
     }
 
     /// <summary>

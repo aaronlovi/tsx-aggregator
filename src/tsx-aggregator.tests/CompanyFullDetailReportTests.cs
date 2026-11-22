@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using FluentAssertions;
@@ -31,11 +32,13 @@ public class CompanyFullDetailReportTests {
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
         numAnnualProcessedCashFlowReports: 5,
-        roeCashFlowNumerator: averageNetCashFlow,
-        roeCashFlowEquity: 1_000M,
-        roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: 1_000M,
-        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
+        roe: new RoeInputs(
+            CashFlowNumerator: averageNetCashFlow,
+            CashFlowEquity: 1_000M,
+            OwnerEarningsNumerator: averageOwnerEarnings,
+            OwnerEarningsEquity: 1_000M,
+            OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears()),
+        scoring: new ScoringOptions());
 
     #region B5 - dividends in the est. return and max price
 
@@ -102,11 +105,13 @@ public class CompanyFullDetailReportTests {
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
         numAnnualProcessedCashFlowReports: 5,
-        roeCashFlowNumerator: averageNetCashFlow,
-        roeCashFlowEquity: equity,
-        roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: equity,
-        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
+        roe: new RoeInputs(
+            CashFlowNumerator: averageNetCashFlow,
+            CashFlowEquity: equity,
+            OwnerEarningsNumerator: averageOwnerEarnings,
+            OwnerEarningsEquity: equity,
+            OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears()),
+        scoring: new ScoringOptions());
 
     [Fact]
     public void NegativeEquity_FailsDebtToEquityAndBothRoeChecks() {
@@ -208,11 +213,13 @@ public class CompanyFullDetailReportTests {
         curAdjustedRetainedEarnings: curAdjustedRetainedEarnings,
         oldestRetainedEarnings: oldestRetainedEarnings,
         numAnnualProcessedCashFlowReports: 5,
-        roeCashFlowNumerator: averageNetCashFlow,
-        roeCashFlowEquity: equity,
-        roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: equity,
-        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
+        roe: new RoeInputs(
+            CashFlowNumerator: averageNetCashFlow,
+            CashFlowEquity: equity,
+            OwnerEarningsNumerator: averageOwnerEarnings,
+            OwnerEarningsEquity: equity,
+            OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears()),
+        scoring: new ScoringOptions());
 
     /// <summary>The 1-based numbers of the checks with the given result.</summary>
     private static int[] ChecksWith(CompanyFullDetailReport report, CheckResult result) =>
@@ -356,6 +363,18 @@ public class CompanyFullDetailReportTests {
         _ = report.CurDividendsPaid.Should().Be(0M);
         _ = report.OldestRetainedEarnings.Should().Be(100M);
         _ = report.LastUpdatedDate.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void RoeInputs_From_ReadsEachRoeField() {
+        IReadOnlyList<AnnualReturnOnEquity> years = TestDataFactory.ConsistentRoeYears();
+        var fields = new ProcessedReportFields(
+            CurNumShares: 100, CurTotalShareholdersEquity: 1, CurGoodwill: 0, CurIntangibles: 0, CurLongTermDebt: 0,
+            CurDividendsPaid: 0, CurAdjustedRetainedEarnings: 0, OldestRetainedEarnings: 0, CurBookValue: 1,
+            AverageNetCashFlow: 0, AverageOwnerEarnings: 0, RoeCashFlowNumerator: 11, RoeCashFlowEquity: 22,
+            RoeOwnerEarningsNumerator: 33, RoeOwnerEarningsEquity: 44, RoeOwnerEarningsByYear: years);
+
+        _ = RoeInputs.From(fields).Should().Be(new RoeInputs(11M, 22M, 33M, 44M, years));
     }
 
     [Fact]

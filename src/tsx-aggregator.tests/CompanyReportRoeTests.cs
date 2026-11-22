@@ -84,11 +84,11 @@ public class CompanyReportRoeTests {
             averageOwnerEarnings: f.AverageOwnerEarnings, curDividendsPaid: f.CurDividendsPaid,
             curAdjustedRetainedEarnings: f.CurAdjustedRetainedEarnings, oldestRetainedEarnings: f.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: report.NumAnnualProcessedCashFlowReports,
-            roeCashFlowNumerator: f.RoeCashFlowNumerator, roeCashFlowEquity: f.RoeCashFlowEquity,
-            roeOwnerEarningsNumerator: f.RoeOwnerEarningsNumerator, roeOwnerEarningsEquity: f.RoeOwnerEarningsEquity,
-            roeOwnerEarningsByYear: f.RoeOwnerEarningsByYear,
-            roeConsistencyMinYears: roeConsistencyMinYears, roeConsistencyWindowYears: roeConsistencyWindowYears,
-            roeConsistencyMinUsableYears: roeConsistencyMinUsableYears);
+            roe: RoeInputs.From(f),
+            scoring: new ScoringOptions {
+                RoeConsistencyMinYears = roeConsistencyMinYears, RoeConsistencyWindowYears = roeConsistencyWindowYears,
+                RoeConsistencyMinUsableYears = roeConsistencyMinUsableYears,
+            });
     }
 
     [Fact]

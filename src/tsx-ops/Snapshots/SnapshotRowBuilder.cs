@@ -78,8 +78,7 @@ internal static class SnapshotRowBuilder {
     }
 
     // A missing figure is an empty cell; a check with missing inputs is N (W1).
-    public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields, ScoringOptions? scoring = null) {
-        scoring ??= new ScoringOptions();
+    public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields, ScoringOptions scoring) {
         var report = new CompanyFullDetailReport(
             exchange: instrument.Exchange,
             companySymbol: instrument.CompanySymbol,
@@ -97,14 +96,8 @@ internal static class SnapshotRowBuilder {
             curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings,
             oldestRetainedEarnings: fields.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: instrument.NumAnnualCashFlowReports,
-            roeCashFlowNumerator: fields.RoeCashFlowNumerator,
-            roeCashFlowEquity: fields.RoeCashFlowEquity,
-            roeOwnerEarningsNumerator: fields.RoeOwnerEarningsNumerator,
-            roeOwnerEarningsEquity: fields.RoeOwnerEarningsEquity,
-            roeOwnerEarningsByYear: fields.RoeOwnerEarningsByYear,
-            roeConsistencyMinYears: scoring.RoeConsistencyMinYears,
-            roeConsistencyWindowYears: scoring.RoeConsistencyWindowYears,
-            roeConsistencyMinUsableYears: scoring.RoeConsistencyMinUsableYears);
+            roe: RoeInputs.From(fields),
+            scoring: scoring);
 
         // Same order as CompanyFullDetailReport.OverallScore.
         CheckResult[] checks = report.AllChecks;

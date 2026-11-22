@@ -43,18 +43,20 @@ public class CompanyDetailsApiContractTests {
         curAdjustedRetainedEarnings: 400_000_000M,
         oldestRetainedEarnings: 250_000_000M,
         numAnnualProcessedCashFlowReports: 6,
-        // ROE over matched years (B11): 6.7% from cash flow (NCF + dividends), exactly 10% from owner earnings.
-        roeCashFlowNumerator: 360_000_000M,
-        roeCashFlowEquity: 5_400_000_000M,
-        roeOwnerEarningsNumerator: 540_000_000M,
-        roeOwnerEarningsEquity: 5_400_000_000M,
-        // Check 16 (C16): ROE (OE) of the last five years, most recent first: 12%, 11%, 9%, 13%, 10.5%, so 4 of 5 over 10%.
-        roeOwnerEarningsByYear: [
-            new AnnualReturnOnEquity(new DateOnly(2025, 12, 31), 0.12M),
-            new AnnualReturnOnEquity(new DateOnly(2024, 12, 31), 0.11M),
-            new AnnualReturnOnEquity(new DateOnly(2023, 12, 31), 0.09M),
-            new AnnualReturnOnEquity(new DateOnly(2022, 12, 31), 0.13M),
-            new AnnualReturnOnEquity(new DateOnly(2021, 12, 31), 0.105M)],
+        roe: new RoeInputs(
+            // ROE over matched years (B11): 6.7% from cash flow (NCF + dividends), exactly 10% from owner earnings.
+            CashFlowNumerator: 360_000_000M,
+            CashFlowEquity: 5_400_000_000M,
+            OwnerEarningsNumerator: 540_000_000M,
+            OwnerEarningsEquity: 5_400_000_000M,
+            // Check 16 (C16): ROE (OE) of the last five years, most recent first: 12%, 11%, 9%, 13%, 10.5%, so 4 of 5 over 10%.
+            OwnerEarningsByYear: [
+                new AnnualReturnOnEquity(new DateOnly(2025, 12, 31), 0.12M),
+                new AnnualReturnOnEquity(new DateOnly(2024, 12, 31), 0.11M),
+                new AnnualReturnOnEquity(new DateOnly(2023, 12, 31), 0.09M),
+                new AnnualReturnOnEquity(new DateOnly(2022, 12, 31), 0.13M),
+                new AnnualReturnOnEquity(new DateOnly(2021, 12, 31), 0.105M)]),
+        scoring: new ScoringOptions(),
         mostRecentAnnualReportDate: new DateTimeOffset(2025, 12, 31, 0, 0, 0, TimeSpan.Zero),
         mostRecentQuarterlyReportDate: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero),
         lastUpdatedDate: new DateTimeOffset(2026, 8, 26, 2, 2, 35, TimeSpan.Zero));
@@ -94,11 +96,13 @@ public class CompanyDetailsApiContractTests {
             curAdjustedRetainedEarnings: sample.CurAdjustedRetainedEarnings,
             oldestRetainedEarnings: null,
             numAnnualProcessedCashFlowReports: sample.NumAnnualProcessedCashFlowReports,
-            roeCashFlowNumerator: sample.RoeCashFlowNumerator,
-            roeCashFlowEquity: null,
-            roeOwnerEarningsNumerator: sample.RoeOwnerEarningsNumerator,
-            roeOwnerEarningsEquity: null,
-            roeOwnerEarningsByYear: sample.RoeOwnerEarningsByYear,
+            roe: new RoeInputs(
+                CashFlowNumerator: sample.RoeCashFlowNumerator,
+                CashFlowEquity: null,
+                OwnerEarningsNumerator: sample.RoeOwnerEarningsNumerator,
+                OwnerEarningsEquity: null,
+                OwnerEarningsByYear: sample.RoeOwnerEarningsByYear),
+            scoring: new ScoringOptions(),
             mostRecentAnnualReportDate: sample.MostRecentAnnualReportDate,
             mostRecentQuarterlyReportDate: sample.MostRecentQuarterlyReportDate,
             lastUpdatedDate: sample.LastUpdatedDate,

@@ -26,14 +26,8 @@ public class CompanyFullDetailReport {
         decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
         decimal? oldestRetainedEarnings,
         int numAnnualProcessedCashFlowReports,
-        decimal? roeCashFlowNumerator,
-        decimal? roeCashFlowEquity,
-        decimal? roeOwnerEarningsNumerator,
-        decimal? roeOwnerEarningsEquity,
-        IReadOnlyList<AnnualReturnOnEquity>? roeOwnerEarningsByYear = null,
-        int roeConsistencyMinYears = ScoringOptions.DefaultRoeConsistencyMinYears,
-        int roeConsistencyWindowYears = ScoringOptions.DefaultRoeConsistencyWindowYears,
-        int roeConsistencyMinUsableYears = ScoringOptions.DefaultRoeConsistencyMinUsableYears,
+        RoeInputs roe,
+        ScoringOptions scoring,
         DateTimeOffset? mostRecentAnnualReportDate = null,
         DateTimeOffset? mostRecentQuarterlyReportDate = null,
         DateTimeOffset? lastUpdatedDate = null,
@@ -56,14 +50,15 @@ public class CompanyFullDetailReport {
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
-        RoeCashFlowNumerator = roeCashFlowNumerator;
-        RoeCashFlowEquity = roeCashFlowEquity;
-        RoeOwnerEarningsNumerator = roeOwnerEarningsNumerator;
-        RoeOwnerEarningsEquity = roeOwnerEarningsEquity;
-        RoeOwnerEarningsByYear = roeOwnerEarningsByYear;
-        RoeConsistencyMinYears = roeConsistencyMinYears;
-        RoeConsistencyWindowYears = roeConsistencyWindowYears;
-        RoeConsistencyMinUsableYears = roeConsistencyMinUsableYears;
+        RoeCashFlowNumerator = roe.CashFlowNumerator;
+        RoeCashFlowEquity = roe.CashFlowEquity;
+        RoeOwnerEarningsNumerator = roe.OwnerEarningsNumerator;
+        RoeOwnerEarningsEquity = roe.OwnerEarningsEquity;
+        RoeOwnerEarningsByYear = roe.OwnerEarningsByYear;
+        // The check 16 settings are copied, so a later change to the options doesn't rescore this report.
+        RoeConsistencyMinYears = scoring.RoeConsistencyMinYears;
+        RoeConsistencyWindowYears = scoring.RoeConsistencyWindowYears;
+        RoeConsistencyMinUsableYears = scoring.RoeConsistencyMinUsableYears;
         MostRecentAnnualReportDate = mostRecentAnnualReportDate;
         MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
         LastUpdatedDate = lastUpdatedDate;
@@ -92,15 +87,19 @@ public class CompanyFullDetailReport {
         curAdjustedRetainedEarnings: item.HasCurrentAdjustedRetainedEarnings ? item.CurrentAdjustedRetainedEarnings : null,
         oldestRetainedEarnings: item.HasOldestRetainedEarnings ? item.OldestRetainedEarnings : null,
         numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
-        roeCashFlowNumerator: item.HasRoeCashFlowNumerator ? item.RoeCashFlowNumerator : null,
-        roeCashFlowEquity: item.HasRoeCashFlowEquity ? item.RoeCashFlowEquity : null,
-        roeOwnerEarningsNumerator: item.HasRoeOwnerEarningsNumerator ? item.RoeOwnerEarningsNumerator : null,
-        roeOwnerEarningsEquity: item.HasRoeOwnerEarningsEquity ? item.RoeOwnerEarningsEquity : null,
-        roeOwnerEarningsByYear: [.. item.RoeOwnerEarningsByYear.Select(y => new AnnualReturnOnEquity(
-            DateOnly.Parse(y.YearEnd, CultureInfo.InvariantCulture), y.Roe is null ? null : (decimal)y.Roe))],
-        roeConsistencyMinYears: item.RoeConsistencyMinYears > 0 ? item.RoeConsistencyMinYears : ScoringOptions.DefaultRoeConsistencyMinYears,
-        roeConsistencyWindowYears: item.RoeConsistencyWindowYears > 0 ? item.RoeConsistencyWindowYears : ScoringOptions.DefaultRoeConsistencyWindowYears,
-        roeConsistencyMinUsableYears: item.RoeConsistencyMinUsableYears > 0 ? item.RoeConsistencyMinUsableYears : ScoringOptions.DefaultRoeConsistencyMinUsableYears,
+        roe: new RoeInputs(
+            CashFlowNumerator: item.HasRoeCashFlowNumerator ? item.RoeCashFlowNumerator : null,
+            CashFlowEquity: item.HasRoeCashFlowEquity ? item.RoeCashFlowEquity : null,
+            OwnerEarningsNumerator: item.HasRoeOwnerEarningsNumerator ? item.RoeOwnerEarningsNumerator : null,
+            OwnerEarningsEquity: item.HasRoeOwnerEarningsEquity ? item.RoeOwnerEarningsEquity : null,
+            OwnerEarningsByYear: [.. item.RoeOwnerEarningsByYear.Select(y => new AnnualReturnOnEquity(
+                DateOnly.Parse(y.YearEnd, CultureInfo.InvariantCulture), y.Roe is null ? null : (decimal)y.Roe))]),
+        // The scoring settings travel with each reply item; 0 comes from an older server that didn't send them.
+        scoring: new ScoringOptions {
+            RoeConsistencyMinYears = item.RoeConsistencyMinYears > 0 ? item.RoeConsistencyMinYears : ScoringOptions.DefaultRoeConsistencyMinYears,
+            RoeConsistencyWindowYears = item.RoeConsistencyWindowYears > 0 ? item.RoeConsistencyWindowYears : ScoringOptions.DefaultRoeConsistencyWindowYears,
+            RoeConsistencyMinUsableYears = item.RoeConsistencyMinUsableYears > 0 ? item.RoeConsistencyMinUsableYears : ScoringOptions.DefaultRoeConsistencyMinUsableYears,
+        },
         mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
         mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
         lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset(),

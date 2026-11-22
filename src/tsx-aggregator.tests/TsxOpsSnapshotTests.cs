@@ -55,7 +55,7 @@ public class TsxOpsSnapshotTests {
 
     [Fact]
     public void RowBuilder_AllChecksPass_ScoresSixteen() {
-        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields);
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields, new ScoringOptions());
 
         _ = row[Snapshot.ScoreColumn].Should().Be("16");
         _ = SnapshotRowBuilder.CheckColumns.Select(c => row[c]).Should().AllBe("P");
@@ -85,7 +85,7 @@ public class TsxOpsSnapshotTests {
         // B7 sign rule: negative equity fails debt-to-equity (c01) instead of passing with a negative ratio.
         ProcessedReportFields fields = AllPassFields with { CurTotalShareholdersEquity = -200_000_000 };
 
-        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields);
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields, new ScoringOptions());
 
         _ = row["c01"].Should().Be("F");
     }
@@ -97,7 +97,7 @@ public class TsxOpsSnapshotTests {
         ProcessedReportFields fields = AllPassFields with {
             CurTotalShareholdersEquity = null, CurBookValue = null, RoeCashFlowEquity = null, RoeOwnerEarningsEquity = null };
 
-        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields);
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, fields, new ScoringOptions());
 
         _ = row["cur_total_shareholders_equity"].Should().BeEmpty();
         _ = row["cur_book_value"].Should().BeEmpty();
@@ -231,9 +231,9 @@ public class TsxOpsSnapshotTests {
 
     [Fact]
     public void RowBuilder_HasTheReportingCurrency() {
-        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields with { ReportingCurrency = "USD" });
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields with { ReportingCurrency = "USD" }, new ScoringOptions());
 
         _ = row["reporting_currency"].Should().Be("USD");
-        _ = SnapshotRowBuilder.Build(Instrument, AllPassFields)["reporting_currency"].Should().BeEmpty();
+        _ = SnapshotRowBuilder.Build(Instrument, AllPassFields, new ScoringOptions())["reporting_currency"].Should().BeEmpty();
     }
 }
