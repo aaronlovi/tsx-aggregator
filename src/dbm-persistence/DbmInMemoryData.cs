@@ -289,12 +289,12 @@ internal class DbmInMemoryData {
         return isPaused;
     }
 
-    public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType) {
+    public void MarkInstrumentEventAsProcessed(long instrumentId, int eventType, DateTimeOffset upToEventDate) {
         if (!_instrumentEventsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentEventDto>? instrumentEvents))
             return;
 
         for (int i = 0; i < instrumentEvents.Count; i++) {
-            if (instrumentEvents[i].EventType != eventType)
+            if (instrumentEvents[i].EventType != eventType || instrumentEvents[i].EventDate > upToEventDate)
                 continue;
             instrumentEvents[i] = instrumentEvents[i] with { IsProcessed = true };
         }
@@ -303,7 +303,6 @@ internal class DbmInMemoryData {
     public void InsertProcessedCompanyReport(ProcessedInstrumentReportDto dto) {
         ObsoleteOldProcessedInstrumentReports(dto);
         InsertProcessedInstrumentReport(dto);
-        UpdateInstrumentEvents(dto.InstrumentId, true, (int)CompanyEventTypes.RawDataChanged);
     }
 
     public bool InsertInstrument(InstrumentDto dto) {

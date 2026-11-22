@@ -61,7 +61,7 @@ public sealed class DbmInMemory : IDbmService {
 
     public ValueTask<Result> MarkInstrumentEventAsProcessed(InstrumentEventExDto dto, CancellationToken ct) {
         lock (_data) {
-            _data.MarkInstrumentEventAsProcessed(dto.InstrumentId, dto.EventType);
+            _data.MarkInstrumentEventAsProcessed(dto.InstrumentId, dto.EventType, dto.InstrumentEvent.EventDate);
         }
 
         return ValueTask.FromResult(Result.SUCCESS);

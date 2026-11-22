@@ -1,7 +1,6 @@
 ﻿using System;
 using Npgsql;
 using tsx_aggregator.models;
-using tsx_aggregator.shared;
 
 namespace dbm_persistence;
 
@@ -19,21 +18,17 @@ internal sealed class InsertProcessedCompanyReportStmt : NonQueryBatchedDbStmtBa
     public InsertProcessedCompanyReportStmt(ProcessedInstrumentReportDto dto) 
         : base(nameof(InsertProcessedCompanyReportStmt)) {
         AddCommandToBatch(ObsoleteOldRecordsSql, [
-            new NpgsqlParameter<DateTime>("obsoleted_date", dto.ReportObsoletedDate?.DateTime ?? DateTime.UtcNow),
+            new NpgsqlParameter<DateTime>("obsoleted_date", dto.ReportObsoletedDate?.UtcDateTime ?? DateTime.UtcNow),
             new NpgsqlParameter<long>("instrument_id", dto.InstrumentId)
         ]);
 
         AddCommandToBatch(InsertNewRecordSql, [
             new NpgsqlParameter<long>("instrument_id", dto.InstrumentId),
             new NpgsqlParameter<string>("report_json", dto.SerializedReport),
-            new NpgsqlParameter<DateTime>("created_date", dto.ReportCreatedDate.DateTime)
+            new NpgsqlParameter<DateTime>("created_date", dto.ReportCreatedDate.UtcDateTime)
         ]);
 
-        AddCommandToBatch(UpdateInstrumentEventStmt.sql, [
-            new NpgsqlParameter<bool>("is_processed", true),
-            new NpgsqlParameter<long>("instrument_id", dto.InstrumentId),
-            new NpgsqlParameter<int>("event_type", (int)Constants.CompanyEventTypes.RawDataChanged),
-            new NpgsqlParameter<DateTime>("event_date", dto.ReportCreatedDate.DateTime)
-        ]);
+        // The handled event is marked by the Aggregator right after this (MarkInstrumentEventAsProcessed), with its
+        // date as the cutoff. This batch used to mark every RawDataChanged event of the instrument as well (review P9).
     }
 }
