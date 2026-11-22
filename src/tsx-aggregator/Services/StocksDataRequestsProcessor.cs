@@ -140,13 +140,14 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
 
         Result<ProcessedFullInstrumentReportDto> res = await _dbm.GetProcessedStockDataByExchangeAndSymbol(request.Exchange, request.InstrumentSymbol, ct);
 
-        if (res.Success) {
-            _logger.LogInformation("ProcessGetStockDetailsRequest Success");
+        if (!res.Success) {
+            _logger.LogWarning("ProcessGetStockDetailsRequest Failed - {Error}", res.ErrMsg);
         } else if (res.Data is null) {
+            // The query found no row: a not-found, not a DB failure (whose own error is kept above)
             res = res with { Success = false, ErrMsg = "No data found" };
-            _logger.LogInformation("ProcessGetStockDetailsRequest Succeeded, but returned a null result");
+            _logger.LogInformation("ProcessGetStockDetailsRequest - No data found");
         } else {
-            _logger.LogInformation("ProcessGetStockDetailsRequest Failed - {Error}", res.ErrMsg);
+            _logger.LogInformation("ProcessGetStockDetailsRequest Success");
         }
 
         var reply = new GetStocksDetailReply() {

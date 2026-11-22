@@ -400,6 +400,9 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         GetStocksDetailReply detail = await RequestDetail("NOPE");
 
         detail.StockDetail.Should().BeNull();
+        // The "No data found" branch was reached only by DB failures (the branches were the wrong way round).
+        detail.Success.Should().BeFalse();
+        detail.ErrorMessage.Should().Be("No data found");
     }
 
     [Fact]
@@ -410,7 +413,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         GetStocksDetailReply detail = await RequestDetail("NMR.UN");
 
         detail.Success.Should().BeFalse();
-        detail.ErrorMessage.Should().NotBeEmpty();
+        detail.ErrorMessage.Should().Be("connection refused", "a DB failure keeps its own error, not \"No data found\"");
         detail.StockDetail.Should().BeNull();
     }
 
