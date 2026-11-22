@@ -1,9 +1,11 @@
 # Home-wifi access to the stocks site on the deploy laptop (Deploy Laptop Plan 2.8, D7).
 #   1. Turns on WSL mirrored networking in %UserProfile%\.wslconfig, so devices on the wifi can reach ports
 #      published in WSL (with the default NAT mode only the laptop itself can).
-#   2. Allows TCP <Port> in from Private networks only: a Windows Defender Firewall rule and a Hyper-V firewall
-#      rule for WSL (mirrored mode filters WSL traffic with both).
-#   3. Checks that the current network is Private; a Public network gets no access.
+#   2. Allows TCP <Port> in from devices on the local network (subnet) only, whatever the network type, so the
+#      wifi can stay Public (shared with another household; Private would also turn on network discovery and
+#      every other rule scoped to Private). A Windows Defender Firewall rule and a Hyper-V firewall rule for WSL
+#      (mirrored mode filters WSL traffic with both).
+#   3. Prints the network(s) and the laptop's address for phones.
 #
 # Run from an Administrator PowerShell, as the Windows user who runs WSL:
 #   powershell -ExecutionPolicy Bypass -File deploy\windows\setup-home-network.ps1
@@ -51,27 +53,41 @@ foreach ($line in $lines) {
 Set-Content -Path $wslConfig -Value $out -Encoding ASCII
 Write-Host "WSL networking: mirrored ($wslConfig). Takes effect after 'wsl --shutdown' or a reboot."
 
-# 2. Firewall rules, Private networks only.
+# The real network connections (Wi-Fi, Ethernet), not WSL's or Hyper-V's virtual adapters, and their subnets.
+$profiles = @(Get-NetConnectionProfile)
+$addresses = @(foreach ($p in $profiles) {
+    Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $p.InterfaceIndex -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -notlike "169.254.*" }
+})
+if ($addresses.Count -eq 0) {
+    Write-Error "No network connection with an IPv4 address found. Connect to the home wifi first."
+}
+
+function Get-SubnetCidr([string]$ip, [int]$prefix) {
+    # Byte by byte: Windows PowerShell 5.1 reads 0xFFFFFFFF as -1, so 32-bit mask arithmetic is unreliable.
+    $bytes = ([System.Net.IPAddress]::Parse($ip)).GetAddressBytes()
+    for ($i = 0; $i -lt 4; $i++) {
+        $bits = [Math]::Min(8, [Math]::Max(0, $prefix - 8 * $i))
+        $maskByte = (0xFF -shl (8 - $bits)) -band 0xFF
+        $bytes[$i] = [byte]($bytes[$i] -band $maskByte)
+    }
+    return "{0}/{1}" -f ([System.Net.IPAddress]::new($bytes)), $prefix
+}
+$subnets = @($addresses | ForEach-Object { Get-SubnetCidr $_.IPAddress $_.PrefixLength } | Sort-Object -Unique)
+
+# 2. Firewall rules: local subnet only, any network type.
 Remove-Rules
 $null = New-NetFirewallRule -DisplayName $RuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port `
-    -Profile Private -Description "Stocks site in WSL/Docker, home wifi only (tsx-aggregator deploy/README.md)"
+    -Profile Any -RemoteAddress LocalSubnet `
+    -Description "Stocks site in WSL/Docker, local network only (tsx-aggregator deploy/README.md)"
 $null = New-NetFirewallHyperVRule -Name ("tsx-stocks-" + $Port) -DisplayName $RuleName -Direction Inbound `
-    -VMCreatorId $WslVmCreatorId -Protocol TCP -LocalPorts $Port -Action Allow -Profiles Private
-Write-Host "Firewall: TCP $Port allowed in from Private networks (Windows Defender Firewall and Hyper-V firewall for WSL)."
+    -VMCreatorId $WslVmCreatorId -Protocol TCP -LocalPorts $Port -RemoteAddresses $subnets -Action Allow -Profiles Any
+Write-Host ("Firewall: TCP $Port allowed in from the local network only ({0}), on any network type." -f ($subnets -join ", "))
+Write-Host "If the wifi's address range changes (new router), run this script again."
 
-# 3. Network profile and address.
-$profiles = @(Get-NetConnectionProfile)
+# 3. Networks and addresses.
 foreach ($p in $profiles) {
-    Write-Host ("Network '{0}' ({1}): {2}" -f $p.Name, $p.InterfaceAlias, $p.NetworkCategory)
+    Write-Host ("Network '{0}' ({1}): {2} (stays as it is)" -f $p.Name, $p.InterfaceAlias, $p.NetworkCategory)
 }
-if ($profiles | Where-Object { $_.NetworkCategory -eq "Public" }) {
-    Write-Warning ("A network is Public, so the rule does not apply there. For the home wifi: Settings > Network & internet > " +
-        "Wi-Fi > (your network) > Network profile type > Private network. Only do this for your own home network.")
-}
-# Only the addresses of real network connections (Wi-Fi, Ethernet), not WSL's or Hyper-V's virtual adapters.
-$ips = foreach ($p in $profiles) {
-    Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $p.InterfaceIndex -ErrorAction SilentlyContinue |
-        Where-Object { $_.IPAddress -notlike "169.254.*" } | Select-Object -ExpandProperty IPAddress
-}
-foreach ($ip in $ips) { Write-Host "From a phone on the wifi: http://${ip}:$Port  (reserve this address in the router)" }
+foreach ($a in $addresses) { Write-Host "From a phone on the wifi: http://$($a.IPAddress):$Port  (reserve this address in the router)" }
 Write-Host "Next: 'wsl --shutdown' in PowerShell, open Ubuntu again, then deploy/README.md."

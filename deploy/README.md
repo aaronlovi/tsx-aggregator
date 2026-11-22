@@ -32,7 +32,7 @@ Scripts and steps for running the stack in Docker inside Ubuntu on WSL on the Wi
 | Windows | Ubuntu on WSL | `wsl --install` (by hand) |
 | Ubuntu | systemd on, Docker Engine (not Docker Desktop) | `wsl/setup-ubuntu.sh` |
 | Windows | `.wslconfig` memory cap (default half the RAM), scheduled task "WSL keep-alive" | `windows/setup-wsl-host.ps1` |
-| Windows | `.wslconfig` mirrored networking, firewall rules for TCP 5080 from Private networks | `windows/setup-home-network.ps1` |
+| Windows | `.wslconfig` mirrored networking, firewall rules for TCP 5080 from the local network only | `windows/setup-home-network.ps1` |
 | Ubuntu | .NET SDK in `~/.dotnet` (for `tsx-ops`) | `dotnet-install.sh` (4.2) |
 | Docker | `tsx-postgres`, `tsx-aggregator`, `tsx-webapi`, `tsx-web` | `wsl/stack.sh` |
 
@@ -76,14 +76,21 @@ Pass: the task time and the container start are before the `explorer` start (the
 
 ## 3. Home Wifi Access
 
+The wifi is shared with another household, so it stays **Public** in Windows (Private would also turn on network discovery and every other firewall rule scoped to Private). The site is open to any device on the wifi, read-only; nothing else on the laptop is.
+
 1. In an **Administrator** PowerShell:
    ```powershell
    powershell -ExecutionPolicy Bypass -File \\wsl$\Ubuntu\home\aaron\dev\tsx-aggregator\deploy\windows\setup-home-network.ps1
    ```
-   It turns on mirrored networking for WSL and allows TCP 5080 in from **Private** networks only, then prints each network's type and the laptop's address.
-2. If it warns that the home wifi is **Public**: Settings → Network & internet → Wi-Fi → your network → Network profile type → **Private network**. Only for your own home network.
-3. Apply it: `wsl --shutdown` in PowerShell (the keep-alive task restarts WSL within a minute, or open Ubuntu).
-4. In the router, reserve the address it printed for this laptop (DHCP reservation), so the phone bookmark keeps working.
+   It turns on mirrored networking for WSL and allows TCP 5080 in from the local network's addresses only (e.g. `192.168.6.0/24`), on any network type, then prints the laptop's address. Run it again if the router's address range ever changes.
+2. Apply it: `wsl --shutdown` in PowerShell, then open Ubuntu.
+3. In the **eero app**: Settings → Network settings → Reservations & port forwarding → Add a reservation → this laptop, so its address stays the same. **No port forwarding**: that would open the site to the internet.
+4. Test with the throwaway container, published on all addresses this time:
+   ```bash
+   docker rm -f startup-test
+   docker run -d --name startup-test --restart unless-stopped -p 5080:80 nginx:alpine
+   ```
+   `http://localhost:5080` on the laptop and `http://<address from 1>:5080` on a phone on the wifi both show "Welcome to nginx!"; with the phone on mobile data it does not load.
 5. Repeat the reboot test (2.4) once: mirrored networking changes how WSL starts.
 
 ## 4. Prepare the Stack
