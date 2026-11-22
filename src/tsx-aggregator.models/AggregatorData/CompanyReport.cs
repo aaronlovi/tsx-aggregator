@@ -610,8 +610,10 @@ public class CompanyReport
             LogMissingPropertyWarning(reportDate, "depreciation and amortization", warnings);
         }
 
-        // When DepreciationAmortizationDepletion equals the D&A figure, depletion is already inside it.
-        bool depletionIncludedInDA = rawCashFlowReport["DepreciationAmortizationDepletion"] == cashFlowReport.DepreciationAndAmortization;
+        // When DepreciationAmortizationDepletion equals the D&A figure, depletion is already inside it (decision 16).
+        // When Depletion itself equals the D&A figure, the D&A figure is the depletion (B15, decision 27).
+        bool depletionIncludedInDA = rawCashFlowReport["DepreciationAmortizationDepletion"] == cashFlowReport.DepreciationAndAmortization
+            || rawCashFlowReport["Depletion"] == cashFlowReport.DepreciationAndAmortization;
 
         if (hasDepletion && !depletionIncludedInDA)
             cashFlowReport.Depletion = rawCashFlowReport["Depletion"]!.Value;

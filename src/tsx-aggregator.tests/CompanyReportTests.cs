@@ -238,6 +238,17 @@ public class CompanyReportTests {
     }
 
     [Fact]
+    public void OwnerEarnings_DepletionEqualToDepreciationAndAmortization_IsNotAddedTwice() {
+        // B15 (decision 27): IPCO 2023 reports D&A and depletion as the same 111.3M, with a slightly larger DAD, so
+        // the D&A figure is the depletion. 100 + 111.3 - 10, not 100 + 222.6 - 10.
+        _ = OwnerEarningsWithCapEx10(
+            ("DepreciationAndAmortization", 111.3m),
+            ("Depletion", 111.3m),
+            ("DepreciationAmortizationDepletion", 112.9m))
+            .Should().Be(201.3m);
+    }
+
+    [Fact]
     public void OwnerEarnings_DepreciationAmortizationDepletion_IgnoredWhenDepreciationAndAmortizationPresent() {
         _ = OwnerEarningsWithCapEx10(
             ("DepreciationAndAmortization", 50m),
