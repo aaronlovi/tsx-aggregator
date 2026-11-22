@@ -17,6 +17,7 @@ public class CompanyFullDetailReport {
         string instrumentName,
         decimal pricePerShare,
         decimal curLongTermDebt,
+        decimal curShortTermDebt,
         decimal? curTotalShareholdersEquity,
         decimal? curBookValue,
         long curNumShares,
@@ -41,6 +42,7 @@ public class CompanyFullDetailReport {
         InstrumentName = instrumentName;
         PricePerShare = pricePerShare;
         CurLongTermDebt = curLongTermDebt;
+        CurShortTermDebt = curShortTermDebt;
         CurTotalShareholdersEquity = curTotalShareholdersEquity;
         CurBookValue = curBookValue;
         CurNumShares = curNumShares;
@@ -78,6 +80,7 @@ public class CompanyFullDetailReport {
         instrumentName: item.InstrumentName,
         pricePerShare: item.PerSharePrice,
         curLongTermDebt: item.CurrentLongTermDebt,
+        curShortTermDebt: item.CurrentShortTermDebt,
         curTotalShareholdersEquity: item.HasCurrentTotalShareholdersEquity ? item.CurrentTotalShareholdersEquity : null,
         curBookValue: item.HasCurrentBookValue ? item.CurrentBookValue : null,
         curNumShares: item.CurrentNumShares,
@@ -113,6 +116,8 @@ public class CompanyFullDetailReport {
     public string InstrumentName { get; init; }
     public decimal PricePerShare { get; init; }
     public decimal CurLongTermDebt { get; init; }
+    /// <summary>Debt due within a year (X3).</summary>
+    public decimal CurShortTermDebt { get; init; }
     // Null means the source data didn't have the figure (W1).
     public decimal? CurTotalShareholdersEquity { get; init; }
     public decimal? CurBookValue { get; init; }
@@ -151,9 +156,12 @@ public class CompanyFullDetailReport {
 
     /// <summary>Null without a quote (price 0 or less) or share count (decision 20).</summary>
     public decimal? CurMarketCap => PricePerShare > 0 && CurNumShares > 0 ? CurNumShares * PricePerShare : null;
-    public decimal? DebtToEquityRatio => Utilities.DivOrNull(CurLongTermDebt, CurTotalShareholdersEquity);
+    /// <summary>Long-term plus short-term debt: what checks 1 (D/E) and 10 (D/B) use (X3, decision 5).</summary>
+    public decimal CurTotalDebt => CurLongTermDebt + CurShortTermDebt;
+    public decimal? DebtToEquityRatio => Utilities.DivOrNull(CurTotalDebt, CurTotalShareholdersEquity);
     public decimal? CurPriceToBookRatio => Utilities.DivOrNull(CurMarketCap, CurBookValue);
-    public decimal? LongTermDebtToBookRatio => Utilities.DivOrNull(CurLongTermDebt, CurBookValue);
+    /// <summary>Total debt (long-term + short-term since X3) over book value; the name is kept for the REST contract.</summary>
+    public decimal? LongTermDebtToBookRatio => Utilities.DivOrNull(CurTotalDebt, CurBookValue);
     /// <summary>Net cash flow + dividends over the equity it was earned on (B11).</summary>
     public decimal? ReturnOnEquity_FromCashFlow => Utilities.DivOrNull(RoeCashFlowNumerator, RoeCashFlowEquity);
     /// <summary>Owner earnings over the equity they were earned on (B11).</summary>

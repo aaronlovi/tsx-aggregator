@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -78,7 +78,7 @@ public class CompanyReportRoeTests {
         _ = ok.Should().BeTrue();
         return new CompanyFullDetailReport(
             exchange: "TSX", companySymbol: "TST", instrumentSymbol: "TST", companyName: "Test Co",
-            instrumentName: "Test Co Common", pricePerShare: 10M, curLongTermDebt: f!.CurLongTermDebt,
+            instrumentName: "Test Co Common", pricePerShare: 10M, curLongTermDebt: f!.CurLongTermDebt, curShortTermDebt: 0M,
             curTotalShareholdersEquity: f.CurTotalShareholdersEquity, curBookValue: f.CurBookValue,
             curNumShares: f.CurNumShares, averageNetCashFlow: f.AverageNetCashFlow,
             averageOwnerEarnings: f.AverageOwnerEarnings, curDividendsPaid: f.CurDividendsPaid,

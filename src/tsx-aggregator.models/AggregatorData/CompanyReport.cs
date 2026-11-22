@@ -27,6 +27,10 @@ public class CompanyReport
     // and the balance sheet debt change (the B3 fallback for net debt issuance) can't drift apart.
     private static readonly string[] LongTermDebtKeys = ["LongTermDebtAndCapitalLeaseObligation", "LongTermDebt"];
 
+    // Debt due within a year, in the same order as LongTermDebtKeys, so leases are counted on both sides or on neither
+    // (X3). Also the current debt taken out of working capital.
+    private static readonly string[] ShortTermDebtKeys = ["CurrentDebtAndCapitalLeaseObligation", "CurrentDebt"];
+
     // Dates of the report sets the current and oldest balance sheet figures come from.
     private DateOnly? _mostRecentReportDate;
     private DateOnly? _oldestReportDate;
@@ -64,6 +68,8 @@ public class CompanyReport
     public decimal CurGoodwill { get; set; }
     public decimal CurIntangibles { get; set; }
     public decimal CurLongTermDebt { get; set; }
+    /// <summary>Debt due within a year, leases included when the long-term figure includes them (X3); 0 when the sheets have none.</summary>
+    public decimal CurShortTermDebt { get; set; }
     /// <summary>From the most recent annual cash flow; null when there is none, 0 when it has no dividends key.</summary>
     public decimal? CurDividendsPaid { get; set; }
     public decimal? CurRetainedEarnings { get; set; }
@@ -298,6 +304,15 @@ public class CompanyReport
         }
         else
             warnings.Add("Most recent figures: missing property current LongTermDebt");
+
+        // No key means no debt due within a year, which is common, so that is not warned about (X3, decision 5).
+        if (mostRecentBalanceSheet.FirstPresent(ShortTermDebtKeys) is decimal shortTermDebt)
+            CurShortTermDebt = shortTermDebt;
+        else if (latestAnnual is (DateOnly annualDate, var annualBalanceSheet) && annualBalanceSheet.FirstPresent(ShortTermDebtKeys) is decimal annualShortTermDebt)
+        {
+            CurShortTermDebt = annualShortTermDebt;
+            warnings.Add($"Most recent figures: current ShortTermDebt from the annual balance sheet of {annualDate}");
+        }
 
         if (mostRecentBalanceSheet.HasValue("RetainedEarnings"))
             CurRetainedEarnings = mostRecentBalanceSheet["RetainedEarnings"]!.Value;
@@ -705,7 +720,7 @@ public class CompanyReport
             return null;
 
         decimal cash = rawBalanceSheet.FirstPresent("CashCashEquivalentsAndShortTermInvestments", "CashAndCashEquivalents") ?? 0;
-        decimal currentDebt = rawBalanceSheet.FirstPresent("CurrentDebtAndCapitalLeaseObligation", "CurrentDebt") ?? 0;
+        decimal currentDebt = rawBalanceSheet.FirstPresent(ShortTermDebtKeys) ?? 0;
 
         return (currentAssets - cash) - (currentLiabilities - currentDebt);
     }

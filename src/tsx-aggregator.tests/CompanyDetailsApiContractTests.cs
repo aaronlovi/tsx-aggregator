@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,6 +34,7 @@ public class CompanyDetailsApiContractTests {
         instrumentName: "Example Corp Common",
         pricePerShare: 25M,
         curLongTermDebt: 300_000_000M,
+        curShortTermDebt: 0M,
         curTotalShareholdersEquity: 900_000_000M,
         curBookValue: 800_000_000M,
         curNumShares: 50_000_000,
@@ -87,6 +88,7 @@ public class CompanyDetailsApiContractTests {
             instrumentName: sample.InstrumentName,
             pricePerShare: sample.PricePerShare,
             curLongTermDebt: sample.CurLongTermDebt,
+            curShortTermDebt: 0M,
             curTotalShareholdersEquity: null,
             curBookValue: null,
             curNumShares: sample.CurNumShares,

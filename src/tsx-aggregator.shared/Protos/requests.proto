@@ -1,4 +1,4 @@
-syntax = "proto3";
+﻿syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 import "decimal-value.proto";
@@ -74,6 +74,8 @@ message GetStocksDataReplyItem {
     int32 roe_consistency_min_years = 30;     // 0 from an older server: use the defaults
     int32 roe_consistency_window_years = 31;
     int32 roe_consistency_min_usable_years = 32;
+    // Debt due within a year (X3); D/E and D/B use long-term + short-term debt. 0 from an older server.
+    int64 current_short_term_debt = 33;
 }
 
 message GetStockSearchResultsRequest {

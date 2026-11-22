@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using tsx_aggregator.models;
@@ -95,6 +95,66 @@ public class CompanyReportDebtTests {
         _ = Process(report);
 
         _ = report.CurLongTermDebt.Should().Be(0m);
+    }
+
+    // X3: debt due within a year, same key order as the long-term chain (leases on both sides or neither), with the
+    // same annual fallback. Measured in the review's section 3.7.
+
+    [Fact]
+    public void ShortTermDebt_PrefersIncludingLeases() {
+        var report = NewReport();
+        AddQuarterSet(report, Q1Fy2022, ("CurrentDebt", 40m), ("CurrentDebtAndCapitalLeaseObligation", 55m));
+
+        _ = Process(report);
+
+        _ = report.CurShortTermDebt.Should().Be(55m);
+    }
+
+    [Fact]
+    public void ShortTermDebt_FallsBackToCurrentDebt() {
+        var report = NewReport();
+        AddQuarterSet(report, Q1Fy2022, ("CurrentDebt", 40m));
+
+        _ = Process(report);
+
+        _ = report.CurShortTermDebt.Should().Be(40m);
+    }
+
+    [Fact]
+    public void QuarterWithoutShortTermDebt_TakesTheAnnualFigure() {
+        var report = NewReport();
+        AddAnnualSet(report, Fy2021, ("CurrentDebt", 70m), ("LongTermDebt", 300m));
+        AddQuarterSet(report, Q1Fy2022, ("LongTermDebt", 250m));
+
+        List<string> warnings = Process(report);
+
+        _ = report.CurShortTermDebt.Should().Be(70m);
+        _ = report.CurLongTermDebt.Should().Be(250m, "each part falls back on its own");
+        _ = warnings.Should().Contain($"Most recent figures: current ShortTermDebt from the annual balance sheet of {Fy2021}");
+    }
+
+    [Fact]
+    public void QuarterWithZeroShortTermDebt_KeepsZero() {
+        var report = NewReport();
+        AddAnnualSet(report, Fy2021, ("CurrentDebt", 70m));
+        AddQuarterSet(report, Q1Fy2022, ("CurrentDebt", 0m));
+
+        _ = Process(report);
+
+        _ = report.CurShortTermDebt.Should().Be(0m);
+    }
+
+    [Fact]
+    public void NoShortTermDebtAnywhere_IsZeroWithoutAWarning() {
+        // Most companies without the key simply have no debt due within a year.
+        var report = NewReport();
+        AddAnnualSet(report, Fy2021);
+        AddQuarterSet(report, Q1Fy2022);
+
+        List<string> warnings = Process(report);
+
+        _ = report.CurShortTermDebt.Should().Be(0m);
+        _ = warnings.Should().NotContain(w => w.Contains("ShortTermDebt"));
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-<!-- On error -->
+﻿<!-- On error -->
 @if (errorMsg) {
   <div>
     <h2>{{ errorMsg }}</h2>
@@ -100,7 +100,7 @@
             {{ checkLabel(companyDetails.doesPassCheck_DebtToEquitySmallEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
-            <span matTooltip="Is Long-Term Debt To Book Ratio &lt; 1.0?">
+            <span matTooltip="Is Debt To Book Ratio &lt; 1.0? Debt is long-term debt plus debt due within a year.">
               Debt-to-Book Small Enough?
             </span>
           </th>
@@ -274,12 +274,14 @@
             {{ (companyDetails.curMarketCap | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
-            <span matTooltip="Liabilities that are due in more than one year including loans, bonds, and other forms of debt with a maturity date beyond the next twelve months.">
-              Long Term Debt
+            <span matTooltip="Loans, bonds, notes and leases: long-term debt plus debt due within a year. The two parts are shown when you hover over the figure.">
+              Debt
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ (companyDetails.curLongTermDebt | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            <span [matTooltip]="'Long-term ' + (companyDetails.curLongTermDebt | currency:'USD':'symbol':'1.0-0') + ', due within a year ' + (companyDetails.curShortTermDebt | currency:'USD':'symbol':'1.0-0')">
+              {{ (companyDetails.curTotalDebt | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            </span>
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="Total value of assets minus liabilities.">
@@ -356,8 +358,8 @@
             {{ (companyDetails.curPriceToBookRatio | number:'1.2-2') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
-            <span matTooltip="The proportion of a company's long-term debt relative to its book value. It is calculated by dividing long-term debt by book value.">
-              Long-Term Debt To Book Ratio
+            <span matTooltip="The proportion of a company's debt relative to its book value. It is calculated by dividing debt (long-term plus due within a year) by book value.">
+              Debt To Book Ratio
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">

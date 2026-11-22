@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -75,6 +75,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         ["CurGoodwill"] = 412_000_000m,
         ["CurIntangibles"] = 96_300_000m,
         ["CurLongTermDebt"] = 845_000_000m,
+        ["CurShortTermDebt"] = 120_000_000m,
         ["CurDividendsPaid"] = 61_200_000m,
         ["CurRetainedEarnings"] = 1_085_000_000m,
         ["CurRetainedEarningsEstimated"] = true,
@@ -183,6 +184,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.CurrentGoodwill.Should().Be(412_000_000);
         item.CurrentIntangibles.Should().Be(96_300_000);
         item.CurrentLongTermDebt.Should().Be(845_000_000);
+        item.CurrentShortTermDebt.Should().Be(120_000_000);
         item.CurrentTotalShareholdersEquity.Should().Be(2_310_500_000);
         item.CurrentDividendsPaid.Should().Be(61_200_000);
         item.CurrentAdjustedRetainedEarnings.Should().Be(1_120_000_000);
@@ -312,6 +314,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         report.ProcessReports(new List<string>());
         report.CurTotalShareholdersEquity = 2_310_500_000m;
         report.CurLongTermDebt = 845_000_000m;
+        report.CurShortTermDebt = 120_000_000m;
         SetupStocks(Dto("NMR", JsonSerializer.Serialize(report)));
 
         GetStocksDataReply reply = await RequestStocks();
@@ -320,6 +323,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.CurrentNumShares.Should().Be(182_400_000);
         item.CurrentTotalShareholdersEquity.Should().Be(2_310_500_000);
         item.CurrentLongTermDebt.Should().Be(845_000_000);
+        item.CurrentShortTermDebt.Should().Be(120_000_000);
         item.CurrentDividendsPaid.Should().Be(61_200_000);
         item.AverageNetCashFlow.Should().Be(35_000_000);
     }

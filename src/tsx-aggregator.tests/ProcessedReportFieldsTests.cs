@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using FluentAssertions;
@@ -46,6 +46,26 @@ public class ProcessedReportFieldsTests {
             RoeCashFlowEquity: 500,
             RoeOwnerEarningsNumerator: 60,
             RoeOwnerEarningsEquity: 500));
+    }
+
+    [Fact]
+    public void TryParse_WithoutShortTermDebt_ReadsZero() {
+        // Reports written before X3 score as before (long-term debt only) until the rebuild.
+        _ = ProcessedReportFields.TryParse(CompleteJson, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.CurShortTermDebt.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryParse_ShortTermDebt_ReadsIt() {
+        string json = CompleteJson.Replace("\"CurLongTermDebt\": 30", "\"CurLongTermDebt\": 30, \"CurShortTermDebt\": 12.6");
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.CurShortTermDebt.Should().Be(13);
+    }
+
+    [Fact]
+    public void TryParse_ShortTermDebtNotANumber_Fails() {
+        string json = CompleteJson.Replace("\"CurLongTermDebt\": 30", "\"CurLongTermDebt\": 30, \"CurShortTermDebt\": \"x\"");
+        _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
     }
 
     [Fact]
@@ -107,6 +127,7 @@ public class ProcessedReportFieldsTests {
         report.CurGoodwill = 50;
         report.CurIntangibles = 25;
         report.CurLongTermDebt = 300;
+        report.CurShortTermDebt = 45;
         report.CurDividendsPaid = 12;
         report.CurAdjustedRetainedEarnings = 77;
         report.OldestRetainedEarnings = 33;
@@ -119,6 +140,7 @@ public class ProcessedReportFieldsTests {
         _ = fields.CurGoodwill.Should().Be(50);
         _ = fields.CurIntangibles.Should().Be(25);
         _ = fields.CurLongTermDebt.Should().Be(300);
+        _ = fields.CurShortTermDebt.Should().Be(45);
         _ = fields.CurDividendsPaid.Should().Be(12);
         _ = fields.CurAdjustedRetainedEarnings.Should().Be(77);
         _ = fields.OldestRetainedEarnings.Should().Be(33);

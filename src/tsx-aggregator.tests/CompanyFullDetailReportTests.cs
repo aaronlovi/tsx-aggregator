@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using FluentAssertions;
@@ -23,6 +23,7 @@ public class CompanyFullDetailReportTests {
         instrumentName: "Test Co Common",
         pricePerShare: 10M,
         curLongTermDebt: 0M,
+        curShortTermDebt: 0M,
         curTotalShareholdersEquity: 1_000M,
         curBookValue: 1_000M,
         curNumShares: 100,
@@ -96,6 +97,7 @@ public class CompanyFullDetailReportTests {
         instrumentName: "Test Co Common",
         pricePerShare: 10M,
         curLongTermDebt: 10M,
+        curShortTermDebt: 0M,
         curTotalShareholdersEquity: equity,
         curBookValue: bookValue,
         curNumShares: 100,
@@ -204,6 +206,7 @@ public class CompanyFullDetailReportTests {
         instrumentName: "Test Co Common",
         pricePerShare: pricePerShare,
         curLongTermDebt: 10M,
+        curShortTermDebt: 0M,
         curTotalShareholdersEquity: equity,
         curBookValue: bookValue,
         curNumShares: 100,
@@ -324,6 +327,50 @@ public class CompanyFullDetailReportTests {
 
     #endregion
 
+    #region X3 - short-term debt in the debt checks
+
+    private static CompanyFullDetailReport ReportWithDebt(decimal longTermDebt, decimal shortTermDebt) =>
+        new CompanyFullDetailReport(
+            exchange: "TSX", companySymbol: "TST", instrumentSymbol: "TST", companyName: "Test Co",
+            instrumentName: "Test Co Common", pricePerShare: 10M,
+            curLongTermDebt: longTermDebt,
+            curShortTermDebt: shortTermDebt,
+            curTotalShareholdersEquity: 1_000M, curBookValue: 800M, curNumShares: 100,
+            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
+            oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
+            roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
+            scoring: new ScoringOptions());
+
+    [Fact]
+    public void TotalDebt_IsLongTermPlusShortTerm() {
+        _ = ReportWithDebt(300M, 150M).CurTotalDebt.Should().Be(450M);
+    }
+
+    [Fact]
+    public void DebtToEquity_CountsShortTermDebt() {
+        // Long-term debt alone: 300 / 1,000 = 0.3 passes; with 250 due within a year, 550 / 1,000 = 0.55 fails.
+        _ = ReportWithDebt(300M, 0M).DoesPassCheck_DebtToEquitySmallEnough.Should().Be(CheckResult.Pass);
+        CompanyFullDetailReport report = ReportWithDebt(300M, 250M);
+        _ = report.DebtToEquityRatio.Should().Be(0.55M);
+        _ = report.DoesPassCheck_DebtToEquitySmallEnough.Should().Be(CheckResult.Fail);
+    }
+
+    [Fact]
+    public void DebtToBook_CountsShortTermDebt() {
+        // Book value 800: 700 / 800 passes; 700 + 200 = 900 / 800 fails.
+        _ = ReportWithDebt(700M, 0M).DoesPassCheck_DebtToBookRatioSmallEnough.Should().Be(CheckResult.Pass);
+        CompanyFullDetailReport report = ReportWithDebt(700M, 200M);
+        _ = report.LongTermDebtToBookRatio.Should().Be(1.125M);
+        _ = report.DoesPassCheck_DebtToBookRatioSmallEnough.Should().Be(CheckResult.Fail);
+    }
+
+    [Fact]
+    public void OnlyShortTermDebt_IsNotDebtFree() {
+        _ = ReportWithDebt(0M, 600M).DoesPassCheck_DebtToEquitySmallEnough.Should().Be(CheckResult.Fail);
+    }
+
+    #endregion
+
     #region W1 - gRPC reply mapping
 
     [Fact]
@@ -344,6 +391,18 @@ public class CompanyFullDetailReportTests {
         _ = report.CurAdjustedRetainedEarnings.Should().BeNull();
         _ = report.OldestRetainedEarnings.Should().BeNull();
         _ = report.CurLongTermDebt.Should().Be(10M);
+        _ = report.CurShortTermDebt.Should().Be(0M, "an older server does not send it");
+    }
+
+    [Fact]
+    public void FromReplyItem_ReadsShortTermDebt() {
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, CurrentNumShares = 100, CurrentLongTermDebt = 10,
+            CurrentShortTermDebt = 7, NumAnnualProcessedCashFlowReports = 5,
+        };
+
+        _ = CompanyFullDetailReport.FromReplyItem(item).CurShortTermDebt.Should().Be(7M);
     }
 
     [Fact]

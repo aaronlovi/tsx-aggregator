@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -43,6 +43,7 @@ internal static class SnapshotRowBuilder {
         "cur_total_shareholders_equity",
         "cur_book_value",
         "cur_long_term_debt",
+        "cur_short_term_debt",
         "average_net_cash_flow",
         "average_owner_earnings",
         "cur_dividends_paid",
@@ -87,6 +88,7 @@ internal static class SnapshotRowBuilder {
             instrumentName: instrument.InstrumentName,
             pricePerShare: instrument.PricePerShare,
             curLongTermDebt: fields.CurLongTermDebt,
+            curShortTermDebt: fields.CurShortTermDebt,
             curTotalShareholdersEquity: fields.CurTotalShareholdersEquity,
             curBookValue: fields.CurBookValue,
             curNumShares: fields.CurNumShares,
@@ -120,6 +122,7 @@ internal static class SnapshotRowBuilder {
             ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity),
             ["cur_book_value"] = Format(fields.CurBookValue),
             ["cur_long_term_debt"] = Format(fields.CurLongTermDebt),
+            ["cur_short_term_debt"] = Format(fields.CurShortTermDebt),
             ["average_net_cash_flow"] = Format(fields.AverageNetCashFlow),
             ["average_owner_earnings"] = Format(fields.AverageOwnerEarnings),
             ["cur_dividends_paid"] = Format(fields.CurDividendsPaid),

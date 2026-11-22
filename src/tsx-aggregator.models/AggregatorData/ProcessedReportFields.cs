@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
@@ -31,7 +31,8 @@ public sealed record ProcessedReportFields(
     long? RoeOwnerEarningsNumerator = null,
     long? RoeOwnerEarningsEquity = null,
     IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null,
-    string? ReportingCurrency = null) {
+    string? ReportingCurrency = null,
+    long CurShortTermDebt = 0) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -70,6 +71,13 @@ public sealed record ProcessedReportFields(
             return false;
         }
 
+        // Optional: reports written before X3 don't have it, and score as before (long-term debt only) until a rebuild.
+        long curShortTermDebt = 0;
+        if (root.TryGetProperty("CurShortTermDebt", out _) && !GetDataPoint(root, "CurShortTermDebt", out curShortTermDebt)) {
+            fields = null;
+            return false;
+        }
+
         fields = new ProcessedReportFields(
             curNumShares,
             curTotalShareholdersEquity,
@@ -93,7 +101,8 @@ public sealed record ProcessedReportFields(
             // Optional: reports written before X1 don't have it.
             root.TryGetProperty("ReportingCurrency", out JsonElement currency) && currency.ValueKind == JsonValueKind.String
                 ? currency.GetString()
-                : null);
+                : null,
+            curShortTermDebt);
         return true;
     }
 

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using tsx_aggregator.models;
@@ -20,6 +20,7 @@ public class TopScoreDiffComputerTests {
             instrumentName: $"{name} Common Shares",
             pricePerShare: 50M,
             curLongTermDebt: 100_000_000M,
+            curShortTermDebt: 0M,
             curTotalShareholdersEquity: 500_000_000M,
             curBookValue: 200_000_000M,
             curNumShares: 10_000_000,
@@ -51,6 +52,7 @@ public class TopScoreDiffComputerTests {
             instrumentName: $"{name} Common Shares",
             pricePerShare: 0M,
             curLongTermDebt: 100_000_000M,
+            curShortTermDebt: 0M,
             curTotalShareholdersEquity: 500_000_000M,
             curBookValue: 200_000_000M,
             curNumShares: 10_000_000,

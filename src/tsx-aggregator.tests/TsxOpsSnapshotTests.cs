@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -51,6 +51,17 @@ public class TsxOpsSnapshotTests {
         _ = rows.Should().HaveCount(2);
         _ = rows[0].Should().Equal(fields);
         _ = rows[1].Should().Equal("a", "b", "c", "d", "e");
+    }
+
+    [Fact]
+    public void RowBuilder_ShortTermDebt_IsAColumnAndCountsInTheDebtRatios() {
+        // X3: 100M long-term + 300M short-term on 1B equity and book: D/E 0.4 passes, D/B 0.4.
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields with { CurShortTermDebt = 300_000_000 }, new ScoringOptions());
+
+        _ = row["cur_long_term_debt"].Should().Be("100000000");
+        _ = row["cur_short_term_debt"].Should().Be("300000000");
+        _ = decimal.Parse(row["debt_to_equity"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(0.4M);
+        _ = decimal.Parse(row["debt_to_book"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(0.4M);
     }
 
     [Fact]

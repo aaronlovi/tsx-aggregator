@@ -1,4 +1,4 @@
-/**
+﻿/**
  * A company's full details as returned by GET companies/{exchange}/{instrumentSymbol}.
  *
  * Every ratio, check result, the score and the max price are computed by the backend
@@ -23,6 +23,8 @@ export interface CompanyDetails {
     // Inputs
     pricePerShare: number;
     curLongTermDebt: number;
+    curShortTermDebt: number;
+    curTotalDebt: number;
     curTotalShareholdersEquity: number | null;
     curBookValue: number | null;
     curNumShares: number;
