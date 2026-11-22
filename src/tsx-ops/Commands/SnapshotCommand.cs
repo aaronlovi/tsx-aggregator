@@ -52,6 +52,7 @@ internal sealed class SnapshotCommand : ICommand {
         string connectionString = context.GetConnectionString(parsed.Get(ParsedArgs.ConnectionOption));
         ILogger logger = context.CreateLogger<SnapshotCommand>();
 
+        ScoringOptions scoring = context.GetScoringOptions();
         var stopwatch = Stopwatch.StartNew();
         logger.LogInformation("Reading {Source} data in a read-only transaction", source.ToString().ToLowerInvariant());
 
@@ -59,11 +60,11 @@ internal sealed class SnapshotCommand : ICommand {
             List<SnapshotInstrument> instruments = await SnapshotSource.LoadInstrumentsAsync(conn, tx, token);
             if (source == SnapshotSourceKind.Raw) {
                 Dictionary<long, List<CurrentInstrumentRawDataReportDto>> raw = await SnapshotSource.LoadCurrentRawReportsAsync(conn, tx, token);
-                return SnapshotBuilder.FromRaw(instruments, raw);
+                return SnapshotBuilder.FromRaw(instruments, raw, scoring);
             }
 
             Dictionary<long, string> processed = await SnapshotSource.LoadProcessedReportsAsync(conn, tx, token);
-            return SnapshotBuilder.FromProcessed(instruments, processed);
+            return SnapshotBuilder.FromProcessed(instruments, processed, scoring);
         }, ct);
 
         string outPath = parsed.Get(OutOption) ?? DefaultOutputPath(label);
@@ -87,9 +88,9 @@ internal sealed class SnapshotCommand : ICommand {
             .ToArray();
 
         logger.LogInformation(
-            "Wrote {Rows} rows in {Seconds:0.0}s: {Ok} scored, {NotScored} not scored; 13+: {Thirteen}, 14+: {Fourteen}, 15/15: {Fifteen}",
+            "Wrote {Rows} rows in {Seconds:0.0}s: {Ok} scored, {NotScored} not scored; 14+: {Fourteen}, 15+: {Fifteen}, 16/16: {Sixteen}",
             snapshot.Rows.Count, elapsed.TotalSeconds, ok, snapshot.Rows.Count - ok,
-            scores.Count(s => s >= 13), scores.Count(s => s >= 14), scores.Count(s => s >= 15));
+            scores.Count(s => s >= 14), scores.Count(s => s >= 15), scores.Count(s => s >= 16));
 
         foreach (IGrouping<string, IReadOnlyDictionary<string, string>> group in snapshot.Rows
                      .Where(r => r[Snapshot.StatusColumn] != SnapshotRowBuilder.StatusOk)

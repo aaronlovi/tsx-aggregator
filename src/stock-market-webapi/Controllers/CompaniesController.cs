@@ -44,9 +44,9 @@ public class CompaniesController : Controller {
             return CompareAverageReturn(a, b, descending: true);
         });
 
-        // Keep only score >= 13 companies, and transform to summary reports
+        // Keep only top-score companies (14 of 16 since C16), and transform to summary reports
         var summaryReports = fullDetailReports
-            .Where(r => r.OverallScore >= 13)
+            .Where(r => r.OverallScore >= ScoringOptions.TopScoreCutoff)
             .Select(CompanySummaryReport.FromDetailedReport)
             .ToList();
 

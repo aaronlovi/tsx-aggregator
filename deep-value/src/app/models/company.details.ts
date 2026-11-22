@@ -69,6 +69,20 @@ export interface CompanyDetails {
     didAdjustedRetainedEarningsIncrease: CheckResult; // the 13th check
     doesPassCheck_ROE_FromCashFlow_BigEnough: CheckResult;
     doesPassCheck_ROE_FromOwnerEarnings_BigEnough: CheckResult;
+    /**
+     * Check 16 (C16): ROE (OE) over 10% in at least roeConsistencyMinYears of the last roeConsistencyWindowYears;
+     * with fewer usable years (but at least roeConsistencyMinUsableYears), the same number of misses is allowed.
+     */
+    doesPassCheck_ROE_FromOwnerEarnings_Consistent: CheckResult;
+    /** Usable years check 16 looked at; null when there were too few (the check is then n/a). */
+    roeOwnerEarningsYearsConsidered: number | null;
+    /** How many of those years had ROE (OE) over 10%. */
+    roeOwnerEarningsYearsAbove10: number | null;
+    /** How many of them had to be over 10%. */
+    roeOwnerEarningsYearsRequired: number | null;
+    roeConsistencyMinYears: number;
+    roeConsistencyWindowYears: number;
+    roeConsistencyMinUsableYears: number;
     doesPassCheck_Overall: boolean;
     overallScore: number;
     notAvailableCount: number;

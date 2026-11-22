@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json.Serialization;
 using tsx_aggregator.Services;
@@ -28,6 +30,10 @@ public class CompanyFullDetailReport {
         decimal? roeCashFlowEquity,
         decimal? roeOwnerEarningsNumerator,
         decimal? roeOwnerEarningsEquity,
+        IReadOnlyList<AnnualReturnOnEquity>? roeOwnerEarningsByYear = null,
+        int roeConsistencyMinYears = ScoringOptions.DefaultRoeConsistencyMinYears,
+        int roeConsistencyWindowYears = ScoringOptions.DefaultRoeConsistencyWindowYears,
+        int roeConsistencyMinUsableYears = ScoringOptions.DefaultRoeConsistencyMinUsableYears,
         DateTimeOffset? mostRecentAnnualReportDate = null,
         DateTimeOffset? mostRecentQuarterlyReportDate = null,
         DateTimeOffset? lastUpdatedDate = null,
@@ -54,6 +60,10 @@ public class CompanyFullDetailReport {
         RoeCashFlowEquity = roeCashFlowEquity;
         RoeOwnerEarningsNumerator = roeOwnerEarningsNumerator;
         RoeOwnerEarningsEquity = roeOwnerEarningsEquity;
+        RoeOwnerEarningsByYear = roeOwnerEarningsByYear;
+        RoeConsistencyMinYears = roeConsistencyMinYears;
+        RoeConsistencyWindowYears = roeConsistencyWindowYears;
+        RoeConsistencyMinUsableYears = roeConsistencyMinUsableYears;
         MostRecentAnnualReportDate = mostRecentAnnualReportDate;
         MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
         LastUpdatedDate = lastUpdatedDate;
@@ -86,6 +96,11 @@ public class CompanyFullDetailReport {
         roeCashFlowEquity: item.HasRoeCashFlowEquity ? item.RoeCashFlowEquity : null,
         roeOwnerEarningsNumerator: item.HasRoeOwnerEarningsNumerator ? item.RoeOwnerEarningsNumerator : null,
         roeOwnerEarningsEquity: item.HasRoeOwnerEarningsEquity ? item.RoeOwnerEarningsEquity : null,
+        roeOwnerEarningsByYear: [.. item.RoeOwnerEarningsByYear.Select(y => new AnnualReturnOnEquity(
+            DateOnly.Parse(y.YearEnd, CultureInfo.InvariantCulture), y.Roe is null ? null : (decimal)y.Roe))],
+        roeConsistencyMinYears: item.RoeConsistencyMinYears > 0 ? item.RoeConsistencyMinYears : ScoringOptions.DefaultRoeConsistencyMinYears,
+        roeConsistencyWindowYears: item.RoeConsistencyWindowYears > 0 ? item.RoeConsistencyWindowYears : ScoringOptions.DefaultRoeConsistencyWindowYears,
+        roeConsistencyMinUsableYears: item.RoeConsistencyMinUsableYears > 0 ? item.RoeConsistencyMinUsableYears : ScoringOptions.DefaultRoeConsistencyMinUsableYears,
         mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
         mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
         lastUpdatedDate: item.LastUpdatedDate?.ToDateTimeOffset(),
@@ -115,6 +130,13 @@ public class CompanyFullDetailReport {
     [JsonIgnore] public decimal? RoeCashFlowEquity { get; init; }
     [JsonIgnore] public decimal? RoeOwnerEarningsNumerator { get; init; }
     [JsonIgnore] public decimal? RoeOwnerEarningsEquity { get; init; }
+    /// <summary>ROE (OE) of each usable year, most recent first (C16); null when the stored report predates it.</summary>
+    [JsonIgnore] public IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear { get; init; }
+    /// <summary>Check 16 passes with ROE (OE) over 10% in at least this many of the last <see cref="RoeConsistencyWindowYears"/>.</summary>
+    public int RoeConsistencyMinYears { get; init; }
+    public int RoeConsistencyWindowYears { get; init; }
+    /// <summary>Fewer usable years than this makes check 16 n/a.</summary>
+    public int RoeConsistencyMinUsableYears { get; init; }
     public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
     public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
     public DateTimeOffset? LastUpdatedDate { get; init; }
@@ -205,7 +227,37 @@ public class CompanyFullDetailReport {
     public CheckResult DoesPassCheck_ROE_FromOwnerEarnings_BigEnough =>
         CheckWithPositiveDenominator(RoeOwnerEarningsEquity, ReturnOnEquity_FromOwnerEarnings, roe => roe > 0.10M);
 
-    /// <summary>The 15 checks, in the order the score has always listed them. Not serialized: each has its own field.</summary>
+    /// <summary>
+    /// How many usable years check 16 looks at: the last <see cref="RoeConsistencyWindowYears"/>, or all of them when
+    /// there are fewer. Null when there are fewer than <see cref="RoeConsistencyMinUsableYears"/> (C16, decision 28).
+    /// </summary>
+    public int? RoeOwnerEarningsYearsConsidered =>
+        RoeOwnerEarningsByYear is { } years && Math.Min(years.Count, RoeConsistencyWindowYears) is int considered
+            && considered >= RoeConsistencyMinUsableYears
+                ? considered
+                : null;
+    /// <summary>
+    /// How many of the years considered had ROE (OE) over 10% (a year with average equity 0 or less doesn't count).
+    /// </summary>
+    public int? RoeOwnerEarningsYearsAbove10 =>
+        RoeOwnerEarningsYearsConsidered is int considered
+            ? RoeOwnerEarningsByYear!.Take(considered).Count(y => y.Roe > 0.10M)
+            : null;
+    /// <summary>
+    /// How many of the years considered must be over 10%: N of the full window, or the same number of misses
+    /// (M - N) over fewer years, at least 1.
+    /// </summary>
+    public int? RoeOwnerEarningsYearsRequired =>
+        RoeOwnerEarningsYearsConsidered is int considered
+            ? Math.Max(1, considered - (RoeConsistencyWindowYears - RoeConsistencyMinYears))
+            : null;
+    /// <summary>Check 16: ROE (OE) over 10% in at least N of the last M years, scaled to fewer usable years (C16).</summary>
+    public CheckResult DoesPassCheck_ROE_FromOwnerEarnings_Consistent =>
+        RoeOwnerEarningsYearsAbove10 is int above && RoeOwnerEarningsYearsRequired is int required
+            ? (above >= required ? CheckResult.Pass : CheckResult.Fail)
+            : CheckResult.NotAvailable;
+
+    /// <summary>The 16 checks, in the order the score lists them (16 added by C16). Not serialized: each has its own field.</summary>
     [JsonIgnore]
     public CheckResult[] AllChecks => [
         DoesPassCheck_DebtToEquitySmallEnough,
@@ -223,10 +275,11 @@ public class CompanyFullDetailReport {
         DidAdjustedRetainedEarningsIncrease,
         DoesPassCheck_ROE_FromCashFlow_BigEnough,
         DoesPassCheck_ROE_FromOwnerEarnings_BigEnough,
+        DoesPassCheck_ROE_FromOwnerEarnings_Consistent,
     ];
 
     public bool DoesPassCheck_Overall => AllChecks.All(check => check == CheckResult.Pass);
-    /// <summary>Counts Pass only: NotAvailable earns nothing, like Fail, so the 13 cutoff keeps its meaning.</summary>
+    /// <summary>Counts Pass only: NotAvailable earns nothing, like Fail, so the cutoff keeps its meaning.</summary>
     public int OverallScore => AllChecks.Count(check => check == CheckResult.Pass);
     public int NotAvailableCount => AllChecks.Count(check => check == CheckResult.NotAvailable);
 

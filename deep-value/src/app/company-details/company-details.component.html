@@ -87,7 +87,7 @@
         </tr>
         <!-- Scores -->
         <tr class="mat-row data-table__row data-table__row--alternating">
-          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="4">
+          <th class="mat-header-cell data-table__header data-table__header--caption-cell" colspan="2" rowspan="5">
             Scores
           </th>
           <th class="mat-header-cell data-table__header">
@@ -236,14 +236,29 @@
             {{ checkLabel(companyDetails.doesPassCheck_ROE_FromOwnerEarnings_BigEnough) }}
           </td>
           <th class="mat-header-cell data-table__header">
+            <span matTooltip="Was Return on Equity from Owner Earnings (that year's owner earnings / that year's average equity) &gt; 10% in at least {{ companyDetails.roeConsistencyMinYears }} of the last {{ companyDetails.roeConsistencyWindowYears }} years? With fewer usable years, the same number of misses is allowed; n/a with fewer than {{ companyDetails.roeConsistencyMinUsableYears }}.">
+              ROE from Owner Earnings Consistent?
+            </span>
+          </th>
+          <td class="mat-cell data-table__data data-table__data--score"
+            [ngClass]="checkClass(companyDetails.doesPassCheck_ROE_FromOwnerEarnings_Consistent)">
+            {{ checkLabel(companyDetails.doesPassCheck_ROE_FromOwnerEarnings_Consistent) }}
+            @if (companyDetails.roeOwnerEarningsYearsAbove10 !== null) {
+              <span class="roe-years" matTooltip="Years over 10% of the years looked at; {{ companyDetails.roeOwnerEarningsYearsRequired }} needed.">({{ companyDetails.roeOwnerEarningsYearsAbove10 }} of {{ companyDetails.roeOwnerEarningsYearsConsidered }})</span>
+            }
+          </td>
+        </tr>
+        <tr class="mat-row data-table__row--alternating">
+          <th class="mat-header-cell data-table__header">
             Overall Score
           </th>
           <td class="mat-cell data-table__data data-table__data--score">
-            <strong>{{ companyDetails.overallScore }} / 15</strong>
+            <strong>{{ companyDetails.overallScore }} / 16</strong>
             @if (companyDetails.notAvailableCount > 0) {
               <span class="na-count" matTooltip="Checks with missing source data earn no point.">({{ companyDetails.notAvailableCount }} n/a)</span>
             }
           </td>
+          <td class="mat-cell data-table__data" colspan="4"></td>
         </tr>
         <!-- Financials -->
         <tr class="mat-row data-table__row">

@@ -54,7 +54,7 @@ export class CompanyListComponent implements OnInit, OnDestroy {
                 this.pageTitle = 'Bottom 30 Companies';
                 this.loadBottomCompanies();
             } else {
-                this.pageTitle = 'Top Companies (Score 13+)';
+                this.pageTitle = 'Top Companies (Score 14+)';
                 this.loadCompanies();
             }
         });

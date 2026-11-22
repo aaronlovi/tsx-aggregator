@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
@@ -27,7 +29,8 @@ public sealed record ProcessedReportFields(
     long? RoeCashFlowNumerator = null,
     long? RoeCashFlowEquity = null,
     long? RoeOwnerEarningsNumerator = null,
-    long? RoeOwnerEarningsEquity = null) {
+    long? RoeOwnerEarningsEquity = null,
+    IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -84,8 +87,23 @@ public sealed record ProcessedReportFields(
             roeCashFlowNumerator,
             roeCashFlowEquity,
             roeOwnerEarningsNumerator,
-            roeOwnerEarningsEquity);
+            roeOwnerEarningsEquity,
+            GetAnnualRoes(root, "RoeOwnerEarningsByYear"));
         return true;
+    }
+
+    /// <summary>Null when the report has no such field (written before C16): check 16 is then n/a until a rebuild.</summary>
+    private static List<AnnualReturnOnEquity>? GetAnnualRoes(JsonElement root, string fieldName) {
+        if (!root.TryGetProperty(fieldName, out JsonElement array) || array.ValueKind != JsonValueKind.Array)
+            return null;
+
+        var years = new List<AnnualReturnOnEquity>();
+        foreach (JsonElement year in array.EnumerateArray()) {
+            DateOnly yearEnd = DateOnly.Parse(year.GetProperty("YearEnd").GetString()!, CultureInfo.InvariantCulture);
+            decimal? roe = year.TryGetProperty("Roe", out JsonElement r) && r.ValueKind == JsonValueKind.Number ? r.GetDecimal() : null;
+            years.Add(new AnnualReturnOnEquity(yearEnd, roe));
+        }
+        return years;
     }
 
     private static bool GetFlag(JsonElement root, string fieldName) =>

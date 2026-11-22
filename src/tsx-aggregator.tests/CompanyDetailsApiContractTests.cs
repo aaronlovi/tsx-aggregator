@@ -23,8 +23,8 @@ public class CompanyDetailsApiContractTests {
     private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
     /// <summary>
-    /// A fictional company that passes 12 of 15 checks: it fails est. return (CF) > 5% and both ROE checks
-    /// (ROE from owner earnings is exactly 10%, which does not pass "> 10%").
+    /// A fictional company that passes 13 of 16 checks: it fails est. return (CF) > 5% and both ROE checks
+    /// (ROE from owner earnings is exactly 10%, which does not pass "> 10%"), and passes check 16 (4 of 5 years).
     /// </summary>
     internal static CompanyFullDetailReport SampleReport() => new(
         exchange: "TSX",
@@ -48,15 +48,23 @@ public class CompanyDetailsApiContractTests {
         roeCashFlowEquity: 5_400_000_000M,
         roeOwnerEarningsNumerator: 540_000_000M,
         roeOwnerEarningsEquity: 5_400_000_000M,
+        // Check 16 (C16): ROE (OE) of the last five years, most recent first: 12%, 11%, 9%, 13%, 10.5%, so 4 of 5 over 10%.
+        roeOwnerEarningsByYear: [
+            new AnnualReturnOnEquity(new DateOnly(2025, 12, 31), 0.12M),
+            new AnnualReturnOnEquity(new DateOnly(2024, 12, 31), 0.11M),
+            new AnnualReturnOnEquity(new DateOnly(2023, 12, 31), 0.09M),
+            new AnnualReturnOnEquity(new DateOnly(2022, 12, 31), 0.13M),
+            new AnnualReturnOnEquity(new DateOnly(2021, 12, 31), 0.105M)],
         mostRecentAnnualReportDate: new DateTimeOffset(2025, 12, 31, 0, 0, 0, TimeSpan.Zero),
         mostRecentQuarterlyReportDate: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero),
         lastUpdatedDate: new DateTimeOffset(2026, 8, 26, 2, 2, 35, TimeSpan.Zero));
 
     [Fact]
-    public void SampleReport_ScoresTwelve() {
+    public void SampleReport_ScoresThirteen() {
         CompanyFullDetailReport report = SampleReport();
 
-        _ = report.OverallScore.Should().Be(12);
+        _ = report.OverallScore.Should().Be(13);
+        _ = report.RoeOwnerEarningsYearsAbove10.Should().Be(4);
         _ = report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough.Should().Be(CheckResult.Fail);
         _ = report.DoesPassCheck_ROE_FromCashFlow_BigEnough.Should().Be(CheckResult.Fail);
         _ = report.DoesPassCheck_ROE_FromOwnerEarnings_BigEnough.Should().Be(CheckResult.Fail);
@@ -90,6 +98,7 @@ public class CompanyDetailsApiContractTests {
             roeCashFlowEquity: null,
             roeOwnerEarningsNumerator: sample.RoeOwnerEarningsNumerator,
             roeOwnerEarningsEquity: null,
+            roeOwnerEarningsByYear: sample.RoeOwnerEarningsByYear,
             mostRecentAnnualReportDate: sample.MostRecentAnnualReportDate,
             mostRecentQuarterlyReportDate: sample.MostRecentQuarterlyReportDate,
             lastUpdatedDate: sample.LastUpdatedDate,
@@ -101,7 +110,7 @@ public class CompanyDetailsApiContractTests {
         CompanyFullDetailReport report = MissingDataSampleReport();
 
         _ = report.NotAvailableCount.Should().Be(7);
-        _ = report.OverallScore.Should().Be(7);
+        _ = report.OverallScore.Should().Be(8);
         _ = report.MaxPrice.Should().BeNull();
     }
 

@@ -100,6 +100,11 @@ public class CompanyReport
     public decimal? RoeOwnerEarningsNumerator { get; private set; }
     /// <summary>Equity the <see cref="RoeOwnerEarningsNumerator"/> years were earned on.</summary>
     public decimal? RoeOwnerEarningsEquity { get; private set; }
+    /// <summary>
+    /// ROE (OE) of each year with closing equity that counts for owner earnings, most recent first: the years
+    /// behind check 16 (C16, decision 28).
+    /// </summary>
+    public IReadOnlyList<AnnualReturnOnEquity> RoeOwnerEarningsByYear { get; private set; } = [];
     [JsonIgnore] public string ToShortString => $"{Symbol}/{Name}";
 
     #endregion
@@ -492,6 +497,9 @@ public class CompanyReport
             CalcReturnOnEquityInputs(_ => true, item => item.NetCashFlow + item.DividendsPaid);
         (RoeOwnerEarningsNumerator, RoeOwnerEarningsEquity) =
             CalcReturnOnEquityInputs(item => item.IsUsableForOwnerEarnings, item => item.OwnerEarnings);
+        RoeOwnerEarningsByYear = [.. MatchedRoeYears(item => item.IsUsableForOwnerEarnings)
+            .Select(y => new AnnualReturnOnEquity(y.Date, y.AverageEquity > 0 ? y.Item.OwnerEarnings / y.AverageEquity : null))
+            .Reverse()];
     }
 
     private (decimal? Numerator, decimal? Equity) CalcReturnOnEquityInputs(
@@ -504,25 +512,8 @@ public class CompanyReport
         decimal numeratorSum = 0;
         decimal equitySum = 0;
         int matchedYears = 0;
-        foreach ((DateOnly date, CashFlowItem item) in years)
+        foreach ((_, CashFlowItem item, decimal averageEquity) in MatchedRoeYears(isRoeYear))
         {
-            // A year without closing equity is skipped in both sums.
-            if (!_annualRawBalanceSheets.TryGetValue(date, out RawReportDataMap? closingSheet)
-                || closingSheet["StockholdersEquity"] is not decimal closing)
-            {
-                continue;
-            }
-
-            // The opening is the previous annual balance sheet, if it is about a year earlier and has equity;
-            // otherwise the closing equity stands alone.
-            KeyValuePair<DateOnly, RawReportDataMap> opening = _annualRawBalanceSheets.LastOrDefault(kv => kv.Key < date);
-            int daysBetween = date.DayNumber - opening.Key.DayNumber;
-            decimal averageEquity = opening.Value is not null
-                && daysBetween is >= MinDaysBetweenAnnualBalanceSheets and <= MaxDaysBetweenAnnualBalanceSheets
-                && opening.Value["StockholdersEquity"] is decimal openingEquity
-                    ? (openingEquity + closing) / 2
-                    : closing;
-
             numeratorSum += numeratorOf(item);
             equitySum += averageEquity;
             matchedYears++;
@@ -536,6 +527,37 @@ public class CompanyReport
         if (latestWithEquity is null)
             return (null, null);
         return (years.Average(kv => numeratorOf(kv.Value)), latestWithEquity["StockholdersEquity"]);
+    }
+
+    /// <summary>
+    /// The ROE years, oldest first (B11, decision 24): annual cash flow years that pass <paramref name="isRoeYear"/>
+    /// and have closing equity. A year's average equity is the mean of its opening and closing annual equity; the
+    /// opening counts only if it is the previous annual balance sheet, about a year earlier, with equity.
+    /// </summary>
+    private IEnumerable<(DateOnly Date, CashFlowItem Item, decimal AverageEquity)> MatchedRoeYears(Func<CashFlowItem, bool> isRoeYear)
+    {
+        foreach ((DateOnly date, CashFlowItem item) in _annualProcessedCashFlowItems)
+        {
+            if (!isRoeYear(item))
+                continue;
+
+            // A year without closing equity is skipped.
+            if (!_annualRawBalanceSheets.TryGetValue(date, out RawReportDataMap? closingSheet)
+                || closingSheet["StockholdersEquity"] is not decimal closing)
+            {
+                continue;
+            }
+
+            KeyValuePair<DateOnly, RawReportDataMap> opening = _annualRawBalanceSheets.LastOrDefault(kv => kv.Key < date);
+            int daysBetween = date.DayNumber - opening.Key.DayNumber;
+            decimal averageEquity = opening.Value is not null
+                && daysBetween is >= MinDaysBetweenAnnualBalanceSheets and <= MaxDaysBetweenAnnualBalanceSheets
+                && opening.Value["StockholdersEquity"] is decimal openingEquity
+                    ? (openingEquity + closing) / 2
+                    : closing;
+
+            yield return (date, item, averageEquity);
+        }
     }
 
     /// <summary>

@@ -43,8 +43,15 @@ public class TopScoreAlertServiceTests {
                 CurrentAdjustedRetainedEarnings = 50_000_000,
                 OldestRetainedEarnings = 30_000_000,
                 NumAnnualProcessedCashFlowReports = 5,
+                RoeCashFlowNumerator = 60_000_000,
+                RoeCashFlowEquity = 500_000_000,
+                RoeOwnerEarningsNumerator = 55_000_000,
+                RoeOwnerEarningsEquity = 500_000_000,
                 PerSharePrice = 50M
             });
+            // Check 16 (C16): five years of 20% ROE (OE), so every item scores 16 of 16.
+            for (int year = 2025; year > 2020; year--)
+                reply.StocksData[^1].RoeOwnerEarningsByYear.Add(new AnnualRoe { YearEnd = $"{year}-12-31", Roe = 0.2M });
         }
         return reply;
     }

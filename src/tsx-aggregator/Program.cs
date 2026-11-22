@@ -56,7 +56,8 @@ public class Program {
                     })
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
                     .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices))
-                    .Configure<AlertSettingsOptions>(context.Configuration.GetSection(AlertSettingsOptions.AlertSettings));
+                    .Configure<AlertSettingsOptions>(context.Configuration.GetSection(AlertSettingsOptions.AlertSettings))
+                    .Configure<ScoringOptions>(context.Configuration.GetSection(ScoringOptions.Scoring));
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
@@ -137,6 +138,10 @@ public class Program {
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         LogConfig(host.Services.GetRequiredService<IConfiguration>(), logger);
 
+        // Bad scoring settings would silently change every score: refuse to start.
+        if (host.Services.GetRequiredService<IOptions<ScoringOptions>>().Value.Validate() is string scoringError)
+            throw new InvalidOperationException(scoringError);
+
         return host;
     }
 
@@ -148,6 +153,7 @@ public class Program {
         LogConfigSection(config, logger, GoogleCredentialsOptions.GoogleCredentials);
         LogConfigSection(config, logger, HostedServicesOptions.HostedServices);
         LogConfigSection(config, logger, AlertSettingsOptions.AlertSettings);
+        LogConfigSection(config, logger, ScoringOptions.Scoring);
         logger.LogInformation("==========END CRITICAL CONFIGURATION==========");
     }
 

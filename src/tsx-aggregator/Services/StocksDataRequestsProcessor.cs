@@ -8,6 +8,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
 
@@ -26,12 +27,14 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
     private readonly IDbmService _dbm;
     private readonly IServiceProvider _svp;
     private readonly Channel<StocksDataRequestsInputBase> _inputChannel;
+    private readonly ScoringOptions _scoring;
 
     public StocksDataRequestsProcessor(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<StocksDataRequestsProcessor>>();
         _dbm = svp.GetRequiredService<IDbmService>();
         _svp = svp;
         _inputChannel = Channel.CreateUnbounded<StocksDataRequestsInputBase>();
+        _scoring = svp.GetService<IOptions<ScoringOptions>>()?.Value ?? new ScoringOptions();
 
         _logger.LogInformation("StocksDataRequestsProcessor - Created");
     }
@@ -91,14 +94,14 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
         };
         foreach (ProcessedFullInstrumentReportDto dto in res.Data ?? []) {
             using var companyContext = _logger.BeginScope(new Dictionary<string, string> { [LogUtils.InstrumentSymbolContext] = dto.InstrumentSymbol });
-            AddCompanyItem(request.Exchange, dto, reply, _logger);
+            AddCompanyItem(request.Exchange, dto, reply, _scoring, _logger);
         }
 
         _ = request.Completed.TrySetResult(reply);
 
         // Local helper methods
 
-        static void AddCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, GetStocksDataReply getStocksDataReply, ILogger logger) {
+        static void AddCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, GetStocksDataReply getStocksDataReply, ScoringOptions scoring, ILogger logger) {
             try {
                 if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
                     logger.LogWarning("ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
@@ -106,7 +109,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     return;
                 }
 
-                getStocksDataReply.StocksData.Add(BuildReplyItem(exchange, dto, fields));
+                getStocksDataReply.StocksData.Add(BuildReplyItem(exchange, dto, fields, scoring));
             }
             catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
@@ -138,14 +141,14 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             ErrorMessage = res.ErrMsg
         };
         if (res.Data is not null) {
-            reply.StockDetail = TransformCompanyItem(request.Exchange, res.Data, _logger);
+            reply.StockDetail = TransformCompanyItem(request.Exchange, res.Data, _scoring, _logger);
         }
 
         _ = request.Completed.TrySetResult(reply);
 
         // Local helper methods
 
-        static GetStocksDataReplyItem? TransformCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, ILogger logger) {
+        static GetStocksDataReplyItem? TransformCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, ScoringOptions scoring, ILogger logger) {
             try {
                 if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
                     logger.LogWarning("ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
@@ -153,7 +156,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
                     return null;
                 }
 
-                return BuildReplyItem(exchange, dto, fields);
+                return BuildReplyItem(exchange, dto, fields, scoring);
             } catch (Exception ex) {
                 logger.LogError(ex, "ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
                     dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
@@ -162,7 +165,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
         }
     }
 
-    private static GetStocksDataReplyItem BuildReplyItem(string exchange, ProcessedFullInstrumentReportDto dto, ProcessedReportFields fields) {
+    private static GetStocksDataReplyItem BuildReplyItem(string exchange, ProcessedFullInstrumentReportDto dto, ProcessedReportFields fields, ScoringOptions scoring) {
         var item = new GetStocksDataReplyItem() {
             Exchange = exchange,
             CompanySymbol = dto.CompanySymbol,
@@ -178,6 +181,9 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             OldestRetainedEarningsEstimated = fields.OldestRetainedEarningsEstimated,
             PerSharePrice = 0M, // To be filled out later by the quotes service
             NumAnnualProcessedCashFlowReports = dto.NumAnnualCashFlowReports,
+            RoeConsistencyMinYears = scoring.RoeConsistencyMinYears,
+            RoeConsistencyWindowYears = scoring.RoeConsistencyWindowYears,
+            RoeConsistencyMinUsableYears = scoring.RoeConsistencyMinUsableYears,
             MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
                 ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
             MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
@@ -209,6 +215,12 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             item.RoeOwnerEarningsNumerator = roeOwnerEarningsNumerator;
         if (fields.RoeOwnerEarningsEquity is long roeOwnerEarningsEquity)
             item.RoeOwnerEarningsEquity = roeOwnerEarningsEquity;
+        foreach (AnnualReturnOnEquity year in fields.RoeOwnerEarningsByYear ?? []) {
+            var annualRoe = new AnnualRoe { YearEnd = year.YearEnd.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) };
+            if (year.Roe is decimal roe)
+                annualRoe.Roe = roe;
+            item.RoeOwnerEarningsByYear.Add(annualRoe);
+        }
         return item;
     }
 

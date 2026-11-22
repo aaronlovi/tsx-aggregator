@@ -34,7 +34,8 @@ public class CompanyFullDetailReportTests {
         roeCashFlowNumerator: averageNetCashFlow,
         roeCashFlowEquity: 1_000M,
         roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: 1_000M);
+        roeOwnerEarningsEquity: 1_000M,
+        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
 
     #region B5 - dividends in the est. return and max price
 
@@ -104,7 +105,8 @@ public class CompanyFullDetailReportTests {
         roeCashFlowNumerator: averageNetCashFlow,
         roeCashFlowEquity: equity,
         roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: equity);
+        roeOwnerEarningsEquity: equity,
+        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
 
     [Fact]
     public void NegativeEquity_FailsDebtToEquityAndBothRoeChecks() {
@@ -209,7 +211,8 @@ public class CompanyFullDetailReportTests {
         roeCashFlowNumerator: averageNetCashFlow,
         roeCashFlowEquity: equity,
         roeOwnerEarningsNumerator: averageOwnerEarnings,
-        roeOwnerEarningsEquity: equity);
+        roeOwnerEarningsEquity: equity,
+        roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
 
     /// <summary>The 1-based numbers of the checks with the given result.</summary>
     private static int[] ChecksWith(CompanyFullDetailReport report, CheckResult result) =>
@@ -223,7 +226,7 @@ public class CompanyFullDetailReportTests {
             curAdjustedRetainedEarnings: 300_000_000M, oldestRetainedEarnings: 100_000_000M);
 
         _ = ChecksWith(report, CheckResult.Fail).Should().BeEmpty();
-        _ = report.OverallScore.Should().Be(15);
+        _ = report.OverallScore.Should().Be(16);
         _ = report.NotAvailableCount.Should().Be(0);
         _ = report.DoesPassCheck_Overall.Should().BeTrue();
     }
@@ -292,7 +295,7 @@ public class CompanyFullDetailReportTests {
         var report = FullReport(averageOwnerEarnings: null);
 
         // Check 2 fails (book value 800 < 150M); checks 5, 7, 9 and 15 are n/a.
-        _ = report.OverallScore.Should().Be(10);
+        _ = report.OverallScore.Should().Be(11);
         _ = report.NotAvailableCount.Should().Be(4);
         _ = report.DoesPassCheck_Overall.Should().BeFalse();
     }

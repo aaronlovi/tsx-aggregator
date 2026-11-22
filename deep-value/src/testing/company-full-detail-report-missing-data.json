@@ -15,6 +15,9 @@
   "curAdjustedRetainedEarnings": 400000000,
   "oldestRetainedEarnings": null,
   "numAnnualProcessedCashFlowReports": 6,
+  "roeConsistencyMinYears": 4,
+  "roeConsistencyWindowYears": 5,
+  "roeConsistencyMinUsableYears": 3,
   "mostRecentAnnualReportDate": "2025-12-31T00:00:00+00:00",
   "mostRecentQuarterlyReportDate": "2026-06-30T00:00:00+00:00",
   "lastUpdatedDate": "2026-08-26T02:02:35+00:00",
@@ -47,7 +50,11 @@
   "didAdjustedRetainedEarningsIncrease": "NotAvailable",
   "doesPassCheck_ROE_FromCashFlow_BigEnough": "NotAvailable",
   "doesPassCheck_ROE_FromOwnerEarnings_BigEnough": "NotAvailable",
+  "roeOwnerEarningsYearsConsidered": 5,
+  "roeOwnerEarningsYearsAbove10": 4,
+  "roeOwnerEarningsYearsRequired": 4,
+  "doesPassCheck_ROE_FromOwnerEarnings_Consistent": "Pass",
   "doesPassCheck_Overall": false,
-  "overallScore": 7,
+  "overallScore": 8,
   "notAvailableCount": 7
 }

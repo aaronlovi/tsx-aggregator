@@ -22,7 +22,7 @@ public class TsxOpsSnapshotTests {
         NumShares: 100_000_000,
         NumAnnualCashFlowReports: 5);
 
-    // A company that passes all 15 checks at $10/share with 100M shares (market cap $1B).
+    // A company that passes all 16 checks at $10/share with 100M shares (market cap $1B).
     private static readonly ProcessedReportFields AllPassFields = new(
         CurNumShares: 100_000_000,
         CurTotalShareholdersEquity: 1_000_000_000,
@@ -38,7 +38,8 @@ public class TsxOpsSnapshotTests {
         RoeCashFlowNumerator: 750_000_000,
         RoeCashFlowEquity: 5_000_000_000,
         RoeOwnerEarningsNumerator: 750_000_000,
-        RoeOwnerEarningsEquity: 5_000_000_000);
+        RoeOwnerEarningsEquity: 5_000_000_000,
+        RoeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
 
     [Fact]
     public void Csv_RoundTripsQuotesCommasAndEmptyFields() {
@@ -53,10 +54,10 @@ public class TsxOpsSnapshotTests {
     }
 
     [Fact]
-    public void RowBuilder_AllChecksPass_ScoresFifteen() {
+    public void RowBuilder_AllChecksPass_ScoresSixteen() {
         Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields);
 
-        _ = row[Snapshot.ScoreColumn].Should().Be("15");
+        _ = row[Snapshot.ScoreColumn].Should().Be("16");
         _ = SnapshotRowBuilder.CheckColumns.Select(c => row[c]).Should().AllBe("P");
         _ = row[Snapshot.StatusColumn].Should().Be(SnapshotRowBuilder.StatusOk);
         _ = row["debt_to_equity"].Should().Be("0.1");
@@ -135,8 +136,8 @@ public class TsxOpsSnapshotTests {
 
     [Fact]
     public void Diff_ReportsGroupEntryExitFlipsAndMembershipChanges() {
-        Snapshot a = MakeSnapshot(("1", "AAA", 13), ("2", "BBB", 12), ("3", "CCC", 15), ("4", "DDD", 9));
-        Snapshot b = MakeSnapshot(("1", "AAA", 12), ("2", "BBB", 14), ("3", "CCC", 15), ("5", "EEE", 13));
+        Snapshot a = MakeSnapshot(("1", "AAA", 14), ("2", "BBB", 13), ("3", "CCC", 16), ("4", "DDD", 10));
+        Snapshot b = MakeSnapshot(("1", "AAA", 13), ("2", "BBB", 15), ("3", "CCC", 16), ("5", "EEE", 14));
 
         SnapshotDiffResult diff = SnapshotDiff.Compute(a, b);
 
@@ -146,16 +147,18 @@ public class TsxOpsSnapshotTests {
         _ = diff.ScoreChanges.Select(r => (r.Symbol, r.Delta)).Should().Equal(("BBB", 2), ("AAA", -1));
         _ = diff.DeltaHistogram.Should().Equal(new Dictionary<int, int> { [-1] = 1, [2] = 1 });
 
-        ThresholdChange thirteen = diff.Thresholds.Single(t => t.Threshold == 13);
-        _ = thirteen.Entered.Select(r => r.Symbol).Should().Equal("BBB");
-        _ = thirteen.Left.Select(r => r.Symbol).Should().Equal("AAA");
+        // Groups since C16: 14+ (the cutoff), 15+ and 16/16.
+        _ = diff.Thresholds.Select(t => t.Threshold).Should().Equal(14, 15, 16);
         ThresholdChange fourteen = diff.Thresholds.Single(t => t.Threshold == 14);
         _ = fourteen.Entered.Select(r => r.Symbol).Should().Equal("BBB");
-        _ = fourteen.Left.Should().BeEmpty();
+        _ = fourteen.Left.Select(r => r.Symbol).Should().Equal("AAA");
+        ThresholdChange fifteen = diff.Thresholds.Single(t => t.Threshold == 15);
+        _ = fifteen.Entered.Select(r => r.Symbol).Should().Equal("BBB");
+        _ = fifteen.Left.Should().BeEmpty();
 
-        // MakeSnapshot passes the first <score> checks, so AAA flips c13 P→F and BBB flips c13, c14 F→P.
-        _ = diff.CheckFlips["c13"].Should().Equal(new Dictionary<string, int> { ["F→P"] = 1, ["P→F"] = 1 });
-        _ = diff.CheckFlips["c14"].Should().Equal(new Dictionary<string, int> { ["F→P"] = 1 });
+        // MakeSnapshot passes the first <score> checks, so AAA flips c14 P→F and BBB flips c14, c15 F→P.
+        _ = diff.CheckFlips["c14"].Should().Equal(new Dictionary<string, int> { ["F→P"] = 1, ["P→F"] = 1 });
+        _ = diff.CheckFlips["c15"].Should().Equal(new Dictionary<string, int> { ["F→P"] = 1 });
         _ = diff.ColumnChanges[Snapshot.ScoreColumn].Should().Be(2);
     }
 
@@ -166,7 +169,7 @@ public class TsxOpsSnapshotTests {
 
         SnapshotDiffResult diff = SnapshotDiff.Compute(a, b);
 
-        _ = diff.Thresholds.Single(t => t.Threshold == 13).Left.Select(r => r.Symbol).Should().Equal("AAA");
+        _ = diff.Thresholds.Single(t => t.Threshold == 14).Left.Select(r => r.Symbol).Should().Equal("AAA");
         _ = diff.StatusChanges.Should().ContainSingle().Which.Should().Be(("AAA", "ok", "error:OverflowException"));
         _ = diff.CheckFlips["c01"].Should().Equal(new Dictionary<string, int> { ["P→-"] = 1 });
     }

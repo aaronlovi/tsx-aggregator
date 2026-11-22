@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using tsx_aggregator.models;
 
 namespace tsx_ops.Snapshots;
 
@@ -44,7 +45,7 @@ internal sealed class SnapshotDiffResult {
 }
 
 internal static class SnapshotDiff {
-    public static readonly IReadOnlyList<int> DefaultThresholds = [13, 14, 15];
+    public static readonly IReadOnlyList<int> DefaultThresholds = [ScoringOptions.TopScoreCutoff, 15, SnapshotRowBuilder.NumChecks];
 
     private static readonly HashSet<string> IdentityColumns = new(StringComparer.Ordinal) {
         Snapshot.InstrumentIdColumn, Snapshot.SymbolColumn, "company_name",
@@ -166,7 +167,9 @@ internal static class SnapshotDiff {
         Line("## Score Groups");
         Line();
         foreach (ThresholdChange t in diff.Thresholds) {
-            string label = t.Threshold >= 15 ? "15/15" : $"{Inv(t.Threshold)}+";
+            string label = t.Threshold >= SnapshotRowBuilder.NumChecks
+                ? $"{Inv(t.Threshold)}/{Inv(SnapshotRowBuilder.NumChecks)}"
+                : $"{Inv(t.Threshold)}+";
             Line($"- **{label}**: {Inv(t.Entered.Count)} entered, {Inv(t.Left.Count)} left");
             if (t.Entered.Count > 0)
                 Line($"  - Entered: {string.Join(", ", t.Entered.Select(FormatMove))}");

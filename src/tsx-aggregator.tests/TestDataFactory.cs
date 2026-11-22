@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using FluentAssertions;
 using tsx_aggregator.models;
@@ -66,6 +67,10 @@ public static class TestDataFactory {
         registry.InitializeDirectory(list);
         return registry;
     }
+
+    /// <summary>Per-year ROE (OE) for check 16, most recent first: by default five years at 20%, which pass it.</summary>
+    public static IReadOnlyList<AnnualReturnOnEquity> ConsistentRoeYears(decimal roe = 0.2m, int years = 5) =>
+        [.. Enumerable.Range(0, years).Select(i => new AnnualReturnOnEquity(new DateOnly(2025 - i, 12, 31), roe))];
 
     public static RawReportDataMap CreateRawReport(params (string Key, decimal Value)[] fields) {
         var rpt = new RawReportDataMap();

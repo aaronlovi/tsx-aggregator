@@ -39,11 +39,13 @@ describe('CompanyService', () => {
     it('uses the score, checks and max price computed by the backend', () => {
         const details = fetchDetails(detailsFixture);
 
-        expect(details.overallScore).toBe(12);
+        expect(details.overallScore).toBe(13);
         expect(details.maxPrice).toBe(24);
         expect(details.percentageUpside).toBe(-4);
         expect(details.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough).toBe('Fail');
         expect(details.doesPassCheck_ROE_FromOwnerEarnings_BigEnough).toBe('Fail');
+        expect(details.doesPassCheck_ROE_FromOwnerEarnings_Consistent).toBe('Pass');
+        expect(details.roeOwnerEarningsYearsAbove10).toBe(4);
         expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe('Pass');
         expect(details.notAvailableCount).toBe(0);
         expect(details.estimatedNextYearTotalReturnPercentage_FromOwnerEarnings).toBe(7.2);
@@ -82,7 +84,7 @@ describe('CompanyService', () => {
         expect(details.doesPassCheck_DebtToEquitySmallEnough).toBe('NotAvailable');
         expect(details.didAdjustedRetainedEarningsIncrease).toBe('NotAvailable');
         expect(details.notAvailableCount).toBe(7);
-        expect(details.overallScore).toBe(7);
+        expect(details.overallScore).toBe(8);
     });
 
     it('maps list rows, keeping nulls and the backend percentage upside', () => {

@@ -11,7 +11,7 @@ export class CompanySummary {
     estimatedNextYearTotalReturnPercentageFromCashFlow: number | null;
     estimatedNextYearTotalReturnPercentageOwnerEarnings: number | null;
     overallScore: number;
-    /** How many of the 15 checks had missing data (they earn no point). */
+    /** How many of the 16 checks had missing data (they earn no point). */
     notAvailableCount: number;
     maxPrice: number | null;
     percentageUpside: number | null;

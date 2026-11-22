@@ -138,6 +138,7 @@ Google Sheets --> QuoteService (prices)       v
 - `Ports.Grpc` -- gRPC listen port (default 7001)
 - `HostedServices` -- Toggle individual background services
 - `FeatureFlags` -- Feature toggles (e.g., `CheckExistingRawReportUpdates`)
+- `Scoring` -- Check 16 settings: `RoeConsistencyMinYears` (4), `RoeConsistencyWindowYears` (5), `RoeConsistencyMinUsableYears` (3); tsx-ops reads the same keys. Top-score cutoff is 14 of 16 (`ScoringOptions.TopScoreCutoff`)
 - `GoogleCredentials` -- Google Sheets API config for price quotes
 
 ## Database

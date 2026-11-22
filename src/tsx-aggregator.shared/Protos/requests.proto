@@ -69,6 +69,11 @@ message GetStocksDataReplyItem {
     optional int64 roe_cash_flow_equity = 26;
     optional int64 roe_owner_earnings_numerator = 27;
     optional int64 roe_owner_earnings_equity = 28;
+    // Check 16 (C16): ROE (OE) of each usable year, most recent first, and the settings to judge it with.
+    repeated AnnualRoe roe_owner_earnings_by_year = 29;
+    int32 roe_consistency_min_years = 30;     // 0 from an older server: use the defaults
+    int32 roe_consistency_window_years = 31;
+    int32 roe_consistency_min_usable_years = 32;
 }
 
 message GetStockSearchResultsRequest {
@@ -151,4 +156,10 @@ message GetDashboardStatsReply {
 message DashboardRawReportCount {
     int32 report_type = 1;
     int64 count = 2;
+}
+
+// One year's ROE (C16). roe is unset when that year's average equity is 0 or less.
+message AnnualRoe {
+    string year_end = 1;   // yyyy-MM-dd
+    DecimalValue roe = 2;
 }

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
+using tsx_aggregator.models;
+
 namespace tsx_ops;
 
 /// <summary>Process exit codes for tsx-ops commands.</summary>
@@ -96,6 +98,23 @@ internal sealed class OpsContext : IDisposable {
             CommandTimeout = StatementTimeoutSeconds + 10,
         };
         return builder.ConnectionString;
+    }
+
+    /// <summary>
+    /// The "Scoring" settings, with the same keys and defaults as tsx-aggregator (C16), so snapshots score like the API.
+    /// </summary>
+    /// <exception cref="UsageException">The settings are invalid.</exception>
+    public ScoringOptions GetScoringOptions() {
+        var scoring = new ScoringOptions();
+        if (int.TryParse(Configuration[$"{ScoringOptions.Scoring}:{nameof(ScoringOptions.RoeConsistencyMinYears)}"], out int minYears))
+            scoring.RoeConsistencyMinYears = minYears;
+        if (int.TryParse(Configuration[$"{ScoringOptions.Scoring}:{nameof(ScoringOptions.RoeConsistencyWindowYears)}"], out int windowYears))
+            scoring.RoeConsistencyWindowYears = windowYears;
+        if (int.TryParse(Configuration[$"{ScoringOptions.Scoring}:{nameof(ScoringOptions.RoeConsistencyMinUsableYears)}"], out int minUsableYears))
+            scoring.RoeConsistencyMinUsableYears = minUsableYears;
+        if (scoring.Validate() is string error)
+            throw new UsageException(error);
+        return scoring;
     }
 
     public void Dispose() => LoggerFactory.Dispose();

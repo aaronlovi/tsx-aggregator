@@ -28,7 +28,7 @@ internal static class SnapshotRowBuilder {
     public const string StatusOk = "ok";
     public const string StatusInvalid = "invalid";
 
-    public const int NumChecks = 15;
+    public const int NumChecks = 16;
 
     public static readonly IReadOnlyList<string> CheckColumns =
         Enumerable.Range(1, NumChecks).Select(i => $"c{i:00}").ToArray();
@@ -54,6 +54,7 @@ internal static class SnapshotRowBuilder {
         "debt_to_book",
         "roe_cf",
         "roe_oe",
+        "roe_oe_years_above_10",
         "est_return_cf_pct",
         "est_return_oe_pct",
         "max_price",
@@ -76,7 +77,8 @@ internal static class SnapshotRowBuilder {
     }
 
     // A missing figure is an empty cell; a check with missing inputs is N (W1).
-    public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields) {
+    public static Dictionary<string, string> Build(SnapshotInstrument instrument, ProcessedReportFields fields, ScoringOptions? scoring = null) {
+        scoring ??= new ScoringOptions();
         var report = new CompanyFullDetailReport(
             exchange: instrument.Exchange,
             companySymbol: instrument.CompanySymbol,
@@ -97,7 +99,11 @@ internal static class SnapshotRowBuilder {
             roeCashFlowNumerator: fields.RoeCashFlowNumerator,
             roeCashFlowEquity: fields.RoeCashFlowEquity,
             roeOwnerEarningsNumerator: fields.RoeOwnerEarningsNumerator,
-            roeOwnerEarningsEquity: fields.RoeOwnerEarningsEquity);
+            roeOwnerEarningsEquity: fields.RoeOwnerEarningsEquity,
+            roeOwnerEarningsByYear: fields.RoeOwnerEarningsByYear,
+            roeConsistencyMinYears: scoring.RoeConsistencyMinYears,
+            roeConsistencyWindowYears: scoring.RoeConsistencyWindowYears,
+            roeConsistencyMinUsableYears: scoring.RoeConsistencyMinUsableYears);
 
         // Same order as CompanyFullDetailReport.OverallScore.
         CheckResult[] checks = report.AllChecks;
@@ -130,6 +136,7 @@ internal static class SnapshotRowBuilder {
             ["debt_to_book"] = Format(report.LongTermDebtToBookRatio),
             ["roe_cf"] = Format(report.ReturnOnEquity_FromCashFlow),
             ["roe_oe"] = Format(report.ReturnOnEquity_FromOwnerEarnings),
+            ["roe_oe_years_above_10"] = report.RoeOwnerEarningsYearsAbove10 is int above ? Format(above) : string.Empty,
             ["est_return_cf_pct"] = Format(report.EstimatedNextYearTotalReturnPercentage_FromCashFlow),
             ["est_return_oe_pct"] = Format(report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings),
             ["max_price"] = Format(report.MaxPrice),

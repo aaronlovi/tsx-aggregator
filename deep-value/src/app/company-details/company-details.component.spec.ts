@@ -47,8 +47,18 @@ describe('CompanyDetailsComponent', () => {
 
     expect(companyServiceSpy.getCompanyDetails).toHaveBeenCalledWith('TSX', 'EXMP');
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('7 / 15');
+    expect(text).toContain('7 / 16');
     expect(text).toContain('Example Corp');
+  });
+
+  it('shows the ROE consistency check with how many of the last years were over 10%', () => {
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(detailsFixture as CompanyDetails));
+
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).toContain('ROE from Owner Earnings Consistent?');
+    expect(root.querySelector('.roe-years')?.textContent).toContain('(4 of 5)');
   });
 
   it('shows Yes and No for checks with data, and no n/a count', () => {
@@ -75,7 +85,7 @@ describe('CompanyDetailsComponent', () => {
     expect(naCells).toHaveLength(7);
     expect(naCells.every(cell => cell.textContent?.trim() === 'n/a')).toBe(true);
     expect(root.querySelector('.na-count')?.textContent).toContain('(7 n/a)');
-    expect(root.textContent).toContain('7 / 15');
+    expect(root.textContent).toContain('8 / 16');
     // e.g. Max Buy Price and Total Shareholders Equity
     const numericCells = Array.from(root.querySelectorAll('.data-table__data--numeric')).map(cell => cell.textContent?.trim());
     expect(numericCells.filter(text => text === 'n/a').length).toBeGreaterThanOrEqual(10);

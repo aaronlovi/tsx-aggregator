@@ -21,9 +21,10 @@ internal static class SnapshotBuilder {
 
     public static Snapshot FromRaw(
         IEnumerable<SnapshotInstrument> instruments,
-        IReadOnlyDictionary<long, List<CurrentInstrumentRawDataReportDto>> rawReports) {
+        IReadOnlyDictionary<long, List<CurrentInstrumentRawDataReportDto>> rawReports,
+        ScoringOptions? scoring = null) {
 
-        return Build(instruments, instrument => {
+        return Build(instruments, scoring ?? new ScoringOptions(), instrument => {
             // Same steps as Aggregator.ProcessCompanyDataChangedEvent. Its per-company warnings (missing
             // properties) are expected noise here, so they are discarded.
             var builder = new CompanyReportBuilder(
@@ -38,24 +39,25 @@ internal static class SnapshotBuilder {
 
     public static Snapshot FromProcessed(
         IEnumerable<SnapshotInstrument> instruments,
-        IReadOnlyDictionary<long, string> processedReports) {
+        IReadOnlyDictionary<long, string> processedReports,
+        ScoringOptions? scoring = null) {
 
-        return Build(instruments, instrument =>
+        return Build(instruments, scoring ?? new ScoringOptions(), instrument =>
             processedReports.TryGetValue(instrument.InstrumentId, out string? json) ? json : null);
     }
 
-    private static Snapshot Build(IEnumerable<SnapshotInstrument> instruments, Func<SnapshotInstrument, string?> getSerializedReport) {
+    private static Snapshot Build(IEnumerable<SnapshotInstrument> instruments, ScoringOptions scoring, Func<SnapshotInstrument, string?> getSerializedReport) {
         var rows = new List<IReadOnlyDictionary<string, string>>();
         foreach (SnapshotInstrument instrument in instruments
                      .OrderBy(i => i.InstrumentSymbol, StringComparer.Ordinal)
                      .ThenBy(i => i.InstrumentId)) {
-            rows.Add(BuildRow(instrument, getSerializedReport));
+            rows.Add(BuildRow(instrument, scoring, getSerializedReport));
         }
 
         return new Snapshot(SnapshotRowBuilder.Columns, rows);
     }
 
-    private static Dictionary<string, string> BuildRow(SnapshotInstrument instrument, Func<SnapshotInstrument, string?> getSerializedReport) {
+    private static Dictionary<string, string> BuildRow(SnapshotInstrument instrument, ScoringOptions scoring, Func<SnapshotInstrument, string?> getSerializedReport) {
         try {
             string? json = getSerializedReport(instrument);
             if (json is null)
@@ -63,7 +65,7 @@ internal static class SnapshotBuilder {
 
             // Same parsing as the API path; an exception here is what makes the API drop the company.
             return ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields)
-                ? SnapshotRowBuilder.Build(instrument, fields)
+                ? SnapshotRowBuilder.Build(instrument, fields, scoring)
                 : SnapshotRowBuilder.BuildUnreadable(instrument, SnapshotRowBuilder.StatusInvalid);
         } catch (Exception ex) when (ex is OverflowException or JsonException or FormatException) {
             return SnapshotRowBuilder.BuildUnreadable(instrument, "error:" + ex.GetType().Name);

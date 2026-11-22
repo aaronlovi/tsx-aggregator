@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using FluentAssertions;
 using tsx_aggregator.models;
@@ -68,7 +69,11 @@ public class CompanyReportRoeTests {
     }
 
     /// <summary>The processed report as the API reads it back: serialized, parsed, and turned into the detail report.</summary>
-    private static CompanyFullDetailReport DetailOf(CompanyReport report) {
+    private static CompanyFullDetailReport DetailOf(
+        CompanyReport report,
+        int roeConsistencyMinYears = ScoringOptions.DefaultRoeConsistencyMinYears,
+        int roeConsistencyWindowYears = ScoringOptions.DefaultRoeConsistencyWindowYears,
+        int roeConsistencyMinUsableYears = ScoringOptions.DefaultRoeConsistencyMinUsableYears) {
         bool ok = ProcessedReportFields.TryParse(JsonSerializer.Serialize(report), out ProcessedReportFields? f);
         _ = ok.Should().BeTrue();
         return new CompanyFullDetailReport(
@@ -80,7 +85,10 @@ public class CompanyReportRoeTests {
             curAdjustedRetainedEarnings: f.CurAdjustedRetainedEarnings, oldestRetainedEarnings: f.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: report.NumAnnualProcessedCashFlowReports,
             roeCashFlowNumerator: f.RoeCashFlowNumerator, roeCashFlowEquity: f.RoeCashFlowEquity,
-            roeOwnerEarningsNumerator: f.RoeOwnerEarningsNumerator, roeOwnerEarningsEquity: f.RoeOwnerEarningsEquity);
+            roeOwnerEarningsNumerator: f.RoeOwnerEarningsNumerator, roeOwnerEarningsEquity: f.RoeOwnerEarningsEquity,
+            roeOwnerEarningsByYear: f.RoeOwnerEarningsByYear,
+            roeConsistencyMinYears: roeConsistencyMinYears, roeConsistencyWindowYears: roeConsistencyWindowYears,
+            roeConsistencyMinUsableYears: roeConsistencyMinUsableYears);
     }
 
     [Fact]
@@ -253,4 +261,101 @@ public class CompanyReportRoeTests {
         _ = detail.DoesPassCheck_ROE_FromCashFlow_BigEnough.Should().Be(CheckResult.Fail);
         _ = detail.DoesPassCheck_ROE_FromOwnerEarnings_BigEnough.Should().Be(CheckResult.Fail);
     }
+
+    #region C16 - ROE (OE) consistency, decision 28
+
+    /// <summary>
+    /// Annual years ending 2016..(2016 + count - 1), equity 1000 throughout (so average equity 1000 from the second
+    /// year), owner earnings = roe x 1000 + 10 capex in each year (net income roe x 1000 + 10, capex 10).
+    /// </summary>
+    private static CompanyReport ReportWithYearlyRoe(params decimal[] roes) {
+        var report = NewReport();
+        AddBalanceSheet(report, new DateOnly(2015, 12, 31), 1000m);
+        for (int i = 0; i < roes.Length; i++)
+            AddYear(report, new DateOnly(2016 + i, 12, 31), 1000m, netIncome: roes[i] * 1000m + 10m);
+        return Process(report);
+    }
+
+    [Fact]
+    public void RoeByYear_IsOwnerEarningsOverAverageEquity_MostRecentFirst() {
+        var report = NewReport();
+        AddBalanceSheet(report, Fy2019, 800m);
+        AddYear(report, Fy2020, 1000m, netIncome: 110m);
+        AddYear(report, Fy2021, 1200m, netIncome: 160m, hasCapEx: false); // not an owner-earnings year
+        AddYear(report, Fy2022, 1400m, netIncome: 270m);
+
+        _ = Process(report);
+
+        // 2022: 260 / 1300 = 0.2. 2020: 100 / 900. 2021 is left out (D&A, no capex).
+        _ = report.RoeOwnerEarningsByYear.Should().Equal(
+            new AnnualReturnOnEquity(Fy2022, 0.2m),
+            new AnnualReturnOnEquity(Fy2020, 100m / 900m));
+    }
+
+    [Fact]
+    public void RoeByYear_NonPositiveAverageEquity_HasNoRoe() {
+        var report = NewReport();
+        AddYear(report, Fy2020, -500m, netIncome: 110m);
+
+        _ = Process(report);
+
+        _ = report.RoeOwnerEarningsByYear.Should().Equal(new AnnualReturnOnEquity(Fy2020, null));
+    }
+
+    [Fact]
+    public void RoeConsistency_FourOfLastFiveOverTenPercent_Passes() {
+        // Oldest first; the last five are 12%, 5%, 15%, 11%, 20%: four over 10%. The oldest (1%) is outside the window.
+        CompanyFullDetailReport detail = DetailOf(ReportWithYearlyRoe(0.01m, 0.12m, 0.05m, 0.15m, 0.11m, 0.20m));
+
+        _ = detail.RoeOwnerEarningsYearsAbove10.Should().Be(4);
+        _ = detail.DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.Pass);
+        _ = detail.AllChecks.Should().HaveCount(16);
+    }
+
+    [Fact]
+    public void RoeConsistency_ThreeOfLastFive_Fails() {
+        // Exactly 10% does not count (same "> 10%" as checks 14 and 15).
+        CompanyFullDetailReport detail = DetailOf(ReportWithYearlyRoe(0.12m, 0.05m, 0.15m, 0.10m, 0.20m));
+
+        _ = detail.RoeOwnerEarningsYearsAbove10.Should().Be(3);
+        _ = detail.DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.Fail);
+    }
+
+    [Theory]
+    // Fewer usable years than the window: one miss allowed, like 4 of 5 (decision 28, refined).
+    [InlineData(new[] { 0.20, 0.05, 0.20, 0.20 }, 3, 4, CheckResult.Pass)]   // 3 of 4
+    [InlineData(new[] { 0.20, 0.05, 0.05, 0.20 }, 2, 4, CheckResult.Fail)]   // 2 of 4
+    [InlineData(new[] { 0.20, 0.05, 0.20 }, 2, 3, CheckResult.Pass)]         // 2 of 3
+    [InlineData(new[] { 0.05, 0.05, 0.20 }, 1, 3, CheckResult.Fail)]         // 1 of 3
+    public void RoeConsistency_FewerUsableYearsThanTheWindow_AllowsOneMiss(
+        double[] roes, int expectedAbove, int expectedConsidered, CheckResult expected) {
+        CompanyFullDetailReport detail = DetailOf(ReportWithYearlyRoe([.. roes.Select(r => (decimal)r)]));
+
+        _ = detail.RoeOwnerEarningsYearsAbove10.Should().Be(expectedAbove);
+        _ = detail.RoeOwnerEarningsYearsConsidered.Should().Be(expectedConsidered);
+        _ = detail.DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(expected);
+    }
+
+    [Fact]
+    public void RoeConsistency_FewerThanThreeUsableYears_IsNotAvailable() {
+        CompanyFullDetailReport detail = DetailOf(ReportWithYearlyRoe(0.20m, 0.20m));
+
+        _ = detail.RoeOwnerEarningsYearsAbove10.Should().BeNull();
+        _ = detail.RoeOwnerEarningsYearsConsidered.Should().BeNull();
+        _ = detail.DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.NotAvailable);
+    }
+
+    [Fact]
+    public void RoeConsistency_UsesTheSettings() {
+        CompanyReport report = ReportWithYearlyRoe(0.12m, 0.05m, 0.15m, 0.10m, 0.20m);
+
+        _ = DetailOf(report, roeConsistencyMinYears: 3).DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.Pass);
+        _ = DetailOf(report, roeConsistencyMinYears: 2, roeConsistencyWindowYears: 2, roeConsistencyMinUsableYears: 2)
+            .DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.Fail); // 20%, 10%: one over
+        CompanyReport twoYears = ReportWithYearlyRoe(0.20m, 0.20m);
+        _ = DetailOf(twoYears, roeConsistencyMinUsableYears: 2)
+            .DoesPassCheck_ROE_FromOwnerEarnings_Consistent.Should().Be(CheckResult.Pass); // 2 of 2, needs 1
+    }
+
+    #endregion
 }

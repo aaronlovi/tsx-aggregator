@@ -44,7 +44,7 @@ public static class TopScoreDiffComputer {
 
     public static IReadOnlyList<TopScoreCompany> ComputeTopScoreList(IReadOnlyList<CompanyFullDetailReport> reports) {
         return reports
-            .Where(r => r.OverallScore >= 13)
+            .Where(r => r.OverallScore >= ScoringOptions.TopScoreCutoff)
             .Select(r => new TopScoreCompany(
                 r.InstrumentSymbol,
                 r.CompanyName,
@@ -191,9 +191,9 @@ public static class TopScoreDiffComputer {
         foreach (var c in companies) {
             bool isAdded = highlightSymbols is not null && highlightSymbols.Contains(c.InstrumentSymbol);
             string scoreBg = c.OverallScore switch {
-                15 => "background:#e1f2f3;",
-                14 => "background:#ffe5ad;",
-                13 => "background:#fcebee;",
+                16 => "background:#e1f2f3;",
+                15 => "background:#ffe5ad;",
+                14 => "background:#fcebee;",
                 _ => ""
             };
             string addedBorder = isAdded ? "border-left:4px solid #2e7d32;" : "";
@@ -230,7 +230,7 @@ public static class TopScoreDiffComputer {
     private static string FmtMarketCap(decimal? value) =>
         value?.ToString("C0", CultureInfo.GetCultureInfo("en-CA")) ?? "N/A";
 
-    /// <summary>"13" or, when some checks had missing data, "13 (1 n/a)" (decision 22).</summary>
+    /// <summary>"14" or, when some checks had missing data, "14 (1 n/a)" (decision 22).</summary>
     internal static string FmtScore(TopScoreCompany c) =>
         c.NotAvailableCount > 0 ? $"{c.OverallScore} ({c.NotAvailableCount} n/a)" : $"{c.OverallScore}";
 }

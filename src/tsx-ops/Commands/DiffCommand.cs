@@ -18,7 +18,7 @@ internal sealed class DiffCommand : ICommand {
         Usage: tsx-ops diff <snapshot-a.csv> <snapshot-b.csv> [--top <n>]
 
         Compares two snapshots by instrument and prints a Markdown summary to stdout: score changes,
-        companies entering or leaving 13+, 14+ and 15/15, per-check flips, changed values, and the top movers.
+        companies entering or leaving 14+, 15+ and 16/16, per-check flips, changed values, and the top movers.
 
           --top <n>  Number of top movers to list (default: 20)
         """;

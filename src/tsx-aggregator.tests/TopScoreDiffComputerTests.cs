@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using tsx_aggregator.models;
 
@@ -7,9 +8,10 @@ namespace tsx_aggregator.tests;
 public class TopScoreDiffComputerTests {
 
     /// <summary>
-    /// Creates a CompanyFullDetailReport that passes all 15 checks (OverallScore == 15).
+    /// Creates a CompanyFullDetailReport that passes all 16 checks (OverallScore == 16).
     /// </summary>
-    private static CompanyFullDetailReport MakeTopScoreCompany(string symbol, string name) {
+    private static CompanyFullDetailReport MakeTopScoreCompany(
+        string symbol, string name, decimal roeEachYear = 0.2m, decimal oldestRetainedEarnings = 30_000_000M, int numYears = 5) {
         return new CompanyFullDetailReport(
             exchange: "TSX",
             companySymbol: symbol.Replace(".TO", ""),
@@ -25,12 +27,13 @@ public class TopScoreDiffComputerTests {
             averageOwnerEarnings: 55_000_000M,
             curDividendsPaid: 5_000_000M,
             curAdjustedRetainedEarnings: 50_000_000M,
-            oldestRetainedEarnings: 30_000_000M,
-            numAnnualProcessedCashFlowReports: 5,
+            oldestRetainedEarnings: oldestRetainedEarnings,
+            numAnnualProcessedCashFlowReports: numYears,
             roeCashFlowNumerator: 60_000_000M,
             roeCashFlowEquity: 500_000_000M,
             roeOwnerEarningsNumerator: 55_000_000M,
-            roeOwnerEarningsEquity: 500_000_000M);
+            roeOwnerEarningsEquity: 500_000_000M,
+            roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears(roeEachYear));
     }
 
     /// <summary>
@@ -58,14 +61,15 @@ public class TopScoreDiffComputerTests {
             roeCashFlowNumerator: 40_000_000M,
             roeCashFlowEquity: 500_000_000M,
             roeOwnerEarningsNumerator: 35_000_000M,
-            roeOwnerEarningsEquity: 500_000_000M);
+            roeOwnerEarningsEquity: 500_000_000M,
+            roeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
     }
 
     /// <summary>
     /// Helper to create a TopScoreCompany with default financial data for diff tests.
     /// </summary>
     private static TopScoreCompany MakeTopScoreCompanyRecord(string symbol, string name) {
-        return new TopScoreCompany(symbol, name, 50M, 60M, 20M, 500_000_000M, 7M, 6M, 15);
+        return new TopScoreCompany(symbol, name, 50M, 60M, 20M, 500_000_000M, 7M, 6M, 16);
     }
 
     // --- ComputeTopScoreList tests ---
@@ -133,14 +137,14 @@ public class TopScoreDiffComputerTests {
         _ = result[0].CurMarketCap.Should().Be(report.CurMarketCap);
         _ = result[0].EstReturnCashFlow.Should().Be(report.EstimatedNextYearTotalReturnPercentage_FromCashFlow);
         _ = result[0].EstReturnOwnerEarnings.Should().Be(report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings);
-        _ = result[0].OverallScore.Should().Be(15);
+        _ = result[0].OverallScore.Should().Be(16);
     }
 
     [Fact]
     public void ComputeTopScoreList_CompanyWithZeroPrice_IsExcluded() {
-        // A company with PricePerShare=0 can't reach score 13
+        // A company with PricePerShare=0 can't reach score 14
         var report = MakeLowScoreCompany("ABC.TO", "ABC Corp");
-        _ = report.OverallScore.Should().BeLessThan(13, "a company with no price data cannot reach score 13");
+        _ = report.OverallScore.Should().BeLessThan(ScoringOptions.TopScoreCutoff, "a company with no price data cannot reach the top-score cutoff");
 
         var result = TopScoreDiffComputer.ComputeTopScoreList([report]);
         _ = result.Should().BeEmpty();
@@ -375,7 +379,7 @@ public class TopScoreDiffComputerTests {
 
         var html = TopScoreDiffComputer.FormatAlertBodyHtml(diff);
 
-        // Added company DEF.TO row should have score-15 teal background + added border
+        // Added company DEF.TO row should have score-16 teal background + added border
         _ = html.Should().Contain("background:#e1f2f3;");
         _ = html.Should().Contain("border-left:4px solid #2e7d32;");
         _ = html.Should().Contain("DEF.TO");
@@ -484,12 +488,26 @@ public class TopScoreDiffComputerTests {
     [Fact]
     public void MakeTopScoreCompany_Helper_ProducesTopScore() {
         var report = MakeTopScoreCompany("TEST.TO", "Test Corp");
-        _ = report.OverallScore.Should().Be(15);
+        _ = report.OverallScore.Should().Be(16);
     }
 
     [Fact]
-    public void MakeLowScoreCompany_Helper_ProducesScoreBelow13() {
+    public void MakeLowScoreCompany_Helper_ProducesScoreBelowCutoff() {
         var report = MakeLowScoreCompany("TEST.TO", "Test Corp");
-        _ = report.OverallScore.Should().BeLessThan(13);
+        _ = report.OverallScore.Should().BeLessThan(ScoringOptions.TopScoreCutoff);
+    }
+
+    [Fact]
+    public void ComputeTopScoreList_CutoffIs14Of16() {
+        // C16 (decision 28): check 16 fails (5% every year) -> 15; plus check 13 (retained earnings fell) -> 14;
+        // plus check 12 (3 years of history) -> 13.
+        CompanyFullDetailReport fifteen = MakeTopScoreCompany("FIF.TO", "Fifteen", roeEachYear: 0.05m);
+        CompanyFullDetailReport fourteen = MakeTopScoreCompany("FOU.TO", "Fourteen", roeEachYear: 0.05m, oldestRetainedEarnings: 60_000_000M);
+        CompanyFullDetailReport thirteen = MakeTopScoreCompany("THI.TO", "Thirteen", roeEachYear: 0.05m, oldestRetainedEarnings: 60_000_000M, numYears: 3);
+        _ = new[] { fifteen.OverallScore, fourteen.OverallScore, thirteen.OverallScore }.Should().Equal(15, 14, 13);
+
+        IReadOnlyList<TopScoreCompany> list = TopScoreDiffComputer.ComputeTopScoreList([fifteen, fourteen, thirteen]);
+
+        _ = list.Select(c => c.InstrumentSymbol).Should().BeEquivalentTo(["FIF.TO", "FOU.TO"]);
     }
 }
