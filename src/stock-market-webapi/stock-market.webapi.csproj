@@ -14,7 +14,6 @@
     <ItemGroup>
         <ProjectReference Include="..\tsx-aggregator.models\tsx-aggregator.models.csproj" />
         <ProjectReference Include="..\tsx-aggregator.shared\tsx-aggregator.shared.csproj" />
-        <ProjectReference Include="..\tsx-aggregator\tsx-aggregator.csproj" />
     </ItemGroup>
 
     <ItemGroup>

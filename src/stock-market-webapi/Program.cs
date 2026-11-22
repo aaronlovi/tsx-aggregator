@@ -33,6 +33,10 @@ public class Program {
         Uri aggregatorGrpcUrl = AggregatorClientSettings.GetGrpcUrl(builder.Configuration);
         Console.WriteLine($"tsx-aggregator gRPC address ({AggregatorClientSettings.GrpcUrlKey}): {aggregatorGrpcUrl}");
 
+        bool readOnly = ApiSettings.IsReadOnly(builder.Configuration);
+        Console.WriteLine($"Read-only mode ({ApiSettings.ReadOnlyKey}): {readOnly}");
+
+        _ = builder.Services.AddHealthChecks();
         _ = builder.Services.AddGrpc();
         _ = builder.Services.AddGrpcReflection();
         _ = builder.Services.AddGrpcClient<StockDataServiceClient>(options => {
@@ -54,6 +58,9 @@ public class Program {
             .AllowAnyMethod()
             .AllowAnyHeader());
 
+        if (readOnly)
+            _ = app.UseMiddleware<ReadOnlyModeMiddleware>();
+
         _ = app.UseHttpsRedirection();
 
         _ = app.UseAuthorization();
@@ -61,6 +68,7 @@ public class Program {
         //app.UseCors("AllowAllOrigins");
 
         _ = app.MapControllers();
+        _ = app.MapHealthChecks("/health");
 
         app.Run();
     }
