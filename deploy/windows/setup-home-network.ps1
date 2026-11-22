@@ -68,8 +68,10 @@ if ($profiles | Where-Object { $_.NetworkCategory -eq "Public" }) {
     Write-Warning ("A network is Public, so the rule does not apply there. For the home wifi: Settings > Network & internet > " +
         "Wi-Fi > (your network) > Network profile type > Private network. Only do this for your own home network.")
 }
-$ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-    Where-Object { $_.PrefixOrigin -in @("Dhcp", "Manual") -and $_.IPAddress -notlike "169.254.*" } |
-    Select-Object -ExpandProperty IPAddress
+# Only the addresses of real network connections (Wi-Fi, Ethernet), not WSL's or Hyper-V's virtual adapters.
+$ips = foreach ($p in $profiles) {
+    Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $p.InterfaceIndex -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -notlike "169.254.*" } | Select-Object -ExpandProperty IPAddress
+}
 foreach ($ip in $ips) { Write-Host "From a phone on the wifi: http://${ip}:$Port  (reserve this address in the router)" }
 Write-Host "Next: 'wsl --shutdown' in PowerShell, open Ubuntu again, then deploy/README.md."
