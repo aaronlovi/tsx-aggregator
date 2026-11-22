@@ -119,7 +119,7 @@ source ~/.bashrc && dotnet --version
 1. The Google service-account key (the `linear-hangar-…json` file from the dev laptop's `C:\work\tsx-aggregator`), uploaded with Chrome Remote Desktop's **Upload file**:
    ```bash
    mkdir -p ~/tsx-secrets && chmod 700 ~/tsx-secrets
-   mv /mnt/c/Users/EMILY/Downloads/linear-hangar-*.json ~/tsx-secrets/google.json
+   mv /mnt/c/Users/EMILY/Desktop/linear-hangar-*.json ~/tsx-secrets/google.json
    chmod 600 ~/tsx-secrets/google.json
    ```
 2. A Gmail app password for this laptop (Google account → Security → App passwords, e.g. "tsx deploy laptop").
@@ -166,7 +166,7 @@ On the **deploy laptop**, in Ubuntu:
 docker rm -f startup-test                       # frees port 5080
 bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh db # PostgreSQL only; wait until 'docker ps' shows it healthy
 docker exec -i tsx-postgres pg_restore -U postgres -d postgres --no-owner --clean --if-exists \
-    < /mnt/c/Users/EMILY/Downloads/tsx-deploy-*.dump
+    < /mnt/c/Users/EMILY/Desktop/tsx-deploy-*.dump
 bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh up
 ```
 
