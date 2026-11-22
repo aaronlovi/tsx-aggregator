@@ -44,9 +44,6 @@ public class CompanyReport
 
     #region PUBLIC PROPERTIES
 
-    [JsonIgnore]
-    public bool NeedGetAnnualIncomes =>
-        _annualProcessedCashFlowItems.Values.Any(cashFlowItem => cashFlowItem.NetIncomeFromContinuingOperations is null);
     public long CurNumShares { get; init; }
     public string Symbol { get; init; }
     public string Name { get; init; }

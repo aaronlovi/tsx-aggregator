@@ -13,13 +13,7 @@ public class Program {
 
         _ = builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-        _ = builder.Services.AddCors(options => {
-            options.AddPolicy("AllowAll", builder => {
-                _ = builder.AllowAnyOrigin()
-                    .AllowAnyMethod()
-                    .AllowAnyHeader();
-            });
-        });
+        _ = builder.Services.AddCors(); // the policy is the one passed to UseCors below
 
         // Add services to the container.
         _ = builder.Services.AddControllers();
@@ -37,8 +31,6 @@ public class Program {
         Console.WriteLine($"Read-only mode ({ApiSettings.ReadOnlyKey}): {readOnly}");
 
         _ = builder.Services.AddHealthChecks();
-        _ = builder.Services.AddGrpc();
-        _ = builder.Services.AddGrpcReflection();
         _ = builder.Services.AddGrpcClient<StockDataServiceClient>(options => {
             options.Address = aggregatorGrpcUrl;
         });
@@ -64,8 +56,6 @@ public class Program {
         _ = app.UseHttpsRedirection();
 
         _ = app.UseAuthorization();
-
-        //app.UseCors("AllowAllOrigins");
 
         _ = app.MapControllers();
         _ = app.MapHealthChecks("/health");
