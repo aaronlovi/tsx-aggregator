@@ -55,6 +55,16 @@ npm run build      # Production build
 npm run build:ssr  # Server-side rendering build
 ```
 
+### Containers (full stack)
+
+```bash
+cd docker-scripts
+cp local.env.example local.env   # per-laptop settings and secrets (git-ignored)
+docker compose --env-file .env --env-file local.env --profile app up -d --build tsx-web
+```
+
+Images: `src/tsx-aggregator/Dockerfile` (with Google Chrome), `src/stock-market-webapi/Dockerfile`, `deep-value/Dockerfile` (nginx; serves the app and forwards `/api/...` to the web API with the prefix removed, because the API's `/companies...` paths overlap the app's routes). Plain `docker compose up -d` still starts only PostgreSQL and pgAdmin. Deploy laptop setup: `deploy/README.md`.
+
 ### Database
 
 ```bash
@@ -138,6 +148,7 @@ Google Sheets --> QuoteService (prices)       v
 - `Ports.Grpc` -- gRPC listen port (default 7001); `Ports.GrpcListenOnAllInterfaces` (default false: localhost only, since `AdminService` has no authentication)
 - `Scraper.BrowserExecutablePath`, `Scraper.BrowserArgs` -- an installed Chrome for the RawCollector (container image); empty = Puppeteer downloads one at run time (dev)
 - `Logs.WriteFile` (default true), `Logs.Directory` -- the daily `tsx-aggregator-*.txt` file; the container image turns it off (stdout only)
+- `Api.ReadOnly` (stock-market-webapi, default false; true in the compose stack) -- 405 for anything but GET/HEAD/OPTIONS; `GET /health` for health checks
 - `Aggregator.GrpcUrl` (stock-market-webapi) -- tsx-aggregator's gRPC address (default `http://localhost:7001`); `run.sh` sets it from `GRPC_PORT`
 - `HostedServices` -- Toggle individual background services
 - `FeatureFlags` -- Feature toggles (e.g., `CheckExistingRawReportUpdates`)

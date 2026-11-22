@@ -416,3 +416,6 @@ src/stock-market-webapi/appsettings.Local.json
 
 # tsx-ops score snapshots
 /snapshots/
+
+# Per-laptop compose settings and secrets (see docker-scripts/local.env.example)
+docker-scripts/local.env

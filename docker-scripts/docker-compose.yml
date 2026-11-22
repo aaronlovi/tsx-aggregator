@@ -1,5 +1,11 @@
 name: tsx-aggregator
 
+# Dev laptop (unchanged):   docker compose up -d                  -> postgres + pgadmin
+# Full stack (deploy laptop, or dev testing):
+#   docker compose --env-file .env --env-file local.env --profile app up -d --build tsx-web
+#   (tsx-web pulls in tsx-webapi, tsx-aggregator and postgres; pgadmin is not started)
+# Per-laptop settings and secrets go in local.env (git-ignored); see local.env.example.
+
 services:
   postgres:
     image: postgres:${POSTGRES_VERSION}
@@ -9,9 +15,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_BIND:-0.0.0.0}:5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     networks:
       - tsx-data-network
@@ -24,6 +35,75 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - tsx-data-network
+
+  tsx-aggregator:
+    profiles: ["app"]
+    build:
+      context: ../src
+      dockerfile: tsx-aggregator/Dockerfile
+    image: tsx-aggregator:${TSX_IMAGE_TAG:-local}
+    container_name: tsx-aggregator
+    environment:
+      ConnectionStrings__tsx-scraper: "Host=postgres;Port=5432;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${TSX_DATABASE:-postgres}"
+      GoogleCredentials__CredentialFilePath: /run/secrets/google.json
+      HostedServices__RunRawCollector: ${RUN_RAW_COLLECTOR:-true}
+      HostedServices__RunAggregator: ${RUN_AGGREGATOR:-true}
+      HostedServices__RunQuoteService: ${RUN_QUOTE_SERVICE:-true}
+      HostedServices__RunTopScoreAlertService: ${RUN_TOP_SCORE_ALERT_SERVICE:-true}
+      AlertSettings__SmtpUsername: ${SMTP_USERNAME:-}
+      AlertSettings__SmtpPassword: ${SMTP_PASSWORD:-}
+      AlertSettings__SenderEmail: ${ALERT_SENDER_EMAIL:-}
+      AlertSettings__Recipients__0: ${ALERT_RECIPIENT:-}
+    volumes:
+      - type: bind
+        source: ${GOOGLE_CREDENTIALS_FILE:-./google-credentials.json}
+        target: /run/secrets/google.json
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      # tsx-ops on the same machine only; never on the network.
+      - "127.0.0.1:${AGGREGATOR_GRPC_PORT:-7001}:7001"
+    shm_size: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - tsx-data-network
+
+  tsx-webapi:
+    profiles: ["app"]
+    build:
+      context: ../src
+      dockerfile: stock-market-webapi/Dockerfile
+    image: tsx-webapi:${TSX_IMAGE_TAG:-local}
+    container_name: tsx-webapi
+    environment:
+      Aggregator__GrpcUrl: http://tsx-aggregator:7001
+      Api__ReadOnly: ${API_READ_ONLY:-true}
+    depends_on:
+      - tsx-aggregator
+    restart: unless-stopped
+    networks:
+      - tsx-data-network
+
+  tsx-web:
+    profiles: ["app"]
+    build:
+      context: ../deep-value
+    image: tsx-web:${TSX_IMAGE_TAG:-local}
+    container_name: tsx-web
+    environment:
+      API_UPSTREAM: http://tsx-webapi:8080
+    ports:
+      # 127.0.0.1 by default; WEB_BIND=0.0.0.0 on the deploy laptop for the home wifi (firewall: Private only).
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-5080}:8080"
+    depends_on:
+      - tsx-webapi
     restart: unless-stopped
     networks:
       - tsx-data-network
