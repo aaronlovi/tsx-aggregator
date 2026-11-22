@@ -116,7 +116,7 @@ public class CompaniesController : Controller {
     public async Task<ActionResult<IEnumerable<CompanySearchResult>>> SearchCompanies(string searchTerm, CancellationToken ct = default) {
         GetStockSearchResultsReply reply = await _client.GetStockSearchResultsAsync(new GetStockSearchResultsRequest() { SearchTerm = searchTerm }, deadline: AggregatorDeadline(), cancellationToken: ct);
         if (!reply.Success)
-            return BadRequest("abc");
+            return BadRequest(new { error = reply.ErrorMessage });
 
         var searchResult = new List<CompanySearchResult>();
         foreach (var res in reply.SearchResults.Take(GetMaxQuickSearchNumResults))

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -569,6 +569,19 @@ public class CompaniesControllerListTests {
             "bottom" => await Controller.GetBottomCompanies(),
             _ => await Controller.GetAllCompanies(1, 10),
         };
+
+        _ = ErrorOf(result.Convert().Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Be("boom");
+    }
+
+    [Fact]
+    public async Task SearchCompanies_FailedReply_CarriesTheError() {
+        // Was the body "abc" (found during step 6 of the code review).
+        _ = _client
+            .Setup(c => c.GetStockSearchResultsAsync(
+                It.IsAny<GetStockSearchResultsRequest>(), It.IsAny<Metadata>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .Returns(UnaryCall(new GetStockSearchResultsReply { Success = false, ErrorMessage = "boom" }));
+
+        IConvertToActionResult result = await Controller.SearchCompanies("le");
 
         _ = ErrorOf(result.Convert().Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Be("boom");
     }
