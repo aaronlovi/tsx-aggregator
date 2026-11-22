@@ -80,4 +80,43 @@ public class RawReportDataMapEqualityTests {
 
         _ = scrape.IsEqual(merged).Should().BeTrue();
     }
+
+    // Review X1: the report's currency is stored with it, as CURRENCY next to REPORTDATE.
+    [Fact]
+    public void Currency_RoundTripsThroughTheStoredJson() {
+        var map = new RawReportDataMap { ReportDate = new DateOnly(2025, 12, 31), Currency = "USD", ["A"] = 1 };
+
+        RawReportDataMap read = RawReportDataMap.FromJsonString(map.AsJsonString());
+
+        _ = read.Currency.Should().Be("USD");
+        _ = read["A"].Should().Be(1);
+    }
+
+    [Fact]
+    public void Currency_IsWrittenByTheMerge() {
+        var map = new RawReportDataMap { ReportDate = new DateOnly(2025, 12, 31), Currency = "USD", ["A"] = 1 };
+        using var stored = JsonDocument.Parse("{\"A\": 1, \"B\": 2}");
+
+        _ = RawReportDataMap.FromJsonString(map.MergeWith(stored)).Currency.Should().Be("USD");
+    }
+
+    [Fact]
+    public void IsEqual_StoredReportWithoutTheCurrency_IsAChange() {
+        // So reports stored before the currency was kept get it on their next scrape.
+        var map = new RawReportDataMap { Currency = "USD", ["A"] = 1 };
+        using var json = JsonDocument.Parse("{\"A\": 1}");
+
+        _ = map.IsEqual(json).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("USD", "{\"A\": 1, \"CURRENCY\": \"USD\"}", true)]
+    [InlineData("USD", "{\"A\": 1, \"CURRENCY\": \"CAD\"}", false)]
+    [InlineData(null, "{\"A\": 1, \"CURRENCY\": \"USD\"}", true)]   // a scrape without a currency says nothing new
+    public void IsEqual_ComparesTheCurrency(string? scraped, string stored, bool expected) {
+        var map = new RawReportDataMap { Currency = scraped, ["A"] = 1 };
+        using var json = JsonDocument.Parse(stored);
+
+        _ = map.IsEqual(json).Should().Be(expected);
+    }
 }

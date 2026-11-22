@@ -814,4 +814,28 @@ public class CompanyReportTests {
     }
 
     #endregion
+
+    // Review X1: the currency of the most recent balance sheet, for measuring the currency mismatch.
+    [Fact]
+    public void ReportingCurrency_IsTheMostRecentBalanceSheets() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 50m);
+        report.AddAnnualBalanceSheet(new DateOnly(2022, 12, 31), new RawReportDataMap { Currency = "USD", ["StockholdersEquity"] = 900m, ["RetainedEarnings"] = 140m });
+        report.AddAnnualCashFlowStatement(new DateOnly(2022, 12, 31), CreateRawReport(("NetIncomeFromContinuingOperations", 50m), ("CashDividendsPaid", 0m)));
+        report.AddAnnualIncomeStatement(new DateOnly(2022, 12, 31), CreateRawReport(("NetIncomeContinuousOperations", 50m)));
+
+        _ = Process(report);
+
+        _ = report.ReportingCurrency.Should().Be("USD");
+    }
+
+    [Fact]
+    public void ReportingCurrency_UnknownWhenNotStored() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 50m);
+
+        _ = Process(report);
+
+        _ = report.ReportingCurrency.Should().BeNull();
+    }
 }

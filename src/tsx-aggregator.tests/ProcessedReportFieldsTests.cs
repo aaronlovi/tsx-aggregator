@@ -211,4 +211,14 @@ public class ProcessedReportFieldsTests {
         _ = fields!.CurRetainedEarningsEstimated.Should().BeTrue();
         _ = fields.OldestRetainedEarningsEstimated.Should().BeFalse();
     }
+
+    [Fact]
+    public void TryParse_ReportingCurrency_IsReadWhenPresent() {
+        string json = CompleteJson.TrimEnd().TrimEnd('}') + ", \"ReportingCurrency\": \"USD\" }";
+
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.ReportingCurrency.Should().Be("USD");
+        _ = ProcessedReportFields.TryParse(CompleteJson, out ProcessedReportFields? older).Should().BeTrue();
+        _ = older!.ReportingCurrency.Should().BeNull("reports written before X1 have no currency");
+    }
 }

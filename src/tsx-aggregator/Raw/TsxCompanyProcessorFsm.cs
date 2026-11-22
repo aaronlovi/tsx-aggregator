@@ -262,9 +262,13 @@ internal class TsxCompanyProcessorFsm {
                     continue;
                 }
                 
-                var cashFlowReport = PopulateReport(reportDate, cashFlowReportObj);
-                var incomeStatement = PopulateReport(reportDate, incomeStatementObj);
-                var balanceSheet = PopulateReport(reportDate, balanceSheetObj);
+                // The provider reports each statement in its filing currency (review X1: USD for many TSX issuers)
+                string? currency = report.TryGetProperty("currency", out JsonElement currencyObj) && currencyObj.ValueKind is JsonValueKind.String
+                    ? currencyObj.GetString()
+                    : null;
+                var cashFlowReport = PopulateReport(reportDate, currency, cashFlowReportObj);
+                var incomeStatement = PopulateReport(reportDate, currency, incomeStatementObj);
+                var balanceSheet = PopulateReport(reportDate, currency, balanceSheetObj);
 
                 if (reportPeriodType is Constants.ReportPeriodTypes.Quarterly) {
                     _companyData.QuarterlyRawCashFlowReports.Add(cashFlowReport);
@@ -291,8 +295,8 @@ internal class TsxCompanyProcessorFsm {
             fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessReports - general error: " + ex.Message));
         }
 
-        RawReportDataMap PopulateReport(DateOnly reportDate, JsonElement reportJsonObj) {
-            var report = new RawReportDataMap { ReportDate = reportDate };
+        RawReportDataMap PopulateReport(DateOnly reportDate, string? currency, JsonElement reportJsonObj) {
+            var report = new RawReportDataMap { ReportDate = reportDate, Currency = currency };
             if (reportJsonObj.ValueKind != JsonValueKind.Object) {
                 _logger.LogWarning("PopulateReport {ReportDate} found a report that is not an 'object'", reportDate);
                 report.IsValid = false;

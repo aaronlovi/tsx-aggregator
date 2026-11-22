@@ -30,7 +30,8 @@ public sealed record ProcessedReportFields(
     long? RoeCashFlowEquity = null,
     long? RoeOwnerEarningsNumerator = null,
     long? RoeOwnerEarningsEquity = null,
-    IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null) {
+    IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null,
+    string? ReportingCurrency = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -88,7 +89,11 @@ public sealed record ProcessedReportFields(
             roeCashFlowEquity,
             roeOwnerEarningsNumerator,
             roeOwnerEarningsEquity,
-            GetAnnualRoes(root, "RoeOwnerEarningsByYear"));
+            GetAnnualRoes(root, "RoeOwnerEarningsByYear"),
+            // Optional: reports written before X1 don't have it.
+            root.TryGetProperty("ReportingCurrency", out JsonElement currency) && currency.ValueKind == JsonValueKind.String
+                ? currency.GetString()
+                : null);
         return true;
     }
 

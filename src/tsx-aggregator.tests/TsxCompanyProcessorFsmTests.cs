@@ -210,4 +210,20 @@ public class TsxCompanyProcessorFsmTests {
 
         fsm.IsInError.Should().BeFalse();
     }
+
+    // Review X1: each report says which currency it is in (USD for many TSX miners); the parser used to drop it.
+    [Fact]
+    public void ReportCurrency_IsKeptOnEachStatement() {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+        string usd = ReportsBody("2025-12-31").Replace("\"reportDate\"", "\"currency\":\"USD\",\"reportDate\"");
+
+        _ = fsm.Update(Quote());
+        _ = fsm.Update(Financials('Q', ReportsBody("2025-12-31")));
+        TsxCompanyData data = fsm.Update(Financials('A', usd)).OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Single().CompanyReport;
+
+        data.AnnualRawCashFlowReports.Single().Currency.Should().Be("USD");
+        data.AnnualRawIncomeStatements.Single().Currency.Should().Be("USD");
+        data.AnnualRawBalanceSheets.Single().Currency.Should().Be("USD");
+        data.QuarterlyRawBalanceSheets.Single().Currency.Should().BeNull("that body has no currency");
+    }
 }

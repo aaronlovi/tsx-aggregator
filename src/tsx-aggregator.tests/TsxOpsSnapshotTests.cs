@@ -212,4 +212,12 @@ public class TsxOpsSnapshotTests {
 
         return new Snapshot(SnapshotRowBuilder.Columns, built);
     }
+
+    [Fact]
+    public void RowBuilder_HasTheReportingCurrency() {
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument, AllPassFields with { ReportingCurrency = "USD" });
+
+        _ = row["reporting_currency"].Should().Be("USD");
+        _ = SnapshotRowBuilder.Build(Instrument, AllPassFields)["reporting_currency"].Should().BeEmpty();
+    }
 }

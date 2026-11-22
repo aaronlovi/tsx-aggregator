@@ -45,6 +45,12 @@ public class CompanyReport
     #region PUBLIC PROPERTIES
 
     public long CurNumShares { get; init; }
+
+    /// <summary>
+    /// The currency of the most recent balance sheet (e.g. "CAD", "USD"); null if not known (raw reports stored before
+    /// review X1). Not used in scoring yet: kept so the CAD/USD mismatch with the CAD price can be measured.
+    /// </summary>
+    public string? ReportingCurrency { get; private set; }
     public string Symbol { get; init; }
     public string Name { get; init; }
     public string Exchange { get; init; }
@@ -344,6 +350,7 @@ public class CompanyReport
         }
 
         _mostRecentReportDate = mostRecentReportDate;
+        ReportingCurrency = mostRecentBalanceSheet.Currency;
 
         if (mostRecentBalanceSheet.HasValue("StockholdersEquity"))
             CurTotalShareholdersEquity = mostRecentBalanceSheet["StockholdersEquity"]!.Value;
