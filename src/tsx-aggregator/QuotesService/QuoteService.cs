@@ -68,7 +68,7 @@ public class QuoteService : BackgroundService, IQuoteService {
                 _logger.LogInformation("QuoteService - Got a message {Input}", input);
 
                 using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
-                using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
+                using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(input.CancellationToken, stoppingToken);
 
                 switch (input) {
                     case QuoteServiceTimeoutInput ti: {

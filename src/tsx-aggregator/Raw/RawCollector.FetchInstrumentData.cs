@@ -81,7 +81,7 @@ internal partial class RawCollector : BackgroundService {
         // Create a cancellation token that is linked to the provided cancellation token.
         // The provided cancellation token is expected to be the application stopping token, so
         // the linked token will be canceled when either the application is stopping, or we are done with the processor.
-        using var cts = Utilities.CreateLinkedTokenSource(null, ct);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         using TsxCompanyProcessor companyProcessor = await TsxCompanyProcessor.Create(instrumentDto, _svp, cts.Token);
         await companyProcessor.StartAsync(cts.Token);

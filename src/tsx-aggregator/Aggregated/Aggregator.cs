@@ -83,7 +83,7 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
                     _logger.LogInformation("Aggregator - Got a message {Input}", input);
 
                     using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
-                    using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
+                    using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(input.CancellationToken, stoppingToken);
 
                     var output = new AggregatorFsmOutputs();
                     _stateFsm.Update(input, output);

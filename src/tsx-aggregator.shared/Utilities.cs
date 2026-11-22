@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,19 +28,6 @@ public static class Utilities {
     public static void SafeDispose(object? o) {
         if (o is IDisposable d)
             d.Dispose();
-    }
-
-
-    /// <summary>
-    /// Creates a CancellationTokenSource that is linked to the provided CancellationToken and CancellationTokenSource.
-    /// </summary>
-    /// <param name="cts">The CancellationTokenSource to link. If null, a new CancellationTokenSource is created that is only linked to the provided CancellationToken.</param>
-    /// <param name="ct">The CancellationToken to link.</param>
-    /// <returns>A CancellationTokenSource that is linked to the provided CancellationToken and, if provided, CancellationTokenSource.</returns>
-    public static CancellationTokenSource CreateLinkedTokenSource(CancellationTokenSource? cts, CancellationToken ct) {
-        return cts is not null
-            ? CancellationTokenSource.CreateLinkedTokenSource(ct, cts.Token)
-            : CancellationTokenSource.CreateLinkedTokenSource(ct);
     }
 
     /// <summary>

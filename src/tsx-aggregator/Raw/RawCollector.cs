@@ -79,7 +79,7 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
                     _logger.LogInformation("RawCollector - Got a message {Input}", input);
 
                     using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
-                    using var thisRequestCts = Utilities.CreateLinkedTokenSource(input.CancellationTokenSource, stoppingToken);
+                    using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(input.CancellationToken, stoppingToken);
 
                     await PreprocessInputs(input, thisRequestCts.Token);
 

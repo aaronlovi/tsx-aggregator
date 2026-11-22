@@ -51,7 +51,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             _logger.LogInformation("StocksDataRequestsProcessor - Got a message {Input}", inputBase);
 
             using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = inputBase.ReqId });
-            using var thisRequestCts = Utilities.CreateLinkedTokenSource(inputBase.CancellationTokenSource, stoppingToken);
+            using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(inputBase.CancellationToken, stoppingToken);
 
             switch (inputBase) {
                 case GetStocksForExchangeRequest getStocksForExchangeRequest: {
