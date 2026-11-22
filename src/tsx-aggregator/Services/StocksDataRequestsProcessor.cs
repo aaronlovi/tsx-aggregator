@@ -21,8 +21,6 @@ namespace tsx_aggregator.Services;
 /// TODO: Add checks for overloading the service
 /// </remarks>
 public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequestsProcessor {
-    private static readonly TimeSpan OneMinute = TimeSpan.FromSeconds(60);
-
     private readonly ILogger _logger;
     private readonly IDbmService _dbm;
     private readonly IServiceProvider _svp;
@@ -42,7 +40,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
     public bool PostRequest(StocksDataRequestsInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
+        _ = Heartbeat.RunAsync(() => _logger.LogInformation("StocksDataFetchingService heartbeat"), stoppingToken); // Fire and forget
 
         _logger.LogInformation("StocksDataRequestsProcessor - Entering main loop");
 
@@ -107,28 +105,11 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
         };
         foreach (ProcessedFullInstrumentReportDto dto in res.Data ?? []) {
             using var companyContext = _logger.BeginScope(new Dictionary<string, string> { [LogUtils.InstrumentSymbolContext] = dto.InstrumentSymbol });
-            AddCompanyItem(request.Exchange, dto, reply, _scoring, _logger);
+            if (TryBuildReplyItem("ProcessGetStocksForExchangeRequest", request.Exchange, dto) is GetStocksDataReplyItem item)
+                reply.StocksData.Add(item);
         }
 
         _ = request.Completed.TrySetResult(reply);
-
-        // Local helper methods
-
-        static void AddCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, GetStocksDataReply getStocksDataReply, ScoringOptions scoring, ILogger logger) {
-            try {
-                if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
-                    logger.LogWarning("ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
-                        dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
-                    return;
-                }
-
-                getStocksDataReply.StocksData.Add(BuildReplyItem(exchange, dto, fields, scoring));
-            }
-            catch (Exception ex) {
-                logger.LogError(ex, "ProcessGetStocksForExchangeRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
-                    dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
-            }
-        }
     }
 
     private async Task ProcessGetStockDetailsRequest(GetStockDetailsForExchangeRequest request, CancellationToken ct) {
@@ -155,27 +136,29 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             ErrorMessage = res.ErrMsg
         };
         if (res.Data is not null) {
-            reply.StockDetail = TransformCompanyItem(request.Exchange, res.Data, _scoring, _logger);
+            reply.StockDetail = TryBuildReplyItem("ProcessGetStockDetailsRequest", request.Exchange, res.Data);
         }
 
         _ = request.Completed.TrySetResult(reply);
+    }
 
-        // Local helper methods
-
-        static GetStocksDataReplyItem? TransformCompanyItem(string exchange, ProcessedFullInstrumentReportDto dto, ScoringOptions scoring, ILogger logger) {
-            try {
-                if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
-                    logger.LogWarning("ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
-                        dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
-                    return null;
-                }
-
-                return BuildReplyItem(exchange, dto, fields, scoring);
-            } catch (Exception ex) {
-                logger.LogError(ex, "ProcessGetStockDetailsRequest company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
-                    dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
+    /// <summary>
+    /// Parses a company's processed report and builds its reply item. A report that does not parse is logged
+    /// (prefixed with <paramref name="requestName"/>) and gives null.
+    /// </summary>
+    private GetStocksDataReplyItem? TryBuildReplyItem(string requestName, string exchange, ProcessedFullInstrumentReportDto dto) {
+        try {
+            if (!ProcessedReportFields.TryParse(dto.SerializedReport, out ProcessedReportFields? fields)) {
+                _logger.LogWarning("{RequestName} company {CompanySymbol},{InstrumentSymbol} not processed - Invalid JSON {SerializedReport}",
+                    requestName, dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
                 return null;
             }
+
+            return BuildReplyItem(exchange, dto, fields, _scoring);
+        } catch (Exception ex) {
+            _logger.LogError(ex, "{RequestName} company {CompanySymbol},{InstrumentSymbol},{ReportJson} not processed - Exception",
+                requestName, dto.CompanySymbol, dto.InstrumentSymbol, dto.SerializedReport);
+            return null;
         }
     }
 
@@ -286,13 +269,5 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
         }
 
         _ = request.Completed.TrySetResult(reply);
-    }
-
-    private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
-        ILogger logger = svp.GetRequiredService<ILogger<StocksDataRequestsProcessor>>();
-        while (!ct.IsCancellationRequested) {
-            logger.LogInformation("StocksDataFetchingService heartbeat");
-            await Task.Delay(OneMinute, ct);
-        }
     }
 }

@@ -16,7 +16,6 @@ namespace tsx_aggregator.Services;
 public class SearchService : BackgroundService, ISearchService {
     private readonly ILogger _logger;
     private readonly Registry _registry;
-    private readonly IServiceProvider _svp;
     private readonly Channel<SearchServiceInputBase> _inputChannel;
 
     private TrieNode<InstrumentKey> _searchByCompanyRoot;
@@ -25,7 +24,6 @@ public class SearchService : BackgroundService, ISearchService {
     public SearchService(IServiceProvider svp) {
         _logger = svp.GetRequiredService<ILogger<SearchService>>();
         _registry = svp.GetRequiredService<Registry>();
-        _svp = svp;
         _inputChannel = Channel.CreateUnbounded<SearchServiceInputBase>();
         SearchServiceReady = new();
         _searchByCompanyRoot = new();
@@ -41,7 +39,7 @@ public class SearchService : BackgroundService, ISearchService {
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
+        _ = Heartbeat.RunAsync(() => _logger.LogInformation("SearchService heartbeat"), stoppingToken); // Fire and forget
 
         _logger.LogInformation("SearchService - Entering main loop");
 
@@ -213,15 +211,6 @@ public class SearchService : BackgroundService, ISearchService {
 
         foreach (TrieNode<InstrumentKey> child in node.Children.Values.Cast<TrieNode<InstrumentKey>>()) {
             CollectWords(child, results);
-        }
-    }
-
-    private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
-        ILogger logger = svp.GetRequiredService<ILogger<SearchService>>();
-
-        while (!ct.IsCancellationRequested) {
-            logger.LogInformation("SearchService heartbeat");
-            await Task.Delay(Constants.OneMinute, ct);
         }
     }
 }

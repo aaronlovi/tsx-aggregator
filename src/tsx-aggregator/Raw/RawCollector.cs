@@ -54,13 +54,9 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
 
     public bool IsPaused => _stateFsm.IsPaused;
 
-    public async Task SetPausedAsync(bool paused, CancellationToken ct) {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        using var input = new RawCollectorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts);
-        if (!PostRequest(input))
-            throw new InvalidOperationException("RawCollector - failed to post the pause/resume request");
-        _ = await input.Completed.Task.WaitAsync(ct);
-    }
+    public Task SetPausedAsync(bool paused, CancellationToken ct) =>
+        PausableService.SetPausedAsync(ServiceName, cts => new RawCollectorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts),
+            PostRequest, ct);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
@@ -241,22 +237,8 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
             _logger.LogInformation("ProcessPersistState failed with error: {ErrMsg}", res.ErrMsg);
     }
 
-    private async Task ProcessPersistCommonServiceState(RawCollectorInputBase input, CancellationToken ct) {
-        _logger.LogInformation("ProcessPersistCommonServiceState begin");
-        Result res = await _dbm.PersistCommonServiceState(_stateFsm.IsPaused, ServiceName, ct);
-        if (res.Success) {
-            _logger.LogInformation("ProcessPersistCommonServiceState success");
-
-            // Indicate to any listeners that the pause/resume operation completed successfully
-            _ = input.Completed.TrySetResult(null);
-        }
-        else {
-            _logger.LogInformation("ProcessPersistCommonServiceState failed with error: {ErrMsg}", res.ErrMsg);
-
-            // Indicate to any listeners that the pause/resume operation failed
-            _ = input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
-        }
-    }
+    private Task ProcessPersistCommonServiceState(RawCollectorInputBase input, CancellationToken ct) =>
+        PausableService.PersistPausedStateAsync(_dbm, _logger, ServiceName, _stateFsm.IsPaused, input, ct);
 
     private long GetNextReqId() => Interlocked.Increment(ref _reqId);
 

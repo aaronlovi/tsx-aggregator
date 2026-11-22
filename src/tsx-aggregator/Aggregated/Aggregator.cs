@@ -29,7 +29,6 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
     internal TimeSpan ErrorBackoff { get; init; } = TimeSpan.FromSeconds(30);
 
     public DateTime? NextCycleTime { get; private set; }
-    private readonly IServiceProvider _svp;
     private readonly IDbmService _dbm;
     private readonly Channel<AggregatorInputBase> _inputChannel;
     private readonly AggregatorFsm _stateFsm;
@@ -38,7 +37,6 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
         _reqId = 0;
         _intervalToNextTimeout = ShortInterval;
         _logger = svp.GetRequiredService<ILogger<Aggregator>>();
-        _svp = svp;
         _dbm = svp.GetRequiredService<IDbmService>();
         _inputChannel = Channel.CreateUnbounded<AggregatorInputBase>();
         _stateFsm = new(svp.GetRequiredService<ILogger<AggregatorFsm>>());
@@ -55,16 +53,12 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
     /// <summary>Checks the event queue now (through the FSM, so a paused Aggregator ignores it).</summary>
     public void CheckForEventsNow() => PostTimeoutRequest(DateTime.UtcNow);
 
-    public async Task SetPausedAsync(bool paused, CancellationToken ct) {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        using var input = new AggregatorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts);
-        if (!PostRequest(input))
-            throw new InvalidOperationException("Aggregator - failed to post the pause/resume request");
-        _ = await input.Completed.Task.WaitAsync(ct);
-    }
+    public Task SetPausedAsync(bool paused, CancellationToken ct) =>
+        PausableService.SetPausedAsync(ServiceName, cts => new AggregatorPauseServiceInput(GetNextReqId(), pauseNotResume: paused, cts),
+            PostRequest, ct);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
+        _ = Heartbeat.RunAsync(() => _logger.LogInformation("Aggregator heartbeat"), stoppingToken); // Fire and forget
 
         try {
             await RestorePausedState(stoppingToken);
@@ -260,30 +254,8 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
         return true;
     }
 
-    private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
-        ILogger logger = svp.GetRequiredService<ILogger<Aggregator>>();
-        while (!ct.IsCancellationRequested) {
-            logger.LogInformation("Aggregator heartbeat");
-            await Task.Delay(TimeSpan.FromMinutes(1), ct);
-        }
-    }
-
-    private async Task ProcessPersistCommonServiceState(AggregatorInputBase input, CancellationToken ct) {
-        _logger.LogInformation("ProcessPersistCommonServiceState begin");
-        Result res = await _dbm.PersistCommonServiceState(_stateFsm.IsPaused, ServiceName, ct);
-        if (res.Success) {
-            _logger.LogInformation("ProcessPersistCommonServiceState success");
-
-            // Indicate to any listeners that the pause/resume operation completed successfully
-            _ = input.Completed.TrySetResult(null);
-        }
-        else {
-            _logger.LogInformation("ProcessPersistCommonServiceState failed with error: {ErrMsg}", res.ErrMsg);
-
-            // Indicate to any listeners that the pause/resume operation failed
-            _ = input.Completed.TrySetException(new InvalidOperationException(res.ErrMsg));
-        }
-    }
+    private Task ProcessPersistCommonServiceState(AggregatorInputBase input, CancellationToken ct) =>
+        PausableService.PersistPausedStateAsync(_dbm, _logger, ServiceName, _stateFsm.IsPaused, input, ct);
 
     /// <summary>Restores the paused state saved in service_state, so a pause survives a restart.</summary>
     private async Task RestorePausedState(CancellationToken ct) {

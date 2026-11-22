@@ -56,7 +56,8 @@ public class QuoteService : BackgroundService, IQuoteService {
     public bool PostRequest(QuoteServiceInputBase inp) => _inputChannel.Writer.TryWrite(inp);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        _ = StartHeartbeat(_svp, stoppingToken); // Fire and forget
+        _ = Heartbeat.RunAsync(() => _logger.LogInformation("QuoteService heartbeat - Next quotes fetch time {NextFetchQuotesTime}",
+            DescribeNextFetchQuotesTime(_svp.GetRequiredService<IQuoteService>().NextFetchQuotesTime)), stoppingToken); // Fire and forget
 
         _logger.LogInformation("QuoteService - Entering main loop");
 
@@ -301,15 +302,5 @@ public class QuoteService : BackgroundService, IQuoteService {
         int doublings = Math.Clamp(failures - 1, 0, 16);
         TimeSpan delay = first * Math.Pow(2, doublings);
         return delay > Constants.TwoHours ? Constants.TwoHours : delay;
-    }
-
-    private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
-        ILogger logger = svp.GetRequiredService<ILogger<QuoteService>>();
-        IQuoteService quoteService = svp.GetRequiredService<IQuoteService>();
-        while (!ct.IsCancellationRequested) {
-            logger.LogInformation("QuoteService heartbeat - Next quotes fetch time {NextFetchQuotesTime}",
-                DescribeNextFetchQuotesTime(quoteService.NextFetchQuotesTime));
-            await Task.Delay(Constants.OneMinute, ct);
-        }
     }
 }
