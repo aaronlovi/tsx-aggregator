@@ -132,6 +132,37 @@ public sealed class ProcessedStockDataSqlTests(PostgresTestDatabase db) : IClass
     }
 
     [PostgresFact]
+    public async Task BySymbol_MapsEveryFieldLikeByExchange() {
+        await SqlTestRows.ClearAll(db);
+        await SqlTestRows.AddInstrument(db, 7, "RY", lastScrapedUtc: LastScraped);
+        await SqlTestRows.AddProcessedReport(db, 7, "{\"score\":15}", ReportCreated);
+        await SqlTestRows.AddRawReport(db, 1, 7, ReportTypes.CashFlow, ReportPeriodTypes.Annual, new DateOnly(2024, 10, 31));
+        await SqlTestRows.AddRawReport(db, 2, 7, ReportTypes.CashFlow, ReportPeriodTypes.Annual, new DateOnly(2025, 10, 31));
+        await SqlTestRows.AddRawReport(db, 3, 7, ReportTypes.CashFlow, ReportPeriodTypes.Annual, new DateOnly(2026, 10, 31), isCurrent: false);
+        await SqlTestRows.AddRawReport(db, 4, 7, ReportTypes.CashFlow, ReportPeriodTypes.Quarterly, new DateOnly(2026, 7, 31));
+        await AddCompany(8, "TD");
+
+        ProcessedFullInstrumentReportDto? row = await BySymbol("RY");
+
+        row.Should().Be(new ProcessedFullInstrumentReportDto(
+            InstrumentId: 7,
+            CompanySymbol: "RY",
+            CompanyName: "RY Inc.",
+            InstrumentSymbol: "RY",
+            InstrumentName: "RY Common Shares",
+            SerializedReport: "{\"score\":15}",
+            InstrumentCreatedDate: new DateTimeOffset(SqlTestRows.Created),
+            InstrumentObsoletedDate: null,
+            ReportCreatedDate: new DateTimeOffset(ReportCreated),
+            ReportObsoletedDate: null,
+            NumAnnualCashFlowReports: 2,
+            MostRecentAnnualReportDate: new DateTimeOffset(2025, 10, 31, 0, 0, 0, TimeSpan.Zero),
+            MostRecentQuarterlyReportDate: new DateTimeOffset(2026, 7, 31, 0, 0, 0, TimeSpan.Zero),
+            LastUpdatedDate: new DateTimeOffset(LastScraped)));
+        (await ByExchange()).Should().ContainEquivalentOf(row);
+    }
+
+    [PostgresFact]
     public async Task BySymbol_UnknownSymbol_SucceedsWithNoData() {
         await SqlTestRows.ClearAll(db);
         await AddCompany(1, "AAA");
