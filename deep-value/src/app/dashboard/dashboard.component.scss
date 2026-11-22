@@ -152,3 +152,11 @@
     text-align: right;
 }
 
+
+// Phones (same width as NARROW_SCREEN_QUERY in app.component.ts): the page header wraps.
+@media (max-width: 768px) {
+    .page-header {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+}

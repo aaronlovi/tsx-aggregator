@@ -5,8 +5,8 @@
   <mat-sidenav
     [opened]="sidenavOpened"
     (openedChange)="sidenavOpened = $event"
-    mode="side">
-    <mat-nav-list>
+    [mode]="sidenavMode">
+    <mat-nav-list (click)="onNavigate()">
       <a mat-list-item routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
       <a mat-list-item routerLink="/companies" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Top Companies (14+)</a>
       <a mat-list-item routerLink="/companies/bottom" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Bottom Companies</a>

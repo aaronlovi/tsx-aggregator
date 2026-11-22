@@ -67,3 +67,27 @@
         margin: 0 8px;
     }
 }
+
+
+// Phones (same width as NARROW_SCREEN_QUERY in app.component.ts): the table keeps its columns and scrolls sideways
+// inside its box instead of being cut off; the page header wraps.
+@media (max-width: 768px) {
+    .page-header {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+
+    .page-header__refresh {
+        margin-left: 0;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px;
+    }
+
+    .data-table {
+        min-width: 1100px;
+    }
+}

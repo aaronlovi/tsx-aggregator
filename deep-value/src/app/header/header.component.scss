@@ -89,3 +89,23 @@
         cursor: pointer;
     }
 }
+
+
+// Phones (same width as NARROW_SCREEN_QUERY in app.component.ts): no title text, the search takes the rest.
+@media (max-width: 768px) {
+    .title .title__title-name,
+    .title__spacer {
+        display: none;
+    }
+
+    .title__search {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin-left: 8px;
+        margin-right: 0;
+
+        ::ng-deep .mat-mdc-form-field {
+            width: 100%;
+        }
+    }
+}
