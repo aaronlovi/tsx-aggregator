@@ -53,23 +53,36 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = inputBase.ReqId });
             using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(inputBase.CancellationToken, stoppingToken);
 
-            switch (inputBase) {
-                case GetStocksForExchangeRequest getStocksForExchangeRequest: {
-                    await ProcessGetStocksForExchangeRequest(getStocksForExchangeRequest, thisRequestCts.Token);
-                    break;
+            // An exception that escaped ExecuteAsync would stop the whole host, so each request is contained here.
+            try {
+                switch (inputBase) {
+                    case GetStocksForExchangeRequest getStocksForExchangeRequest: {
+                        await ProcessGetStocksForExchangeRequest(getStocksForExchangeRequest, thisRequestCts.Token);
+                        break;
+                    }
+                    case GetStockDetailsForExchangeRequest getStockDetailsForExchangeRequest: {
+                        await ProcessGetStockDetailsRequest(getStockDetailsForExchangeRequest, thisRequestCts.Token);
+                        break;
+                    }
+                    case GetDashboardStatsRequestInput getDashboardStatsRequest: {
+                        await ProcessGetDashboardStatsRequest(getDashboardStatsRequest, thisRequestCts.Token);
+                        break;
+                    }
+                    default: {
+                        _logger.LogError("StocksDataFetch main loop - Invalid request type received, dropping input");
+                        _ = inputBase.Completed.TrySetException(new InvalidOperationException("Invalid request type"));
+                        break;
+                    }
                 }
-                case GetStockDetailsForExchangeRequest getStockDetailsForExchangeRequest: {
-                    await ProcessGetStockDetailsRequest(getStockDetailsForExchangeRequest, thisRequestCts.Token);
-                    break;
-                }
-                case GetDashboardStatsRequestInput getDashboardStatsRequest: {
-                    await ProcessGetDashboardStatsRequest(getDashboardStatsRequest, thisRequestCts.Token);
-                    break;
-                }
-                default: {
-                    _logger.LogError("StocksDataFetch main loop - Invalid request type received, dropping input");
-                    break;
-                }
+            } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {
+                _ = inputBase.Completed.TrySetCanceled(stoppingToken);
+                break;
+            } catch (OperationCanceledException) {
+                _logger.LogInformation("StocksDataRequestsProcessor - Request {ReqId} was cancelled by its caller", inputBase.ReqId);
+                _ = inputBase.Completed.TrySetCanceled();
+            } catch (Exception ex) {
+                _logger.LogError(ex, "StocksDataRequestsProcessor - Request {ReqId} failed", inputBase.ReqId);
+                _ = inputBase.Completed.TrySetException(ex);
             }
         }
 
