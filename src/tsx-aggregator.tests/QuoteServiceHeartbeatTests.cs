@@ -43,4 +43,34 @@ public class QuoteServiceHeartbeatTests {
         Action schedule = () => _ = System.Threading.Tasks.Task.Delay(delay, new System.Threading.CancellationToken(canceled: true));
         _ = schedule.Should().NotThrow();
     }
+
+    [Fact]
+    public void NextCheckTime_NoFailure_IsTheNextFetchTime() {
+        _ = QuoteService.NextCheckTime(Now.AddHours(2), null, Now).Should().Be(Now.AddHours(2));
+        _ = QuoteService.NextCheckTime(null, null, Now).Should().BeNull();
+    }
+
+    [Fact]
+    public void NextCheckTime_AfterAFailure_ADueFetchWaitsForTheRetry() {
+        // Without this the due fetch was retried at once, in a tight loop (review P3).
+        _ = QuoteService.NextCheckTime(Now.AddMinutes(-5), Now.AddMinutes(1), Now).Should().Be(Now.AddMinutes(1));
+        _ = QuoteService.NextCheckTime(null, Now.AddMinutes(1), Now).Should().Be(Now.AddMinutes(1));
+    }
+
+    [Fact]
+    public void NextCheckTime_AfterAFailure_IsTheEarlierOfAFutureFetchAndTheRetry() {
+        _ = QuoteService.NextCheckTime(Now.AddMinutes(30), Now.AddMinutes(1), Now).Should().Be(Now.AddMinutes(1));
+        _ = QuoteService.NextCheckTime(Now.AddMinutes(1), Now.AddMinutes(30), Now).Should().Be(Now.AddMinutes(1));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 4)]
+    [InlineData(7, 64)]
+    [InlineData(8, 120)]   // capped at two hours
+    [InlineData(1000, 120)]
+    public void RetryDelay_DoublesUpToTwoHours(int failures, int expectedMinutes) {
+        _ = QuoteService.RetryDelay(TimeSpan.FromMinutes(1), failures).Should().Be(TimeSpan.FromMinutes(expectedMinutes));
+    }
 }
