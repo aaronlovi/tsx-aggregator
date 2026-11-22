@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/node_modules/
+# Machine-specific settings and logs never go into an image; containers get settings from the environment.
+**/appsettings.Local.json
+**/appsettings.Development.json
+**/*.txt
+**/Chrome/
+tsx-aggregator.tests/

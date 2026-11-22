@@ -82,7 +82,8 @@ public class Program {
                     .Configure<GoogleCredentialsOptions>(context.Configuration.GetSection(GoogleCredentialsOptions.GoogleCredentials))
                     .Configure<HostedServicesOptions>(context.Configuration.GetSection(HostedServicesOptions.HostedServices))
                     .Configure<AlertSettingsOptions>(context.Configuration.GetSection(AlertSettingsOptions.AlertSettings))
-                    .Configure<ScoringOptions>(context.Configuration.GetSection(ScoringOptions.Scoring));
+                    .Configure<ScoringOptions>(context.Configuration.GetSection(ScoringOptions.Scoring))
+                    .Configure<ScraperOptions>(context.Configuration.GetSection(ScraperOptions.Scraper));
 
                 // Using the Options pattern, validate configuration instances that are mapped
                 // from configuration when the application starts.
@@ -167,6 +168,10 @@ public class Program {
         if (host.Services.GetRequiredService<IOptions<ScoringOptions>>().Value.Validate() is string scoringError)
             throw new InvalidOperationException(scoringError);
 
+        // A wrong browser path would only show up as failed scrapes: refuse to start.
+        if (host.Services.GetRequiredService<IOptions<ScraperOptions>>().Value.Validate() is string scraperError)
+            throw new InvalidOperationException(scraperError);
+
         return host;
     }
 
@@ -179,6 +184,7 @@ public class Program {
         LogConfigSection(config, logger, HostedServicesOptions.HostedServices);
         LogConfigSection(config, logger, AlertSettingsOptions.AlertSettings);
         LogConfigSection(config, logger, ScoringOptions.Scoring);
+        LogConfigSection(config, logger, ScraperOptions.Scraper);
         logger.LogInformation("==========END CRITICAL CONFIGURATION==========");
     }
 

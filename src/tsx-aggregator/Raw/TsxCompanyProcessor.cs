@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PuppeteerSharp;
 using tsx_aggregator.models;
 using tsx_aggregator.shared;
@@ -28,6 +29,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     private TaskCompletionSource _tcs;
     private readonly Channel<TsxCompanyProcessorFsmInputBase> _inputChannel;
     private readonly CancellationToken _externalCancellationToken;
+    private readonly ScraperOptions _scraperOptions;
 
     private TsxCompanyProcessor(
         InstrumentDto instrumentDto,
@@ -39,6 +41,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         _tcs = new();
         _inputChannel = Channel.CreateUnbounded<TsxCompanyProcessorFsmInputBase>();
         _externalCancellationToken = externalCancellationToken;
+        _scraperOptions = svp.GetService<IOptions<ScraperOptions>>()?.Value ?? new ScraperOptions();
     }
 
     public bool IsFaulted { get; private set; }
@@ -64,10 +67,21 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     public static async Task<TsxCompanyProcessor> Create(InstrumentDto instrumentDto, IServiceProvider svp, CancellationToken externalCancellationToken) {
-        await Init();
         var processor = new TsxCompanyProcessor(instrumentDto, svp, externalCancellationToken);
+        if (!processor._scraperOptions.UsesInstalledBrowser)
+            await DownloadBrowser();
         return processor;
     }
+
+    /// <summary>
+    /// Headless Chrome: the installed one with its extra arguments when Scraper:BrowserExecutablePath is set,
+    /// otherwise the one Puppeteer downloaded.
+    /// </summary>
+    internal static LaunchOptions BuildLaunchOptions(ScraperOptions options) => new() {
+        Headless = true,
+        ExecutablePath = options.UsesInstalledBrowser ? options.BrowserExecutablePath : null,
+        Args = options.BrowserArgs ?? [],
+    };
 
     public async Task<Result<TsxCompanyData>> GetRawFinancials() {
         int attempt = 0;
@@ -101,7 +115,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         _tcs = new TaskCompletionSource(); // Create new TCS for each attempt
 
         try {
-            var launchOptions = new LaunchOptions { Headless = true };
+            LaunchOptions launchOptions = BuildLaunchOptions(_scraperOptions);
             using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
             using IPage page = await browser.NewPageAsync();
             page.DefaultNavigationTimeout = 60000;
@@ -126,7 +140,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         }
     }
 
-    private static async Task Init() {
+    private static async Task DownloadBrowser() {
         var browserFetcher = new BrowserFetcher();
         _ = await browserFetcher.DownloadAsync();
     }
