@@ -364,19 +364,19 @@ public class CompanyReport
         else if (mostRecentBalanceSheet.HasValue("GoodwillAndOtherIntangibleAssets") && mostRecentBalanceSheet.HasValue("Goodwill"))
             CurIntangibles = mostRecentBalanceSheet["GoodwillAndOtherIntangibleAssets"]!.Value - mostRecentBalanceSheet["Goodwill"]!.Value;
         else
-            warnings.Add("parseQuarterlyFigures: missing property current Intangibles");
+            warnings.Add("Most recent figures: missing property current Intangibles");
 
         if (mostRecentBalanceSheet.HasValue("LongTermDebtAndCapitalLeaseObligation"))
             CurLongTermDebt = mostRecentBalanceSheet["LongTermDebtAndCapitalLeaseObligation"]!.Value;
         else if (mostRecentBalanceSheet.HasValue("LongTermDebt"))
             CurLongTermDebt = mostRecentBalanceSheet["LongTermDebt"]!.Value;
         else
-            warnings.Add("parseQuarterlyFigures: missing property current LongTermDebt");
+            warnings.Add("Most recent figures: missing property current LongTermDebt");
 
         if (mostRecentBalanceSheet.HasValue("RetainedEarnings"))
             CurRetainedEarnings = mostRecentBalanceSheet["RetainedEarnings"]!.Value;
         else
-            warnings.Add("parseQuarterlyFigures: missing property current RetainedEarnings");
+            warnings.Add("Most recent figures: missing property current RetainedEarnings");
     }
 
     private void TransformRawFinancialReports(IList<string> warnings)
@@ -477,7 +477,7 @@ public class CompanyReport
             if (rawCashFlowReport.HasValue("DeferredTax"))
                 cashFlowReport.DeferredTax = rawCashFlowReport["DeferredTax"]!.Value;
             else
-                LogMissingPropertyWarning(reportDate, "defferedTax", warnings);
+                LogMissingPropertyWarning(reportDate, "deferredTax", warnings);
 
             if (rawCashFlowReport.HasValue("OtherNonCashItems"))
                 cashFlowReport.OtherNonCashItems = rawCashFlowReport["OtherNonCashItems"]!.Value;
@@ -810,7 +810,7 @@ public class CompanyReport
         }
         else
         {
-            warnings.Add($"Balance sheet(report date: ${reportDate}) missing property 'CurrentAssets'");
+            warnings.Add($"Balance sheet(report date: {reportDate}) missing property 'CurrentAssets'");
             return null;
         }
     }
@@ -823,7 +823,7 @@ public class CompanyReport
         }
         else
         {
-            warnings.Add($"Balance sheet(report date: ${reportDate}) missing property 'CurrentLiabilities'");
+            warnings.Add($"Balance sheet(report date: {reportDate}) missing property 'CurrentLiabilities'");
             return null;
         }
     }
@@ -836,7 +836,7 @@ public class CompanyReport
         }
         else
         {
-            warnings.Add($"Income statement(report date: ${reportDate}) missing property 'NetIncomeContinuousOperations'");
+            warnings.Add($"Income statement(report date: {reportDate}) missing property 'NetIncomeContinuousOperations'");
             return null;
         }
     }

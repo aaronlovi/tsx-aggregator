@@ -23,10 +23,10 @@ internal sealed class SnapshotCommand : ICommand {
 
     public string Description => "Compute every company's score and write it to a CSV (read-only)";
 
-    public string Usage => """
+    public string Usage => $"""
         Usage: tsx-ops snapshot [--source raw|processed] [--label <name>] [--out <file>] [--connection <string>]
 
-        Computes the 15-check score for every listed TSX company with frozen prices from instrument_prices,
+        Computes the {SnapshotRowBuilder.NumChecks}-check score for every listed TSX company with frozen prices from instrument_prices,
         and writes one CSV row per company. All reads run in one read-only, repeatable-read transaction.
 
           --source raw        Recompute each report from raw data with the current code (default)
@@ -87,10 +87,12 @@ internal sealed class SnapshotCommand : ICommand {
             .Select(r => int.Parse(r[Snapshot.ScoreColumn], CultureInfo.InvariantCulture))
             .ToArray();
 
+        // The same score groups as tsx-ops diff, so the two never disagree when the cutoff or the check count changes.
+        string groups = string.Join(", ", SnapshotDiff.DefaultThresholds.Select(t =>
+            (t == SnapshotRowBuilder.NumChecks ? $"{t}/{t}" : $"{t}+") + ": " + scores.Count(s => s >= t).ToString(CultureInfo.InvariantCulture)));
         logger.LogInformation(
-            "Wrote {Rows} rows in {Seconds:0.0}s: {Ok} scored, {NotScored} not scored; 14+: {Fourteen}, 15+: {Fifteen}, 16/16: {Sixteen}",
-            snapshot.Rows.Count, elapsed.TotalSeconds, ok, snapshot.Rows.Count - ok,
-            scores.Count(s => s >= 14), scores.Count(s => s >= 15), scores.Count(s => s >= 16));
+            "Wrote {Rows} rows in {Seconds:0.0}s: {Ok} scored, {NotScored} not scored; {Groups}",
+            snapshot.Rows.Count, elapsed.TotalSeconds, ok, snapshot.Rows.Count - ok, groups);
 
         foreach (IGrouping<string, IReadOnlyDictionary<string, string>> group in snapshot.Rows
                      .Where(r => r[Snapshot.StatusColumn] != SnapshotRowBuilder.StatusOk)
