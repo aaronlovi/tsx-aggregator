@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace tsx_aggregator.models;
 
@@ -29,4 +32,13 @@ public class AlertSettingsOptions {
     public int CheckIntervalMinutes { get; set; } = 60;
 
     public bool SendTestEmailOnStartup { get; set; }
+
+    /// <summary>
+    /// The recipient addresses: each Recipients entry split on commas and semicolons, trimmed, blanks dropped.
+    /// The compose stack passes one setting (ALERT_RECIPIENT -> Recipients:0), so a list arrives comma-separated.
+    /// </summary>
+    public IReadOnlyList<string> RecipientAddresses =>
+        (Recipients ?? [])
+            .SelectMany(entry => (entry ?? string.Empty).Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToList();
 }

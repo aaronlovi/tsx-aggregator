@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -71,5 +72,25 @@ public class EmailServiceTests {
 
         // Assert
         _ = result.Should().BeFalse("the cancellation token was already cancelled");
+    }
+
+    [Fact]
+    public void BuildMessage_CommaSeparatedRecipients_AddsEachAddressAndSkipsBlanks() {
+        // ALERT_RECIPIENT in the compose stack is one setting (Recipients:0), so a list arrives comma-separated.
+        var service = new EmailService(
+            CreateOptions(recipients: ["first@example.com, second@example.com", " ", "third@example.com;"]),
+            new Mock<ILogger<EmailService>>().Object);
+
+        MimeKit.MimeMessage message = service.BuildMessage("subject", "body", htmlBody: null);
+
+        _ = message.To.Mailboxes.Select(m => m.Address).Should()
+            .Equal("first@example.com", "second@example.com", "third@example.com");
+    }
+
+    [Fact]
+    public void RecipientAddresses_OnlyBlankEntries_IsEmpty() {
+        var options = new AlertSettingsOptions { Recipients = ["", "  ", " , "] };
+
+        _ = options.RecipientAddresses.Should().BeEmpty();
     }
 }

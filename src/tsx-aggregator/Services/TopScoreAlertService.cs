@@ -183,7 +183,7 @@ internal class TopScoreAlertService : BackgroundService {
             _logger.LogError("TopScoreAlertService - SenderEmail is not configured");
             return false;
         }
-        if (_settings.Recipients is null || _settings.Recipients.Length == 0) {
+        if (_settings.RecipientAddresses.Count == 0) {
             _logger.LogError("TopScoreAlertService - No recipients configured");
             return false;
         }

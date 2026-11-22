@@ -19,29 +19,34 @@ internal class EmailService : IEmailService {
         _logger = logger;
     }
 
+    internal MimeMessage BuildMessage(string subject, string plainBody, string? htmlBody) {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_settings.SenderEmail, _settings.SenderEmail));
+
+        foreach (string recipient in _settings.RecipientAddresses)
+            message.To.Add(new MailboxAddress(recipient, recipient));
+
+        message.Subject = subject;
+
+        if (htmlBody is not null) {
+            var multipart = new MultipartAlternative {
+                new TextPart("plain") { Text = plainBody },
+                new TextPart("html") { Text = htmlBody }
+            };
+            message.Body = multipart;
+        } else {
+            message.Body = new TextPart("plain") { Text = plainBody };
+        }
+        return message;
+    }
+
     public async Task<bool> SendEmailAsync(string subject, string body, CancellationToken ct) {
         return await SendEmailAsync(subject, body, htmlBody: null, ct);
     }
 
     public async Task<bool> SendEmailAsync(string subject, string plainBody, string? htmlBody, CancellationToken ct) {
         try {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_settings.SenderEmail, _settings.SenderEmail));
-
-            foreach (var recipient in _settings.Recipients)
-                message.To.Add(new MailboxAddress(recipient, recipient));
-
-            message.Subject = subject;
-
-            if (htmlBody is not null) {
-                var multipart = new MultipartAlternative {
-                    new TextPart("plain") { Text = plainBody },
-                    new TextPart("html") { Text = htmlBody }
-                };
-                message.Body = multipart;
-            } else {
-                message.Body = new TextPart("plain") { Text = plainBody };
-            }
+            MimeMessage message = BuildMessage(subject, plainBody, htmlBody);
 
             using var client = new SmtpClient();
             await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls, ct);
@@ -49,7 +54,7 @@ internal class EmailService : IEmailService {
             _ = await client.SendAsync(message, ct);
             await client.DisconnectAsync(quit: true, ct);
 
-            _logger.LogInformation("Top-Score alert email sent successfully to {RecipientCount} recipients", _settings.Recipients.Length);
+            _logger.LogInformation("Top-Score alert email sent successfully to {RecipientCount} recipients", message.To.Count);
             return true;
         } catch (Exception ex) {
             _logger.LogError(ex, "Failed to send top-score alert email");
