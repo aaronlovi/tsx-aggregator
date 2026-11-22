@@ -76,7 +76,7 @@ internal class TopScoreAlertService : BackgroundService {
             return;
         }
 
-        object? response = await req.Completed.Task;
+        object? response = await req.Completed.Task.WaitAsync(ct);
         if (response is not GetStocksDataReply reply || !reply.Success) {
             _logger.LogWarning("TopScoreAlertService - Received invalid response from request processor");
             return;
@@ -95,7 +95,7 @@ internal class TopScoreAlertService : BackgroundService {
             return;
         }
 
-        object? response2 = await req2.Completed.Task;
+        object? response2 = await req2.Completed.Task.WaitAsync(ct);
         if (response2 is not IDictionary<string, decimal> prices) {
             _logger.LogWarning("TopScoreAlertService - Received invalid response from quotes service");
             return;

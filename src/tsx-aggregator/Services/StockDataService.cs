@@ -55,7 +55,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request");
             }
 
-            object? response = await req.Completed.Task;
+            object? response = await req.Completed.Task.WaitAsync(context.CancellationToken);
             if (response is not GetStocksDataReply reply) {
                 _logger.LogWarning("GetStocksData - Received invalid response");
                 return Failure("Got an invalid repsonse");
@@ -73,7 +73,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request to quotes service");
             }
 
-            object? response2 = await req2.Completed.Task;
+            object? response2 = await req2.Completed.Task.WaitAsync(context.CancellationToken);
             if (response2 is not IDictionary<string, decimal> prices) {
                 _logger.LogWarning("GetStocksData - Received invalid response from quotes service");
                 return Failure("Got an invalid repsonse from quotes service");
@@ -132,7 +132,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request");
             }
 
-            object? response = await req.Completed.Task;
+            object? response = await req.Completed.Task.WaitAsync(context.CancellationToken);
             if (response is not GetStocksDetailReply reply) {
                 _logger.LogWarning("GetStocksDetail - Received invalid response");
                 return Failure("Got an invalid repsonse");
@@ -152,7 +152,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request to quotes service");
             }
 
-            object? response2 = await req2.Completed.Task;
+            object? response2 = await req2.Completed.Task.WaitAsync(context.CancellationToken);
             if (response2 is not IDictionary<string, decimal> prices) {
                 _logger.LogWarning("GetStocksDetail - Received invalid response from quotes service");
                 return Failure("Got an invalid repsonse from quotes service");
@@ -202,7 +202,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request");
             }
 
-            object? response = await req.Completed.Task;
+            object? response = await req.Completed.Task.WaitAsync(context.CancellationToken);
             if (response is not List<GetStockSearchResultsReplyItem> searchResults) {
                 _logger.LogWarning("GetStockSearchResults - Received invalid response");
                 return Failure("Got an invalid repsonse");
@@ -254,7 +254,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request");
             }
 
-            var res_ = await req.Completed.Task;
+            var res_ = await req.Completed.Task.WaitAsync(context.CancellationToken);
             if (res_ is not Result<PagedInstrumentInfoDto> res) {
                 _logger.LogWarning("GetInstrumentsWithNoRawReports - Received invalid response");
                 return Failure("Got an invalid response");
@@ -299,7 +299,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return new StockDataServiceReply { Success = false, ErrorMessage = "Failed to post request" };
             }
 
-            var result = await input.Completed.Task;
+            var result = await input.Completed.Task.WaitAsync(context.CancellationToken);
             _logger.LogInformation("SetPriorityCompanies - complete, {ValidCount} valid symbols", result);
             return new StockDataServiceReply { Success = true };
         } catch (OperationCanceledException) {
@@ -330,7 +330,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "Failed to post request" };
             }
 
-            var result = await input.Completed.Task;
+            var result = await input.Completed.Task.WaitAsync(context.CancellationToken);
             if (result is not IReadOnlyList<string> symbols) {
                 _logger.LogWarning("GetPriorityCompanies - Received invalid response");
                 return new GetPriorityCompaniesReply { Success = false, ErrorMessage = "Got an invalid response" };
@@ -370,7 +370,7 @@ public class StockDataSvc : StockDataService.StockDataServiceBase {
                 return Failure("Failed to post request");
             }
 
-            object? response = await req.Completed.Task;
+            object? response = await req.Completed.Task.WaitAsync(context.CancellationToken);
             if (response is not GetDashboardStatsReply reply) {
                 _logger.LogWarning("GetDashboardStats - Received invalid response");
                 return Failure("Got an invalid response");
