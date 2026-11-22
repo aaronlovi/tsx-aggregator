@@ -63,6 +63,17 @@ else
     sudo docker run -d --name "$TEST_CONTAINER" --restart unless-stopped -p "127.0.0.1:$TEST_PORT:80" nginx:alpine >/dev/null
     echo "Started test container '$TEST_CONTAINER' on 127.0.0.1:$TEST_PORT"
 fi
-curl -fsS -o /dev/null "http://127.0.0.1:$TEST_PORT/" && echo "http://127.0.0.1:$TEST_PORT answers inside Ubuntu."
+# nginx needs a moment after the container starts; Docker resets connections that arrive before it listens.
+for _ in $(seq 1 15); do
+    if curl -fsS -o /dev/null "http://127.0.0.1:$TEST_PORT/" 2>/dev/null; then
+        echo "http://127.0.0.1:$TEST_PORT answers inside Ubuntu."
+        break
+    fi
+    sleep 1
+done
+if ! curl -fsS -o /dev/null "http://127.0.0.1:$TEST_PORT/"; then
+    echo "FAIL: http://127.0.0.1:$TEST_PORT does not answer after 15 s. Check: sudo docker logs $TEST_CONTAINER" >&2
+    exit 1
+fi
 echo
 echo "Done. Next: deploy/README.md section 3 (check from Windows, then the reboot test)."
