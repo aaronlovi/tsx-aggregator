@@ -110,3 +110,11 @@ public sealed class PostgresFactAttribute : FactAttribute {
             Skip = reason;
     }
 }
+
+/// <summary>A theory that needs <see cref="PostgresTestDatabase"/>: skipped, with the reason, when there is no server.</summary>
+public sealed class PostgresTheoryAttribute : TheoryAttribute {
+    public PostgresTheoryAttribute() {
+        if (PostgresTestDatabase.WhyUnavailable is string reason)
+            Skip = reason;
+    }
+}

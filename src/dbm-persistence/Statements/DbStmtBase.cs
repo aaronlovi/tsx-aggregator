@@ -19,6 +19,13 @@ internal static class DbUtils {
 
 internal abstract class DbStmtBase {
     protected abstract IReadOnlyCollection<NpgsqlParameter> GetBoundParameters();
+
+    /// <summary>
+    /// A statement error as a failed result that keeps the exception, so <see cref="PostgresExecutor"/> can retry a lost
+    /// connection and log the stack trace and SQL state (code review P7 / R45).
+    /// </summary>
+    internal static DbStmtResult Failure(string className, Exception ex) =>
+        DbStmtResult.StatementFailure($"{className} failed - {ex.Message}", ex);
 }
 
 /// <summary>
@@ -57,8 +64,8 @@ internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
     /// row using the <see cref="ProcessCurrentRow"/> method implemented in the derived class.
     /// Before processing the rows, it calls <see cref="BeforeRowProcessing"/> to allow for
     /// any necessary setup.
-    /// This method handles exceptions by clearing any results and returning a failure result,
-    /// ensuring that the caller can gracefully handle errors.
+    /// An error clears any results and returns a failure result that carries the exception.
+    /// A cancellation of <paramref name="ct"/> is thrown, not turned into a failure.
     /// </remarks>
     public async Task<DbStmtResult> Execute(NpgsqlConnection conn, CancellationToken ct) {
         ClearResults();
@@ -83,10 +90,13 @@ internal abstract class QueryDbStmtBase : DbStmtBase, IPostgresStatement {
 
             return DbStmtResult.StatementSuccess(numRows);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) {
+            ClearResults();
+            throw;
+        }
         catch (Exception ex) {
             ClearResults();
-            string errMsg = $"{_className} failed - {ex.Message}";
-            return DbStmtResult.StatementFailure(errMsg);
+            return Failure(_className, ex);
         }
     }
 
@@ -159,9 +169,11 @@ internal abstract class NonQueryDbStmtBase : DbStmtBase, IPostgresStatement {
             int numRows = await cmd.ExecuteNonQueryAsync(ct);
             return DbStmtResult.StatementSuccess(numRows);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) {
+            throw;
+        }
         catch (Exception ex) {
-            string errMsg = $"{_className} failed - {ex.Message}";
-            return DbStmtResult.StatementFailure(errMsg);
+            return Failure(_className, ex);
         }
     }
 }
@@ -183,9 +195,11 @@ internal abstract class NonQueryBatchedDbStmtBase : IPostgresStatement {
             int numRows = await batch.ExecuteNonQueryAsync(ct);
             return DbStmtResult.StatementSuccess(numRows);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) {
+            throw;
+        }
         catch (Exception ex) {
-            string errMsg = $"{_className} failed - {ex.Message}";
-            return DbStmtResult.StatementFailure(errMsg);
+            return DbStmtBase.Failure(_className, ex);
         }
     }
 
