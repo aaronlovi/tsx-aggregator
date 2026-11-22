@@ -164,7 +164,7 @@ Upload the `.dump` file to the deploy laptop with Chrome Remote Desktop's **Uplo
 On the **deploy laptop**, in Ubuntu:
 
 ```bash
-docker rm -f startup-test                       # frees port 5080
+docker rm -f startup-test                       # frees port 5080 (stack.sh up and update also remove it)
 bash ~/dev/tsx-aggregator/deploy/wsl/stack.sh db # PostgreSQL only; wait until 'docker ps' shows it healthy
 docker exec -i tsx-postgres pg_restore -U postgres -d postgres --no-owner --clean --if-exists \
     < /mnt/c/Users/EMILY/Desktop/tsx-deploy-*.dump

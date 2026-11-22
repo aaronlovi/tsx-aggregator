@@ -4,7 +4,7 @@
 # Commands:
 #   build    build the three images one at a time (parallel builds can exceed the deploy laptop's WSL memory)
 #   db       start PostgreSQL only (for a restore)
-#   up       start everything (PostgreSQL, tsx-aggregator, tsx-webapi, tsx-web); no build
+#   up       start everything (PostgreSQL, tsx-aggregator, tsx-webapi, tsx-web); no build; removes a leftover startup-test
 #   down     stop the app containers; PostgreSQL keeps running
 #   status   containers, health and memory
 #   logs [service]   follow the logs (default tsx-aggregator)
@@ -22,6 +22,27 @@ fi
 compose=(docker compose --env-file .env --env-file local.env --profile app)
 app_services=(tsx-aggregator tsx-webapi tsx-web)
 
+# The throwaway nginx from setup-ubuntu.sh (and the README's network test) also listens on 5080 and restarts with
+# Docker. Left behind, it answers http://localhost:5080 in place of the site, so it goes before the stack starts.
+remove_startup_test() {
+    if docker container inspect startup-test >/dev/null 2>&1; then
+        echo "== removing the leftover startup-test container (it held port 5080)"
+        docker rm -f startup-test >/dev/null
+        return 0
+    fi
+    return 1
+}
+
+# Starts the stack; if a leftover startup-test was removed, restarts tsx-web so it takes port 5080 on every address.
+start_stack() {
+    local removed=0
+    remove_startup_test && removed=1
+    "${compose[@]}" up -d --no-build tsx-web
+    if [ "$removed" = 1 ]; then
+        "${compose[@]}" restart tsx-web
+    fi
+}
+
 build() {
     for s in "${app_services[@]}"; do
         echo "== building $s"
@@ -32,7 +53,7 @@ build() {
 case "${1:-}" in
     build) build ;;
     db) "${compose[@]}" up -d postgres ;;
-    up) "${compose[@]}" up -d --no-build tsx-web ;;
+    up) start_stack ;;
     down) "${compose[@]}" stop tsx-web tsx-webapi tsx-aggregator ;;
     status)
         "${compose[@]}" ps
@@ -43,7 +64,7 @@ case "${1:-}" in
     update)
         git -C "$repo" pull --ff-only
         build
-        "${compose[@]}" up -d --no-build tsx-web
+        start_stack
         ;;
     *)
         sed -n '2,13p' "$self" | sed 's/^# \{0,1\}//'
