@@ -81,12 +81,16 @@ internal class TsxCompanyProcessorFsm {
     }
 
     private void ProcessGotResponse(GotResponse gr, List<TsxCompanyProcessorFsmOutputBase> outputList) {
+        // Only the query string goes to ParseQueryString: given the whole URL, the first parameter's key would be
+        // "https://...json?symbol", and a response whose symbol came first would be rejected.
+        int queryStart = gr.Url.IndexOf('?', StringComparison.Ordinal);
+        NameValueCollection nameValuePairs = HttpUtility.ParseQueryString(queryStart < 0 ? string.Empty : gr.Url[(queryStart + 1)..]);
+
         var isEnhancedQuotesResponse = gr.Url.Includes("getEnhancedQuotes.json?");
         var isFinancialReportsResponse = gr.Url.Includes("getFinancialsEnhancedBySymbol.json?");
-        var isQuarterlyResponse = isFinancialReportsResponse && gr.Url.Includes("reportType=Q");
-        var isAnnualResponse = isFinancialReportsResponse && gr.Url.Includes("reportType=A");
-
-        var nameValuePairs = HttpUtility.ParseQueryString(gr.Url);
+        string? reportType = nameValuePairs.Get("reportType");
+        var isQuarterlyResponse = isFinancialReportsResponse && reportType == "Q";
+        var isAnnualResponse = isFinancialReportsResponse && reportType == "A";
 
         if (isEnhancedQuotesResponse) {
             if (!nameValuePairs.AllKeys.Contains("symbols")) {

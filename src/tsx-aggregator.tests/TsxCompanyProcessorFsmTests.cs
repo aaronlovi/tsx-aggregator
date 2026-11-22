@@ -166,4 +166,17 @@ public class TsxCompanyProcessorFsmTests {
         fsm.GotAllData.Should().BeFalse();
         FeedAll(fsm).OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Should().ContainSingle();
     }
+
+    // Review P14: the whole URL went to ParseQueryString, so a first parameter's key came out as "https://...json?symbol"
+    // and the response was rejected. Today's URLs put the symbol late; this guards against a reordering.
+    [Fact]
+    public void SymbolAsTheFirstQueryParameter_IsAccepted() {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+
+        _ = fsm.Update(new GotResponse { Url = $"https://app.quotemedia.com/datatool/getEnhancedQuotes.json?symbols={Symbol}&webmasterId=1", Text = QuoteBody });
+        _ = fsm.Update(new GotResponse { Url = $"https://app.quotemedia.com/datatool/getFinancialsEnhancedBySymbol.json?symbol={Symbol}&reportType=Q", Text = ReportsBody("2025-12-31") });
+        IList<TsxCompanyProcessorFsmOutputBase> outputs = fsm.Update(new GotResponse { Url = $"https://app.quotemedia.com/datatool/getFinancialsEnhancedBySymbol.json?symbol={Symbol}&reportType=A", Text = ReportsBody("2025-12-31") });
+
+        outputs.OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Should().ContainSingle();
+    }
 }
