@@ -23,6 +23,10 @@ public class CompanyReport
     private const int MinDaysBetweenAnnualBalanceSheets = 330;
     private const int MaxDaysBetweenAnnualBalanceSheets = 400;
 
+    // Long-term debt, preferring the figure that includes capital leases. One list, so the current figure (check 1)
+    // and the balance sheet debt change (the B3 fallback for net debt issuance) can't drift apart.
+    private static readonly string[] LongTermDebtKeys = ["LongTermDebtAndCapitalLeaseObligation", "LongTermDebt"];
+
     // Dates of the report sets the current and oldest balance sheet figures come from.
     private DateOnly? _mostRecentReportDate;
     private DateOnly? _oldestReportDate;
@@ -250,26 +254,25 @@ public class CompanyReport
         else
             warnings.Add("TransformMostRecentFinancialReports: missing property current StockholdersEquity");
 
-        if (mostRecentBalanceSheet.HasValue("Goodwill"))
-            CurGoodwill = mostRecentBalanceSheet["Goodwill"]!.Value;
-        else if (mostRecentBalanceSheet.HasValue("GoodwillAndOtherIntangibleAssets") && mostRecentBalanceSheet.HasValue("OtherIntangibleAssets"))
-            CurGoodwill = mostRecentBalanceSheet["GoodwillAndOtherIntangibleAssets"]!.Value - mostRecentBalanceSheet["OtherIntangibleAssets"]!.Value;
-        else if (mostRecentBalanceSheet.HasValue("GoodwillAndOtherIntangibleAssets"))
-            CurGoodwill = mostRecentBalanceSheet["GoodwillAndOtherIntangibleAssets"]!.Value;
+        // Goodwill, else the combined figure less other intangibles, else all of the combined figure. A missing figure
+        // leaves the property at 0 (decisions 6 and 7). A lifted subtraction is null when either side is missing.
+        decimal? combinedGoodwillAndIntangibles = mostRecentBalanceSheet["GoodwillAndOtherIntangibleAssets"];
+        if ((mostRecentBalanceSheet["Goodwill"]
+                ?? (combinedGoodwillAndIntangibles - mostRecentBalanceSheet["OtherIntangibleAssets"])
+                ?? combinedGoodwillAndIntangibles) is decimal goodwill)
+            CurGoodwill = goodwill;
         else
             warnings.Add("TransformMostRecentFinancialReports: missing property current Goodwill");
 
-        if (mostRecentBalanceSheet.HasValue("OtherIntangibleAssets"))
-            CurIntangibles = mostRecentBalanceSheet["OtherIntangibleAssets"]!.Value;
-        else if (mostRecentBalanceSheet.HasValue("GoodwillAndOtherIntangibleAssets") && mostRecentBalanceSheet.HasValue("Goodwill"))
-            CurIntangibles = mostRecentBalanceSheet["GoodwillAndOtherIntangibleAssets"]!.Value - mostRecentBalanceSheet["Goodwill"]!.Value;
+        // Other intangibles, else the combined figure less goodwill (no "all of the combined figure" fallback here).
+        if ((mostRecentBalanceSheet["OtherIntangibleAssets"]
+                ?? (combinedGoodwillAndIntangibles - mostRecentBalanceSheet["Goodwill"])) is decimal intangibles)
+            CurIntangibles = intangibles;
         else
             warnings.Add("Most recent figures: missing property current Intangibles");
 
-        if (mostRecentBalanceSheet.HasValue("LongTermDebtAndCapitalLeaseObligation"))
-            CurLongTermDebt = mostRecentBalanceSheet["LongTermDebtAndCapitalLeaseObligation"]!.Value;
-        else if (mostRecentBalanceSheet.HasValue("LongTermDebt"))
-            CurLongTermDebt = mostRecentBalanceSheet["LongTermDebt"]!.Value;
+        if (mostRecentBalanceSheet.FirstPresent(LongTermDebtKeys) is decimal longTermDebt)
+            CurLongTermDebt = longTermDebt;
         else
             warnings.Add("Most recent figures: missing property current LongTermDebt");
 
@@ -298,38 +301,24 @@ public class CompanyReport
             bool inAdjustmentWindow = (_oldestReportDate is not DateOnly oldest || reportDate > oldest)
                 && (_mostRecentReportDate is not DateOnly current || reportDate <= current);
 
-            if (rawCashFlowReport.HasValue("NetIncomeFromContinuingOperations"))
-            {
-                cashFlowReport.NetIncomeFromContinuingOperations = rawCashFlowReport["NetIncomeFromContinuingOperations"]!.Value;
-            }
+            // Each fallback (`??`) is evaluated, and warns, only when the figures before it are missing.
+            if ((rawCashFlowReport["NetIncomeFromContinuingOperations"]
+                    ?? CalcIncomeStatement_NetIncomeFromContinuingOperations(reportDate, warnings)) is decimal netIncome)
+                cashFlowReport.NetIncomeFromContinuingOperations = netIncome;
             else
-            {
-                decimal? netIncome = CalcIncomeStatement_NetIncomeFromContinuingOperations(reportDate, warnings);
-                if (netIncome is not null)
-                    cashFlowReport.NetIncomeFromContinuingOperations = netIncome;
-                else
-                    LogMissingPropertyWarning(reportDate, "NetIncomeFromContinuingOperations", warnings);
-            }
+                LogMissingPropertyWarning(reportDate, "NetIncomeFromContinuingOperations", warnings);
 
-            if (rawCashFlowReport.HasValue("ChangesInCash"))
-                cashFlowReport.GrossCashFlow = rawCashFlowReport["ChangesInCash"]!.Value;
-            else if (rawCashFlowReport.HasValue("BeginningCashPosition") && rawCashFlowReport.HasValue("EndCashPosition"))
-                cashFlowReport.GrossCashFlow = rawCashFlowReport["EndCashPosition"]!.Value - rawCashFlowReport["BeginningCashPosition"]!.Value;
+            if ((rawCashFlowReport["ChangesInCash"]
+                    ?? (rawCashFlowReport["EndCashPosition"] - rawCashFlowReport["BeginningCashPosition"])) is decimal grossCashFlow)
+                cashFlowReport.GrossCashFlow = grossCashFlow;
             else
                 LogMissingPropertyWarning(reportDate, "GrossCashFlow", warnings);
 
-            if (rawCashFlowReport.HasValue("NetIssuancePaymentsOfDebt"))
-                cashFlowReport.NetIssuanceOfDebt = rawCashFlowReport["NetIssuancePaymentsOfDebt"]!.Value;
-            else if (rawCashFlowReport.HasValue("NetLongTermDebtIssuance"))
-                cashFlowReport.NetIssuanceOfDebt = rawCashFlowReport["NetLongTermDebtIssuance"]!.Value;
+            if ((rawCashFlowReport.FirstPresent("NetIssuancePaymentsOfDebt", "NetLongTermDebtIssuance")
+                    ?? CalcConsecutiveBalanceSheetsChangeInDebt(reportDate, warnings)) is decimal netIssuanceOfDebt)
+                cashFlowReport.NetIssuanceOfDebt = netIssuanceOfDebt;
             else
-            {
-                decimal? debtDiff = CalcConsecutiveBalanceSheetsChangeInDebt(reportDate, warnings);
-                if (debtDiff is not null)
-                    cashFlowReport.NetIssuanceOfDebt = debtDiff!.Value;
-                else
-                    LogMissingPropertyWarning(reportDate, "NetIssuanceOfDebt", warnings);
-            }
+                LogMissingPropertyWarning(reportDate, "NetIssuanceOfDebt", warnings);
 
             if (rawCashFlowReport.HasValue("CashDividendsPaid"))
             {
@@ -360,16 +349,11 @@ public class CompanyReport
                 LogMissingPropertyWarning(reportDate, "NetIssuanceOfPreferredStock", warnings);
             }
 
-            if (rawCashFlowReport.HasValue("ChangeInWorkingCapital"))
-                cashFlowReport.ChangeInWorkingCapital = rawCashFlowReport["ChangeInWorkingCapital"]!.Value;
+            if ((rawCashFlowReport["ChangeInWorkingCapital"]
+                    ?? CalcConsecutiveBalanceSheetsChangeInWorkingCapital(reportDate, warnings)) is decimal changeInWorkingCapital)
+                cashFlowReport.ChangeInWorkingCapital = changeInWorkingCapital;
             else
-            {
-                decimal? changeInWorkingCapital = CalcConsecutiveBalanceSheetsChangeInWorkingCapital(reportDate, warnings);
-                if (changeInWorkingCapital is not null)
-                    cashFlowReport.ChangeInWorkingCapital = changeInWorkingCapital.Value;
-                else
-                    LogMissingPropertyWarning(reportDate, "ChangeInWorkingCapital", warnings);
-            }
+                LogMissingPropertyWarning(reportDate, "ChangeInWorkingCapital", warnings);
 
             SetDepreciationAmortizationAndDepletion(reportDate, rawCashFlowReport, cashFlowReport, warnings);
             SetNetPPEPurchaseAndSale(reportDate, rawCashFlowReport, cashFlowReport, warnings);
@@ -605,8 +589,8 @@ public class CompanyReport
             return null;
         }
 
-        decimal? prevDebt = CalcLongTermDebtFromRawBalanceSheet(reportDate, prevReport, warnings);
-        decimal? curDebt = CalcLongTermDebtFromRawBalanceSheet(reportDate, thisReport, warnings);
+        decimal? prevDebt = FirstPresentOrWarn(prevReport, "Balance sheet", reportDate, warnings, LongTermDebtKeys);
+        decimal? curDebt = FirstPresentOrWarn(thisReport, "Balance sheet", reportDate, warnings, LongTermDebtKeys);
 
         decimal? debtDiff = null;
         if (prevDebt is not null && curDebt is not null)
@@ -642,7 +626,7 @@ public class CompanyReport
         if (rpt is null)
             return null;
 
-        return CalcNetIncomeFromContinuingOperationsFromRawIncomeStatement(reportDate, rpt, warnings);
+        return FirstPresentOrWarn(rpt, "Income statement", reportDate, warnings, "NetIncomeContinuousOperations");
     }
 
     private (RawReportDataMap? prevReport, RawReportDataMap? thisReport) GetThisAndPrevBalanceSheets(DateOnly reportDate)
@@ -667,17 +651,22 @@ public class CompanyReport
         return value;
     }
 
-    private static decimal? CalcLongTermDebtFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
+    /// <summary>
+    /// The value of the first of <paramref name="keys"/> in the statement; null, with a warning naming the keys, when
+    /// none is there. The report date is the cash flow year being processed, also for the previous balance sheet.
+    /// </summary>
+    private static decimal? FirstPresentOrWarn(
+        RawReportDataMap statement, string statementName, DateOnly reportDate, IList<string> warnings, params ReadOnlySpan<string> keys)
     {
-        if (rawBalanceSheet.HasValue("LongTermDebtAndCapitalLeaseObligation"))
-            return rawBalanceSheet["LongTermDebtAndCapitalLeaseObligation"]!.Value;
-        else if (rawBalanceSheet.HasValue("LongTermDebt"))
-            return rawBalanceSheet["LongTermDebt"]!.Value;
-        else
+        decimal? value = statement.FirstPresent(keys);
+        if (value is null)
         {
-            warnings.Add($"Balance sheet(report date: {reportDate}) missing property 'LongTermDebtAndCapitalLeaseObligation' and 'LongTermDebt'");
-            return null;
+            var quotedKeys = new List<string>(keys.Length);
+            foreach (string key in keys)
+                quotedKeys.Add($"'{key}'");
+            warnings.Add($"{statementName}(report date: {reportDate}) missing property {string.Join(" and ", quotedKeys)}");
         }
+        return value;
     }
 
     /// <summary>
@@ -686,59 +675,16 @@ public class CompanyReport
     /// </summary>
     private static decimal? CalcWorkingCapitalFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
     {
-        decimal? currentAssets = CalcCurrentAssetsFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
-        decimal? currentLiabilities = CalcCurrentLiabilitiesFromRawBalanceSheet(reportDate, rawBalanceSheet, warnings);
+        decimal? currentAssets = FirstPresentOrWarn(rawBalanceSheet, "Balance sheet", reportDate, warnings, "CurrentAssets");
+        decimal? currentLiabilities = FirstPresentOrWarn(rawBalanceSheet, "Balance sheet", reportDate, warnings, "CurrentLiabilities");
 
         if (currentAssets is null || currentLiabilities is null)
             return null;
 
-        decimal cash = rawBalanceSheet["CashCashEquivalentsAndShortTermInvestments"]
-            ?? rawBalanceSheet["CashAndCashEquivalents"]
-            ?? 0;
-        decimal currentDebt = rawBalanceSheet["CurrentDebtAndCapitalLeaseObligation"]
-            ?? rawBalanceSheet["CurrentDebt"]
-            ?? 0;
+        decimal cash = rawBalanceSheet.FirstPresent("CashCashEquivalentsAndShortTermInvestments", "CashAndCashEquivalents") ?? 0;
+        decimal currentDebt = rawBalanceSheet.FirstPresent("CurrentDebtAndCapitalLeaseObligation", "CurrentDebt") ?? 0;
 
         return (currentAssets - cash) - (currentLiabilities - currentDebt);
-    }
-
-    private static decimal? CalcCurrentAssetsFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
-    {
-        if (rawBalanceSheet.HasValue("CurrentAssets"))
-        {
-            return rawBalanceSheet["CurrentAssets"]!.Value;
-        }
-        else
-        {
-            warnings.Add($"Balance sheet(report date: {reportDate}) missing property 'CurrentAssets'");
-            return null;
-        }
-    }
-
-    private static decimal? CalcCurrentLiabilitiesFromRawBalanceSheet(DateOnly reportDate, RawReportDataMap rawBalanceSheet, IList<string> warnings)
-    {
-        if (rawBalanceSheet.HasValue("CurrentLiabilities"))
-        {
-            return rawBalanceSheet["CurrentLiabilities"]!.Value;
-        }
-        else
-        {
-            warnings.Add($"Balance sheet(report date: {reportDate}) missing property 'CurrentLiabilities'");
-            return null;
-        }
-    }
-
-    private static decimal? CalcNetIncomeFromContinuingOperationsFromRawIncomeStatement(DateOnly reportDate, RawReportDataMap rawIncomeStatement, IList<string> warnings)
-    {
-        if (rawIncomeStatement.HasValue("NetIncomeContinuousOperations"))
-        {
-            return rawIncomeStatement["NetIncomeContinuousOperations"]!.Value;
-        }
-        else
-        {
-            warnings.Add($"Income statement(report date: {reportDate}) missing property 'NetIncomeContinuousOperations'");
-            return null;
-        }
     }
 
     private static void LogMissingPropertyWarning(DateOnly reportDate, string missingPropertyName, IList<string> warnings)

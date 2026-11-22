@@ -18,6 +18,15 @@ public class RawReportDataMap : NormalizedStringKeysHashMap<decimal> {
 
     private const string CurrencyKey = "CURRENCY";
 
+    /// <summary>The value of the first of <paramref name="keys"/> that is present; null when none is.</summary>
+    public decimal? FirstPresent(params ReadOnlySpan<string> keys) {
+        foreach (string key in keys) {
+            if (this[key] is decimal value)
+                return value;
+        }
+        return null;
+    }
+
     /// <summary>
     /// True when merging this report into the stored one would change nothing: every numeric field here is in the
     /// stored report, under any letter case, with the same value. Fields only in the stored report do not count, because
