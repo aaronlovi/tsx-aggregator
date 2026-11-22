@@ -189,7 +189,7 @@ As in 2.4, then check that `http://localhost:5080` and the phone both load witho
 
 ### 5.5. Move Over - The Dev Laptop Afterwards
 
-From now on, run dev with `PASSIVE=1 ./run.sh`: no scraping, no quote-sheet writes, no alert emails. Known gap: with the quote service off, pages that need prices (top list, company details) wait forever; a read-only quote mode is on the plan's list. Copy the deploy database back now and then for realistic dev data (the same dump and restore, the other way).
+The dev laptop has `RUN_MODE=passive` in `run.local.env` at the repo root (git-ignored, so pulls never change it), so its `./run.sh` runs without scraping, quote-sheet writes or alert emails; the menu shows the mode. `LIVE=1 ./run.sh` runs them after typing `live`; only when the deploy laptop's stack is stopped. Without that file (the deploy laptop, a fresh clone) `run.sh` runs live as before. Known gap: with the quote service off, pages that need prices (top list, company details) wait forever; a read-only quote mode is on the list (vault: TSX Aggregator Next Steps 3.2). Copy the deploy database back now and then for realistic dev data (the same dump and restore, the other way).
 
 ## 6. Day to Day
 

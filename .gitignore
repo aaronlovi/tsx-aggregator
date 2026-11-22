@@ -419,3 +419,6 @@ src/stock-market-webapi/appsettings.Local.json
 
 # Per-laptop compose settings and secrets (see docker-scripts/local.env.example)
 docker-scripts/local.env
+
+# Per-machine run.sh mode (RUN_MODE=passive on the dev laptop)
+run.local.env

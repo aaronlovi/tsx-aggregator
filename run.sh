@@ -16,13 +16,40 @@ WEB_DIR="$REPO_DIR/src/stock-market-webapi"
 WEBAPI_PORT="${WEBAPI_PORT:-5050}"
 GRPC_PORT="${GRPC_PORT:-7001}"
 
-# PASSIVE=1 ./run.sh: no scraping, no quote-sheet writes, no alert emails. For dev once the deploy laptop runs
-# the live stack (Deploy Laptop Plan 2.7): those must run in one place only. Passed inline because terminals
-# opened by gnome-terminal do not reliably inherit this shell's environment.
-PASSIVE="${PASSIVE:-0}"
+# Run mode is a per-machine setting in run.local.env (git-ignored, never pulled over):
+#   RUN_MODE=passive   no scraping, no quote-sheet writes, no alert emails. Set on the dev laptop since the
+#                      live stack moved to the deploy laptop (2026-11-22); those three must run in one place.
+#   RUN_MODE=live      (or no file) everything runs, as before.
+# On a passive machine, LIVE=1 ./run.sh runs live after a typed confirmation, for when the deploy laptop's stack
+# is stopped. The settings are passed inline because gnome-terminal windows do not reliably inherit this
+# shell's environment.
+RUN_MODE="live"
+if [ -f "$REPO_DIR/run.local.env" ]; then
+    # shellcheck source=/dev/null
+    . "$REPO_DIR/run.local.env"
+fi
+MODE="LIVE"
 AGG_PASSIVE_ENV=""
-if [ "$PASSIVE" = "1" ]; then
+if [ "$RUN_MODE" = "passive" ]; then
+    MODE="passive"
     AGG_PASSIVE_ENV="HostedServices__RunRawCollector=false HostedServices__RunQuoteService=false HostedServices__RunTopScoreAlertService=false "
+    if [ "${LIVE:-0}" = "1" ]; then
+        cat <<'WARN'
+
+  LIVE MODE on a passive machine (run.local.env): this laptop will scrape TSX, rewrite the shared Google quote
+  sheet and send alert emails. Only do this when the deploy laptop's stack is stopped (tsx menu there, 6), or
+  both will run at once.
+
+WARN
+        read -rp "  Type 'live' to continue, anything else for passive: " answer
+        if [ "$answer" = "live" ]; then
+            MODE="LIVE"
+            AGG_PASSIVE_ENV=""
+        fi
+    fi
+elif [ "$RUN_MODE" != "live" ]; then
+    echo "run.local.env: RUN_MODE must be 'passive' or 'live', got '$RUN_MODE'" >&2
+    exit 2
 fi
 
 # Patterns that uniquely identify processes belonging to *this* repo's
@@ -137,7 +164,7 @@ start_webapi() {
 show_status() {
     echo
     echo "=== Status ==="
-    echo "  configured WEBAPI_PORT=$WEBAPI_PORT  GRPC_PORT=$GRPC_PORT  PASSIVE=$PASSIVE"
+    echo "  configured WEBAPI_PORT=$WEBAPI_PORT  GRPC_PORT=$GRPC_PORT  MODE=$MODE"
     if pgrep -af -- "$TSX_PATTERN" >/dev/null; then
         pgrep -af -- "$TSX_PATTERN" | sed 's/^/  aggregator: /'
     else
@@ -161,6 +188,7 @@ while :; do
 
 = MENU ===================================================================
    webapi → http://localhost:$WEBAPI_PORT     gRPC → :$GRPC_PORT
+   mode: ${MODE^^} (scraper, quote-sheet writes and alerts are $( [ "$MODE" = LIVE ] && echo ON || echo off ))
 
   1  Run TSX Scraper
   2  Run Web API
