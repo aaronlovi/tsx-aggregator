@@ -165,10 +165,7 @@ public class QuoteService : BackgroundService, IQuoteService {
     }
 
     private void SetupTimeoutTask(CancellationToken ct) {
-        DateTime nowUtc = DateTime.UtcNow;
-        TimeSpan timeUntilNextFetchQuotesTime = (_nextFetchQuotesTime ?? nowUtc) - nowUtc;
-        if (timeUntilNextFetchQuotesTime < TimeSpan.Zero)
-            timeUntilNextFetchQuotesTime = TimeSpan.Zero;
+        TimeSpan timeUntilNextFetchQuotesTime = DelayUntilNextCheck(_nextFetchQuotesTime, DateTime.UtcNow);
         _ = Task.Delay(timeUntilNextFetchQuotesTime, ct).ContinueWith(t => {
             if (t.IsCanceled) {
                 _logger.LogInformation("QuoteService - Timeout task cancelled");
@@ -213,6 +210,21 @@ public class QuoteService : BackgroundService, IQuoteService {
         nextFetchQuotesTimeUtc is DateTime t
             ? t.ToString("u", System.Globalization.CultureInfo.InvariantCulture)
             : "not known (saved state not loaded)";
+
+    /// <summary>Longest single wait; a later fetch time is re-checked after this.</summary>
+    internal static readonly TimeSpan MaxWaitBetweenChecks = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// How long to wait before the next timeout check: until the next fetch time, now if it is due or unknown, and
+    /// at most <see cref="MaxWaitBetweenChecks"/>. Task.Delay throws beyond about 49.7 days, which stopped the host
+    /// when the saved fetch time was far in the future.
+    /// </summary>
+    internal static TimeSpan DelayUntilNextCheck(DateTime? nextFetchQuotesTimeUtc, DateTime nowUtc) {
+        TimeSpan delay = (nextFetchQuotesTimeUtc ?? nowUtc) - nowUtc;
+        if (delay < TimeSpan.Zero)
+            return TimeSpan.Zero;
+        return delay > MaxWaitBetweenChecks ? MaxWaitBetweenChecks : delay;
+    }
 
     private static async Task StartHeartbeat(IServiceProvider svp, CancellationToken ct) {
         ILogger logger = svp.GetRequiredService<ILogger<QuoteService>>();
