@@ -144,28 +144,9 @@ internal class DbmInMemoryData {
 
     public ApplicationCommonState? GetApplicationCommonState() => _stateFsmState == null ? null : new ApplicationCommonState(_stateFsmState);
 
-    public IReadOnlyList<CurrentInstrumentRawDataReportDto> GetRawFinancialsByInstrumentId(long instrumentId) {
-        var retVal = new List<CurrentInstrumentRawDataReportDto>();
-
-        if (!_rawDataReportsByInstrumentId.TryGetValue(instrumentId, out List<InstrumentRawDataReportDto>? instrumentReports))
-            return retVal;
-
-        foreach (InstrumentRawDataReportDto instrumentReport in instrumentReports) {
-            if (!instrumentReport.IsCurrent)
-                continue;
-
-            var currentReport = new CurrentInstrumentRawDataReportDto(
-                instrumentReport.InstrumentReportId,
-                instrumentId,
-                instrumentReport.ReportType,
-                instrumentReport.ReportPeriodType,
-                instrumentReport.ReportJson,
-                instrumentReport.ReportDate);
-            retVal.Add(currentReport);
-        }
-
-        return retVal;
-    }
+    /// <summary>Same reports as <see cref="GetCurrentInstrumentReports"/>, as the SQL implementation also shares one statement.</summary>
+    public IReadOnlyList<CurrentInstrumentRawDataReportDto> GetRawFinancialsByInstrumentId(long instrumentId) =>
+        GetCurrentInstrumentReports(instrumentId);
 
     public IReadOnlyList<ProcessedFullInstrumentReportDto> GetProcessedStockDataByExchange(string exchange) {
         var retVal = new List<ProcessedFullInstrumentReportDto>();

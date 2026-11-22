@@ -176,7 +176,7 @@ public sealed class DbmService : IDisposable, IDbmService {
     }
 
     public async ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct) {
-        var stmt = new GetRawFinancialsByInstrumentIdStmt(instrumentId);
+        var stmt = new GetCurrentInstrumentReportsStmt(instrumentId);
         DbStmtResult res = await _exec.ExecuteWithRetry(stmt, ct);
         return (res, stmt.InstrumentReports);
     }

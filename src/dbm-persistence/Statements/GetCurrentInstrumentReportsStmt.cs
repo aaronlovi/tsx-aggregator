@@ -5,6 +5,10 @@ using tsx_aggregator.models;
 
 namespace dbm_persistence;
 
+/// <summary>
+/// The current raw reports of one instrument. Used by both the Aggregator (IDbmService.GetCurrentInstrumentReports) and the
+/// RawCollector (IDbmService.GetRawFinancialsByInstrumentId), which once had copies of this statement (code review R55).
+/// </summary>
 internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
     private const string sql = "SELECT instrument_report_id, report_type, report_period_type, report_json, report_date"
         + " FROM instrument_reports"
@@ -14,11 +18,12 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
     private readonly long _instrumentId;
     private readonly List<CurrentInstrumentRawDataReportDto> _instrumentReports;
 
-    private static int _instrumentReportIdIndex = -1;
-    private static int _reportTypeIndex = -1;
-    private static int _reportPeriodTypeIndex = -1;
-    private static int _reportJsonIndex = -1;
-    private static int _reportDateIndex = -1;
+    // Per instance: two services run this statement, possibly at the same time.
+    private int _instrumentReportIdIndex = -1;
+    private int _reportTypeIndex = -1;
+    private int _reportPeriodTypeIndex = -1;
+    private int _reportJsonIndex = -1;
+    private int _reportDateIndex = -1;
 
     public GetCurrentInstrumentReportsStmt(long instrumentId)
         : base(sql, nameof(GetCurrentInstrumentReportsStmt)) 
@@ -36,9 +41,6 @@ internal sealed class GetCurrentInstrumentReportsStmt : QueryDbStmtBase {
 
     protected override void BeforeRowProcessing(NpgsqlDataReader reader) {
         base.BeforeRowProcessing(reader);
-
-        if (_instrumentReportIdIndex != -1)
-            return; // Column indices are already cached. Nothing to do.
 
         _instrumentReportIdIndex = reader.GetOrdinal("instrument_report_id");
         _reportTypeIndex = reader.GetOrdinal("report_type");
