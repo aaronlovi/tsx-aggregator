@@ -9,28 +9,20 @@ public class RawReportDataMap : NormalizedStringKeysHashMap<decimal> {
     public DateOnly? ReportDate { get; init; }
     public bool IsValid { get; set; } = true;
 
+    /// <summary>
+    /// True when merging this report into the stored one would change nothing: every numeric field here is in the
+    /// stored report, under any letter case, with the same value. Fields only in the stored report do not count, because
+    /// <see cref="MergeWith"/> keeps them; counting them rewrote the same report on every scrape (review P10).
+    /// </summary>
     public bool IsEqual(JsonDocument jsonObj) {
+        var stored = new Dictionary<string, decimal>();
         foreach (JsonProperty prop in jsonObj.RootElement.EnumerateObject()) {
-            if (prop.Value.ValueKind != JsonValueKind.Number)
-                continue;
-            bool isNumeric = prop.Value.TryGetDecimal(out decimal val);
-            if (!isNumeric)
-                continue;
-            if (!HasValue(prop.Name))
-                return false;
-            if (val != this[prop.Name])
-                return false;
+            if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetDecimal(out decimal val))
+                stored[prop.Name.ToUpperInvariant()] = val;
         }
 
         foreach (string key in Keys) {
-            if (!jsonObj.RootElement.TryGetProperty(key, out JsonElement jsonElem))
-                return false;
-            if (jsonElem.ValueKind != JsonValueKind.Number)
-                continue;
-            var res = jsonElem.TryGetDecimal(out decimal val);
-            if (!res)
-                return false;
-            if (val != this[key])
+            if (!stored.TryGetValue(key, out decimal storedValue) || storedValue != this[key])
                 return false;
         }
 

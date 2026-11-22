@@ -133,28 +133,43 @@ public class RawFinancialDeltaToolTests {
     }
 
     [Fact]
-    public async Task TakeDelta_MissingFieldPreserved_ReturnsMergedUpdate() {
-        // Arrange
+    public async Task TakeDelta_FieldMissingFromTheNewScrape_LeavesTheStoredReportAlone() {
+        // Review P10: merging would write back exactly what is stored, so there is nothing to update. This used to
+        // produce an update, and a raw-data event, on every scrape.
         var tool = new RawFinancialDeltaTool(ServiceProvider);
-
         var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto> {
             TestDataFactory.CreateCurrentInstrumentReportDto(reportJson: "{\"A\": 1, \"B\": 2}")
         };
-
-        // New report has only {A=1} - B is missing from new scrape
         var newRawCompanyData = new TsxCompanyData();
         newRawCompanyData.AnnualRawCashFlowReports.Add(
             new RawReportDataMap { ReportDate = TestDataFactory.Year2020AsDate, ["A"] = 1 });
 
-        // Act
         var result = await tool.TakeDelta(
             TestDataFactory.DefaultInstrumentId, existingRawFinancials, newRawCompanyData, CancellationToken.None);
 
-        // Assert - missing field B is preserved in merged result
+        _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
+        _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+        _ = result.InstrumentReportsToUpdate.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task TakeDelta_ChangedValueWithAFieldMissing_KeepsTheMissingFieldInTheMerge() {
+        var tool = new RawFinancialDeltaTool(ServiceProvider);
+        var existingRawFinancials = new List<CurrentInstrumentRawDataReportDto> {
+            TestDataFactory.CreateCurrentInstrumentReportDto(reportJson: "{\"A\": 1, \"B\": 2}")
+        };
+        // New report has A changed to 5, and B is missing from the new scrape
+        var newRawCompanyData = new TsxCompanyData();
+        newRawCompanyData.AnnualRawCashFlowReports.Add(
+            new RawReportDataMap { ReportDate = TestDataFactory.Year2020AsDate, ["A"] = 5 });
+
+        var result = await tool.TakeDelta(
+            TestDataFactory.DefaultInstrumentId, existingRawFinancials, newRawCompanyData, CancellationToken.None);
+
         _ = result.InstrumentReportsToInsert.Count.Should().Be(0);
         _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
         _ = result.InstrumentReportsToUpdate.Count.Should().Be(1);
-        TestDataFactory.AssertMergedJsonContains(result.InstrumentReportsToUpdate[0].MergedReportJson, ("A", 1), ("B", 2));
+        TestDataFactory.AssertMergedJsonContains(result.InstrumentReportsToUpdate[0].MergedReportJson, ("A", 5), ("B", 2));
     }
 
     [Fact]

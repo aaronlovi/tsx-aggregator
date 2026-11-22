@@ -23,12 +23,14 @@ public class RawReportDataMapEqualityTests {
     }
 
     [Fact]
-    public void IsEqual_ExtraFieldInJson_ReturnsFalse() {
-        // JSON has A and B, map only has A
+    public void IsEqual_FieldOnlyInTheStoredReport_ReturnsTrue() {
+        // Review P10: MergeWith keeps fields the new scrape lacks, so they cannot make the reports differ. Treating them
+        // as a difference rewrote the same report, and raised a raw-data event, on every scrape (ENB: 14 of 30 reports,
+        // a few hours after the previous scrape).
         var map = new RawReportDataMap { ["A"] = 1 };
         using var json = JsonDocument.Parse("{\"A\": 1, \"B\": 2}");
 
-        _ = map.IsEqual(json).Should().BeFalse();
+        _ = map.IsEqual(json).Should().BeTrue();
     }
 
     [Fact]
@@ -58,14 +60,24 @@ public class RawReportDataMapEqualityTests {
     }
 
     [Fact]
-    public void IsEqual_CaseSensitiveKeyLookup() {
-        // IsEqual uses TryGetProperty which is case-sensitive on JsonDocument.
-        // Map keys are stored uppercase via NormalizedStringKeysHashMap.
-        // If JSON has lowercase keys, IsEqual will not find them via TryGetProperty.
+    public void IsEqual_KeysMatchWhateverTheirCase() {
+        // Map keys are upper-cased (NormalizedStringKeysHashMap); stored JSON keys are compared the same way (review R70).
         var map = new RawReportDataMap { ["DATA_POINT"] = 5 };
         using var json = JsonDocument.Parse("{\"data_point\": 5}");
 
-        // The map key "DATA_POINT" won't match JSON property "data_point" via TryGetProperty
-        _ = map.IsEqual(json).Should().BeFalse();
+        _ = map.IsEqual(json).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsEqual_AfterMerging_TheSameScrapeAgainIsEqual() {
+        // The delta tool merges an unequal report into the stored one; scraping the same data again must not
+        // look like a change.
+        var scrape = new RawReportDataMap { ReportDate = new DateOnly(2025, 12, 31), ["A"] = 1, ["B"] = 3 };
+        using var stored = JsonDocument.Parse("{\"A\": 1, \"B\": 2, \"C\": 7, \"REPORTDATE\": \"2025-12-31T00:00:00Z\"}");
+        _ = scrape.IsEqual(stored).Should().BeFalse("B changed");
+
+        using var merged = JsonDocument.Parse(scrape.MergeWith(stored));
+
+        _ = scrape.IsEqual(merged).Should().BeTrue();
     }
 }
