@@ -25,6 +25,9 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
     private TimeSpan _intervalToNextTimeout;
     private readonly ILogger _logger;
 
+    /// <summary>How long the loop waits after an unexpected error before reading the next input, so a repeating error cannot spin.</summary>
+    internal TimeSpan ErrorBackoff { get; init; } = TimeSpan.FromSeconds(30);
+
     public DateTime? NextCycleTime { get; private set; }
     private readonly IServiceProvider _svp;
     private readonly IDbmService _dbm;
@@ -77,9 +80,10 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
                 cts.CancelAfter(interval);
                 var combinedToken = cts.Token; // Cancels after either the timeout interval
 
+                AggregatorInputBase? input = null;
                 try {
                     // Get the one next input, or timeout trying
-                    AggregatorInputBase input = await _inputChannel.Reader.ReadAsync(combinedToken);
+                    input = await _inputChannel.Reader.ReadAsync(combinedToken);
                     _logger.LogInformation("Aggregator - Got a message {Input}", input);
 
                     using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
@@ -96,17 +100,25 @@ public class Aggregator : BackgroundService, INamedService, IPausableService, IE
                     _logger.LogWarning("Aggregator - Application stop in progress, stopping");
                     break; // Process no more inputs
                 } catch (OperationCanceledException) {
-                    _logger.LogInformation("Aggregator - Interval elapsed, continuing");
-                    PostTimeoutRequest(DateTime.UtcNow);
+                    if (input is null) {
+                        _logger.LogInformation("Aggregator - Interval elapsed, continuing");
+                        PostTimeoutRequest(DateTime.UtcNow);
+                    } else {
+                        _logger.LogInformation("Aggregator - Request {ReqId} was cancelled by its caller", input.ReqId);
+                        _ = input.Completed.TrySetCanceled();
+                    }
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Fatal error in Aggregator, exiting");
-                    break; // Process no more inputs
+                    // One failed request must not stop the service: fail that request and carry on after a pause,
+                    // so an error that repeats on every input cannot spin.
+                    _logger.LogError(ex, "Aggregator - Request failed, continuing in {ErrorBackoff}", ErrorBackoff);
+                    _ = input?.Completed.TrySetException(ex);
+                    await Task.Delay(ErrorBackoff, stoppingToken);
                 }
             }
         } catch (OperationCanceledException) {
             _logger.LogInformation("Aggregator - Cancellation encountered, main loop stopping");
         } catch (Exception ex) {
-            _logger.LogError("Error in Aggregator - {Error}", ex.Message);
+            _logger.LogError(ex, "Error in Aggregator");
         }
     }
 

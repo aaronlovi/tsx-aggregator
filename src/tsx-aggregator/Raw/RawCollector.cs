@@ -42,6 +42,9 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
         _logger.LogInformation("RawCollector - Created");
     }
 
+    /// <summary>How long the loop waits after an unexpected error before reading the next input, so a repeating error cannot spin.</summary>
+    internal TimeSpan ErrorBackoff { get; init; } = TimeSpan.FromSeconds(30);
+
     public string ServiceName => _serviceName;
 
     public bool PostRequest(RawCollectorInputBase inp) => _inputChannel.Writer.TryWrite(inp);
@@ -73,9 +76,10 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
                 DateTime wakeupTime = utcNow.Add(interval);
                 _logger.LogInformation("RawCollector sleeping until {WakeupTime}", wakeupTime.ToLocalTime());
 
+                RawCollectorInputBase? input = null;
                 try {
                     // Get the one next input, or timeout trying
-                    RawCollectorInputBase input = await _inputChannel.Reader.ReadAsync(combinedToken);
+                    input = await _inputChannel.Reader.ReadAsync(combinedToken);
                     _logger.LogInformation("RawCollector - Got a message {Input}", input);
 
                     using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
@@ -94,11 +98,19 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
                     _logger.LogWarning("RawCollector - Application stop in progress, stopping");
                     break; // Process no more inputs
                 } catch (OperationCanceledException) {
-                    _logger.LogInformation("RawCollector - Interval elapsed, continuing");
-                    PostTimeoutRequest(DateTime.UtcNow);
+                    if (input is null) {
+                        _logger.LogInformation("RawCollector - Interval elapsed, continuing");
+                        PostTimeoutRequest(DateTime.UtcNow);
+                    } else {
+                        _logger.LogInformation("RawCollector - Request {ReqId} was cancelled by its caller", input.ReqId);
+                        _ = input.Completed.TrySetCanceled();
+                    }
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Fatal error in RawCollector, exiting");
-                    break; // Process no more inputs
+                    // One failed request must not stop scraping: fail that request and carry on after a pause,
+                    // so an error that repeats on every input cannot spin.
+                    _logger.LogError(ex, "RawCollector - Request failed, continuing in {ErrorBackoff}", ErrorBackoff);
+                    _ = input?.Completed.TrySetException(ex);
+                    await Task.Delay(ErrorBackoff, stoppingToken);
                 }
 
                 // If the service is paused, then the next timeout could be in the past.
@@ -114,7 +126,7 @@ internal partial class RawCollector : BackgroundService, INamedService, IPausabl
             _logger.LogInformation("RawCollector - Cancellation encountered, main loop stopping");
         }
         catch (Exception ex) {
-            _logger.LogError("Error in RawCollector - {Error}", ex.Message);
+            _logger.LogError(ex, "Error in RawCollector");
         }
     }
 

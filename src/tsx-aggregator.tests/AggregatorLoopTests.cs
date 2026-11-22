@@ -15,8 +15,8 @@ using Xunit;
 namespace tsx_aggregator.tests;
 
 /// <summary>
-/// The Aggregator's main loop must survive an abandoned request (code review P13): a request whose poster
-/// had given up used to throw ObjectDisposedException in the loop, which ended it for good while the host kept running.
+/// The Aggregator's main loop must survive a failed or abandoned request (code review P1 and P13):
+/// one bad input used to end the loop for good while the host kept running.
 /// </summary>
 public sealed class AggregatorLoopTests : IAsyncLifetime {
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(10);
@@ -53,7 +53,7 @@ public sealed class AggregatorLoopTests : IAsyncLifetime {
         _ = services.AddSingleton<ILogger<Aggregator>>(new NullLogger<Aggregator>());
         _ = services.AddSingleton<ILogger<AggregatorFsm>>(new NullLogger<AggregatorFsm>());
         _ = services.AddSingleton(_dbm.Object);
-        _aggregator = new Aggregator(services.BuildServiceProvider());
+        _aggregator = new Aggregator(services.BuildServiceProvider()) { ErrorBackoff = TimeSpan.Zero };
         await _aggregator.StartAsync(CancellationToken.None);
         await _eventCheckStarted.Task.WaitAsync(Deadline);
         return _aggregator;
@@ -74,5 +74,22 @@ public sealed class AggregatorLoopTests : IAsyncLifetime {
         // A later request must still be served.
         await aggregator.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
         aggregator.IsPaused.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PauseRequest_WhenSavingThrows_FailsTheCallerAndTheLoopKeepsRunning() {
+        _ = _dbm.SetupSequence(d => d.PersistCommonServiceState(It.IsAny<bool>(), "Aggregator", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("db exploded"))
+            .ReturnsAsync(Result.SUCCESS);
+        Aggregator aggregator = await StartAggregator();
+        _releaseEventCheck.SetResult();
+
+        // The caller hears about the failure instead of waiting forever.
+        Func<Task> failing = () => aggregator.SetPausedAsync(true, CancellationToken.None).WaitAsync(Deadline);
+        _ = await failing.Should().ThrowAsync<InvalidOperationException>().WithMessage("db exploded");
+
+        // And the loop is still alive: resuming works.
+        await aggregator.SetPausedAsync(false, CancellationToken.None).WaitAsync(Deadline);
+        aggregator.IsPaused.Should().BeFalse();
     }
 }
