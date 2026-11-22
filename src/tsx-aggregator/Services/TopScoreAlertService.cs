@@ -69,49 +69,32 @@ internal class TopScoreAlertService : BackgroundService {
         long reqId = Interlocked.Increment(ref _reqId);
 
         // Step 1: Get stock data from DB
-        using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        using var req = new GetStocksForExchangeRequest(reqId, "TSX", cts);
-        if (!_requestProcessor.PostRequest(req)) {
+        (bool posted, object? response) = await ServiceRequests.PostAndAwaitAsync(
+            cts => new GetStocksForExchangeRequest(reqId, "TSX", cts), _requestProcessor.PostRequest, ct);
+        if (!posted) {
             _logger.LogWarning("TopScoreAlertService - Failed to post request to request processor");
             return;
         }
-
-        object? response = await req.Completed.Task.WaitAsync(ct);
         if (response is not GetStocksDataReply reply || !reply.Success) {
             _logger.LogWarning("TopScoreAlertService - Received invalid response from request processor");
             return;
         }
 
         // Step 2: Fill prices from QuoteService
-        var symbols = new List<string>();
-        foreach (GetStocksDataReplyItem replyItem in reply.StocksData) {
-            symbols.Add(replyItem.InstrumentSymbol);
-        }
-
-        using CancellationTokenSource cts2 = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        using var req2 = new QuoteServiceFillPricesForSymbolsInput(reqId, cts2, symbols);
-        if (!_quotesService.PostRequest(req2)) {
+        List<string> symbols = StockPrices.InstrumentSymbols(reply);
+        (posted, response) = await ServiceRequests.PostAndAwaitAsync(
+            cts => new QuoteServiceFillPricesForSymbolsInput(reqId, cts, symbols), _quotesService.PostRequest, ct);
+        if (!posted) {
             _logger.LogWarning("TopScoreAlertService - Failed to post request to quotes service");
             return;
         }
-
-        object? response2 = await req2.Completed.Task.WaitAsync(ct);
-        if (response2 is not IDictionary<string, decimal> prices) {
+        if (response is not IDictionary<string, decimal> prices) {
             _logger.LogWarning("TopScoreAlertService - Received invalid response from quotes service");
             return;
         }
 
         // Step 3: Remove items missing prices
-        int numItemsMissingPrices = 0;
-        for (int i = reply.StocksData.Count - 1; i >= 0; i--) {
-            GetStocksDataReplyItem replyItem = reply.StocksData[i];
-            if (prices.TryGetValue(replyItem.InstrumentSymbol, out decimal price)) {
-                replyItem.PerSharePrice = price;
-            } else {
-                reply.StocksData.RemoveAt(i);
-                numItemsMissingPrices++;
-            }
-        }
+        int numItemsMissingPrices = StockPrices.FillAndDropUnpriced(reply, prices);
 
         _logger.LogInformation("TopScoreAlertService - Fetched {Count} companies, {Missing} missing prices",
             reply.StocksData.Count, numItemsMissingPrices);
