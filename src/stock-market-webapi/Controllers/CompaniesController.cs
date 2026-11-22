@@ -35,23 +35,12 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetCompanies(CancellationToken ct = default) {
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
-        if (!reply.Success)
-            return BadRequest("abc");
-
-        var fullDetailReports = new List<CompanyFullDetailReport>();
-        foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
-        }
+        Result<List<CompanyFullDetailReport>> loaded = await LoadReportsAsync(ct);
+        if (loaded.Data is not { } fullDetailReports)
+            return BadRequest(new { error = loaded.ErrMsg });
 
         // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
-        fullDetailReports.Sort((a, b) => {
-            int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
-            if (scoreCompare != 0)
-                return scoreCompare;
-
-            return CompareAverageReturn(a, b, descending: true);
-        });
+        fullDetailReports.Sort(ByScoreThenAverageReturn(descending: true));
 
         // Keep only top-score companies (14 of 16 since C16), and transform to summary reports
         var summaryReports = fullDetailReports
@@ -66,23 +55,12 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<CompanySummaryReport>>> GetBottomCompanies(CancellationToken ct = default) {
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
-        if (!reply.Success)
-            return BadRequest("abc");
-
-        var fullDetailReports = new List<CompanyFullDetailReport>();
-        foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
-        }
+        Result<List<CompanyFullDetailReport>> loaded = await LoadReportsAsync(ct);
+        if (loaded.Data is not { } fullDetailReports)
+            return BadRequest(new { error = loaded.ErrMsg });
 
         // Sort the output list first by overall score ascending, then by the average of total return ascending
-        fullDetailReports.Sort((a, b) => {
-            int scoreCompare = a.OverallScore.CompareTo(b.OverallScore);
-            if (scoreCompare != 0)
-                return scoreCompare;
-
-            return CompareAverageReturn(a, b, descending: false);
-        });
+        fullDetailReports.Sort(ByScoreThenAverageReturn(descending: false));
 
         // Keep only the bottom 'GetCompaniesMaxNumCompanies' companies, and transform to summary reports
         var summaryReports = fullDetailReports
@@ -101,23 +79,12 @@ public class CompaniesController : Controller {
         if (pageNumber < 1 || pageSize < 1)
             return BadRequest(PagingError);
 
-        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
-        if (!reply.Success)
-            return BadRequest("abc");
-
-        var fullDetailReports = new List<CompanyFullDetailReport>();
-        foreach (GetStocksDataReplyItem item in reply.StocksData) {
-            fullDetailReports.Add(CompanyFullDetailReport.FromReplyItem(item));
-        }
+        Result<List<CompanyFullDetailReport>> loaded = await LoadReportsAsync(ct);
+        if (loaded.Data is not { } fullDetailReports)
+            return BadRequest(new { error = loaded.ErrMsg });
 
         // Sort descending by overall score, then by average return
-        fullDetailReports.Sort((a, b) => {
-            int scoreCompare = b.OverallScore.CompareTo(a.OverallScore);
-            if (scoreCompare != 0)
-                return scoreCompare;
-
-            return CompareAverageReturn(a, b, descending: true);
-        });
+        fullDetailReports.Sort(ByScoreThenAverageReturn(descending: true));
 
         var pagingData = new PagingData(fullDetailReports.Count, pageNumber, pageSize);
         var summaryReports = fullDetailReports
@@ -274,14 +241,9 @@ public class CompaniesController : Controller {
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<DashboardAggregatesResponse>> GetDashboardAggregates(CancellationToken ct = default) {
         try {
-            GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
-            if (!reply.Success)
-                return BadRequest(new { error = reply.ErrorMessage });
-
-            var reports = new List<CompanyFullDetailReport>();
-            foreach (GetStocksDataReplyItem item in reply.StocksData) {
-                reports.Add(CompanyFullDetailReport.FromReplyItem(item));
-            }
+            Result<List<CompanyFullDetailReport>> loaded = await LoadReportsAsync(ct);
+            if (loaded.Data is not { } reports)
+                return BadRequest(new { error = loaded.ErrMsg });
 
             int totalCompanies = reports.Count;
             var withPrice = reports.Where(r => r.CurMarketCap > 0).ToList();
@@ -343,6 +305,27 @@ public class CompaniesController : Controller {
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Fetches every TSX company's processed report from tsx-aggregator and maps it to a <see cref="CompanyFullDetailReport"/>.
+    /// A failed reply gives a failure with the aggregator's error message (Data is null); a failed call throws.
+    /// </summary>
+    private async Task<Result<List<CompanyFullDetailReport>>> LoadReportsAsync(CancellationToken ct) {
+        GetStocksDataReply reply = await _client.GetStocksDataAsync(new GetStocksDataRequest() { Exchange = "TSX" }, deadline: AggregatorDeadline(), cancellationToken: ct);
+        if (!reply.Success)
+            return Result<List<CompanyFullDetailReport>>.SetFailure(reply.ErrorMessage);
+
+        var reports = new List<CompanyFullDetailReport>(reply.StocksData.Count);
+        foreach (GetStocksDataReplyItem item in reply.StocksData)
+            reports.Add(CompanyFullDetailReport.FromReplyItem(item));
+        return Result<List<CompanyFullDetailReport>>.SetSuccess(reports);
+    }
+
+    /// <summary>Orders by overall score, then by the average of the two est. returns (see <see cref="CompareAverageReturn"/>).</summary>
+    private static Comparison<CompanyFullDetailReport> ByScoreThenAverageReturn(bool descending) => (a, b) => {
+        int scoreCompare = descending ? b.OverallScore.CompareTo(a.OverallScore) : a.OverallScore.CompareTo(b.OverallScore);
+        return scoreCompare != 0 ? scoreCompare : CompareAverageReturn(a, b, descending);
+    };
 
     /// <summary>
     /// Orders by the average of the two est. returns. A company with either return null sorts last in both

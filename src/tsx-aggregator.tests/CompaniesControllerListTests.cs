@@ -554,4 +554,22 @@ public class CompaniesControllerListTests {
 
         _ = result.Convert().Should().BeOfType<BadRequestObjectResult>();
     }
+
+    // Review R78: the three stock-data lists answered a failed reply with the body "abc"; they now carry the
+    // aggregator's error the way the dashboard aggregates endpoint always did.
+    public static TheoryData<string> StockDataListActions => ["companies", "bottom", "all"];
+
+    [Theory]
+    [MemberData(nameof(StockDataListActions))]
+    public async Task StockDataListEndpoints_FailedReply_CarryTheError(string action) {
+        SetupStocksData(new GetStocksDataReply { Success = false, ErrorMessage = "boom" });
+
+        IConvertToActionResult result = action switch {
+            "companies" => await Controller.GetCompanies(),
+            "bottom" => await Controller.GetBottomCompanies(),
+            _ => await Controller.GetAllCompanies(1, 10),
+        };
+
+        _ = ErrorOf(result.Convert().Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Be("boom");
+    }
 }
