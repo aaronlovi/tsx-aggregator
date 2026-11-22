@@ -48,6 +48,14 @@ internal class DbmInMemoryData {
                 if (!_instrumentsByInstrumentId.TryGetValue(instrumentId, out InstrumentDto? instrument))
                     continue;
 
+                // Only RawDataChanged rebuilds a report, so only it needs a listed instrument and a current price
+                // (B14, decision 25). Listing and delisting events have nothing to aggregate.
+                if (instrumentEvent.EventType != (int)CompanyEventTypes.RawDataChanged) {
+                    bestPotentialEvent = new InstrumentEventExDto(
+                        instrumentEvent, instrument.InstrumentSymbol, instrument.InstrumentName, instrument.Exchange, 0, 0);
+                    continue;
+                }
+
                 if (instrument.ObsoletedDate is not null)
                     continue;
 

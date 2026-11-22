@@ -16,6 +16,7 @@ public static class Program {
         new SnapshotCommand(),
         new DiffCommand(),
         new ServiceCommand(),
+        new EventsCommand(),
     ];
 
     public static async Task<int> Main(string[] args) {

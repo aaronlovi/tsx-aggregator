@@ -6,15 +6,17 @@ using tsx_aggregator.models;
 namespace dbm_persistence;
 
 internal sealed class GetNextInstrumentEventStmt : QueryDbStmtBase {
+    // Only RawDataChanged (4) rebuilds a report, so only it needs a listed instrument and a current price row
+    // (B14, decision 25). Listing and delisting events have nothing to aggregate and are returned regardless, with a
+    // price and share count of 0 when there is no price row.
     private const string sql = "SELECT ie.instrument_id, ie.event_date, ie.event_type, ie.is_processed,"
         + " i.instrument_symbol, i.instrument_name, i.exchange,"
-        + " ip.price_per_share, ip.num_shares"
+        + " COALESCE(ip.price_per_share, 0) AS price_per_share, COALESCE(ip.num_shares, 0) AS num_shares"
         + " FROM instrument_events ie"
         + " JOIN instruments i on ie.instrument_id = i.instrument_id"
-        + " JOIN instrument_prices ip on ie.instrument_id = ip.instrument_id"
+        + " LEFT JOIN instrument_prices ip on ie.instrument_id = ip.instrument_id AND ip.obsoleted_date is null"
         + " WHERE ie.is_processed = FALSE"
-        + " AND i.obsoleted_date is null"
-        + " AND ip.obsoleted_date is null"
+        + " AND (ie.event_type <> 4 OR (i.obsoleted_date is null AND ip.instrument_id is not null))"
         + " ORDER BY event_date"
         + " LIMIT 1";
 
