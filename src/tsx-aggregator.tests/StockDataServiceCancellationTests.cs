@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using dbm_persistence;
 using FluentAssertions;
-using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -22,21 +21,6 @@ namespace tsx_aggregator.tests;
 public sealed class StockDataServiceCancellationTests {
     private static readonly TimeSpan CallerGivesUpAfter = TimeSpan.FromMilliseconds(200);
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(10);
-
-    private sealed class CancellableCallContext(CancellationToken ct) : ServerCallContext {
-        protected override string MethodCore => "test";
-        protected override string HostCore => "localhost";
-        protected override string PeerCore => "test";
-        protected override DateTime DeadlineCore => DateTime.MaxValue;
-        protected override Metadata RequestHeadersCore => [];
-        protected override CancellationToken CancellationTokenCore => ct;
-        protected override Metadata ResponseTrailersCore => [];
-        protected override Status StatusCore { get; set; }
-        protected override WriteOptions? WriteOptionsCore { get; set; }
-        protected override AuthContext AuthContextCore => new(null, []);
-        protected override ContextPropagationToken CreatePropagationTokenCore(ContextPropagationOptions? options) => throw new NotSupportedException();
-        protected override Task WriteResponseHeadersAsyncCore(Metadata responseHeaders) => Task.CompletedTask;
-    }
 
     private static StockDataSvc BuildServiceWhoseProcessorNeverAnswers() {
         var processor = new Mock<IStocksDataRequestsProcessor>();
@@ -64,7 +48,7 @@ public sealed class StockDataServiceCancellationTests {
     public async Task GetStocksData_WhenTheProcessorNeverAnswers_FailsOnceTheCallerGivesUp() {
         using var caller = new CancellationTokenSource(CallerGivesUpAfter);
         GetStocksDataReply reply = await BuildServiceWhoseProcessorNeverAnswers()
-            .GetStocksData(new GetStocksDataRequest { Exchange = "TSX" }, new CancellableCallContext(caller.Token))
+            .GetStocksData(new GetStocksDataRequest { Exchange = "TSX" }, new TestServerCallContext(caller.Token))
             .WaitAsync(Deadline);
         reply.Success.Should().BeFalse();
     }
@@ -73,7 +57,7 @@ public sealed class StockDataServiceCancellationTests {
     public async Task GetStocksDetail_WhenTheProcessorNeverAnswers_FailsOnceTheCallerGivesUp() {
         using var caller = new CancellationTokenSource(CallerGivesUpAfter);
         GetStocksDetailReply reply = await BuildServiceWhoseProcessorNeverAnswers()
-            .GetStocksDetail(new GetStocksDetailRequest { Exchange = "TSX", InstrumentSymbol = "ABC" }, new CancellableCallContext(caller.Token))
+            .GetStocksDetail(new GetStocksDetailRequest { Exchange = "TSX", InstrumentSymbol = "ABC" }, new TestServerCallContext(caller.Token))
             .WaitAsync(Deadline);
         reply.Success.Should().BeFalse();
     }
@@ -82,7 +66,7 @@ public sealed class StockDataServiceCancellationTests {
     public async Task GetDashboardStats_WhenTheProcessorNeverAnswers_FailsOnceTheCallerGivesUp() {
         using var caller = new CancellationTokenSource(CallerGivesUpAfter);
         GetDashboardStatsReply reply = await BuildServiceWhoseProcessorNeverAnswers()
-            .GetDashboardStats(new GetDashboardStatsRequest(), new CancellableCallContext(caller.Token))
+            .GetDashboardStats(new GetDashboardStatsRequest(), new TestServerCallContext(caller.Token))
             .WaitAsync(Deadline);
         reply.Success.Should().BeFalse();
     }
