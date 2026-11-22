@@ -120,8 +120,9 @@ source ~/.bashrc && dotnet --version
    ```bash
    mkdir -p ~/tsx-secrets && chmod 700 ~/tsx-secrets
    mv /mnt/c/Users/EMILY/Desktop/linear-hangar-*.json ~/tsx-secrets/google.json
-   chmod 600 ~/tsx-secrets/google.json
+   chmod 644 ~/tsx-secrets/google.json
    ```
+   The file must be readable by the container's own user (uid 1654, not `aaron`), or tsx-aggregator stops at start-up with `Access to the path '/run/secrets/google.json' is denied`. The folder's `700` keeps it private on the laptop.
 2. A Gmail app password for this laptop (Google account → Security → App passwords, e.g. "tsx deploy laptop").
 3. The settings file:
    ```bash
