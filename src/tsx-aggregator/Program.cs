@@ -198,8 +198,10 @@ public class Program {
     /// </summary>
     internal static IEnumerable<(string Key, string Value)> DescribeConfigSection(IConfiguration config, string section) {
         foreach (IConfigurationSection child in config.GetSection(section).GetChildren()) {
+            // Children win over the section's own value: an empty JSON array ("Recipients": []) reads as "" even
+            // when the environment adds Recipients__0.
             string? value = child.Value;
-            if (value is null && child.GetChildren().Any())
+            if (child.GetChildren().Any())
                 value = string.Join(", ", child.GetChildren().Select(c => c.Value));
             yield return (child.Key, FormatConfigValueForLog(child.Key, value));
         }

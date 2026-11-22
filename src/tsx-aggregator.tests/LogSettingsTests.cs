@@ -75,4 +75,18 @@ public class LogSettingsTests {
         _ = scraper["BrowserArgs"].Should().Be("--no-sandbox, --disable-dev-shm-usage");
         _ = alerts["SmtpPassword"].Should().NotContain("hunter2");
     }
+
+    [Fact]
+    public void DescribeConfigSection_EmptyJsonArrayOverriddenByEnvironment_ShowsTheEnvironmentValues() {
+        // appsettings.json has "Recipients": [], which .NET reads as an empty value, and the compose stack adds
+        // AlertSettings__Recipients__0. The startup log showed "Recipients =" although the setting was there.
+        IConfiguration config = new ConfigurationBuilder()
+            .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("""{ "AlertSettings": { "Recipients": [] } }""")))
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["AlertSettings:Recipients:0"] = "a@example.com,b@example.com" })
+            .Build();
+
+        var alerts = Program.DescribeConfigSection(config, "AlertSettings").ToDictionary(e => e.Key, e => e.Value);
+
+        _ = alerts["Recipients"].Should().Be("a@example.com,b@example.com");
+    }
 }
