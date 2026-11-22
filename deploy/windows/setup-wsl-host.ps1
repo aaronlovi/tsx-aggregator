@@ -78,4 +78,4 @@ Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 10
 $info = Get-ScheduledTask -TaskName $TaskName | Get-ScheduledTaskInfo
 Write-Host "State: $((Get-ScheduledTask -TaskName $TaskName).State); last result: $($info.LastTaskResult) (267009 = running)."
-Write-Host "Next: in Ubuntu run deploy/wsl/setup-ubuntu.sh, then follow deploy/README.md section 3."
+Write-Host "Next: open http://localhost:5060 in a Windows browser, then the reboot test (deploy/README.md section 3)."
