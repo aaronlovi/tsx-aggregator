@@ -22,11 +22,12 @@ COPY --from=build /app .
 
 # Container defaults. Chrome runs without its sandbox (a container has no user namespaces for it) and with /tmp
 # instead of the small /dev/shm. gRPC must listen on all interfaces inside the container; the compose file
-# publishes it on 127.0.0.1 only.
+# publishes it on 127.0.0.1 only. Logs go to stdout only (docker logs).
 ENV Scraper__BrowserExecutablePath=/usr/bin/google-chrome-stable \
     Scraper__BrowserArgs__0=--no-sandbox \
     Scraper__BrowserArgs__1=--disable-dev-shm-usage \
     Ports__GrpcListenOnAllInterfaces=true \
+    Logs__WriteFile=false \
     DOTNET_ENVIRONMENT=Production
 
 EXPOSE 7001

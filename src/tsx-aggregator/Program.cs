@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using dbm_persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -145,15 +147,9 @@ public class Program {
 
                 _ = services.AddGrpc();
             })
-            .ConfigureLogging(builder => {
+            .ConfigureLogging((context, builder) => {
 
-                Log.Logger = new LoggerConfiguration()
-                    .WriteTo.Console()
-                    .WriteTo.File(
-                        "tsx-aggregator-.txt",
-                        rollingInterval: RollingInterval.Day,
-                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Properties:j} {Message:lj}{NewLine}{Exception}")
-                    .CreateLogger();
+                Log.Logger = CreateLogger(context.Configuration);
 
                 _ = builder
                     .ClearProviders()
@@ -192,8 +188,45 @@ public class Program {
         IConfiguration config,
         Microsoft.Extensions.Logging.ILogger logger,
         string section) {
-        foreach (var child in config.GetSection(section).GetChildren())
-            logger.LogInformation("[{Section}] {Key} = {Value}", section, child.Key, FormatConfigValueForLog(child.Key, child.Value));
+        foreach ((string key, string value) in DescribeConfigSection(config, section))
+            logger.LogInformation("[{Section}] {Key} = {Value}", section, key, value);
+    }
+
+    /// <summary>
+    /// Each setting in a section as it goes into the startup log: secrets masked, arrays (e.g. Scraper:BrowserArgs)
+    /// as their values joined with ", ".
+    /// </summary>
+    internal static IEnumerable<(string Key, string Value)> DescribeConfigSection(IConfiguration config, string section) {
+        foreach (IConfigurationSection child in config.GetSection(section).GetChildren()) {
+            string? value = child.Value;
+            if (value is null && child.GetChildren().Any())
+                value = string.Join(", ", child.GetChildren().Select(c => c.Value));
+            yield return (child.Key, FormatConfigValueForLog(child.Key, value));
+        }
+    }
+
+    internal const string LogsWriteFileKey = "Logs:WriteFile";
+    internal const string LogsDirectoryKey = "Logs:Directory";
+
+    /// <summary>
+    /// Console always; the daily file (tsx-aggregator-yyyyMMdd.txt in Logs:Directory, default the current folder)
+    /// unless Logs:WriteFile is false, as in the container image, where logs go to stdout only.
+    /// </summary>
+    internal static Serilog.ILogger CreateLogger(IConfiguration config) {
+        bool writeFile = true;
+        string? writeFileValue = config[LogsWriteFileKey];
+        if (writeFileValue is not null && !bool.TryParse(writeFileValue, out writeFile))
+            throw new InvalidOperationException($"{LogsWriteFileKey} must be true or false, got '{writeFileValue}'");
+
+        LoggerConfiguration loggerConfig = new LoggerConfiguration().WriteTo.Console();
+        if (writeFile) {
+            string directory = config[LogsDirectoryKey] ?? string.Empty;
+            loggerConfig = loggerConfig.WriteTo.File(
+                System.IO.Path.Combine(directory, "tsx-aggregator-.txt"),
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Properties:j} {Message:lj}{NewLine}{Exception}");
+        }
+        return loggerConfig.CreateLogger();
     }
 
     private static readonly string[] SecretKeyParts = ["password", "secret", "token", "apikey"];

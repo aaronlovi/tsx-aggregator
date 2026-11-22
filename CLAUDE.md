@@ -136,6 +136,8 @@ Google Sheets --> QuoteService (prices)       v
 
 - `ConnectionStrings.tsx-scraper` -- PostgreSQL connection (default port 5433)
 - `Ports.Grpc` -- gRPC listen port (default 7001); `Ports.GrpcListenOnAllInterfaces` (default false: localhost only, since `AdminService` has no authentication)
+- `Scraper.BrowserExecutablePath`, `Scraper.BrowserArgs` -- an installed Chrome for the RawCollector (container image); empty = Puppeteer downloads one at run time (dev)
+- `Logs.WriteFile` (default true), `Logs.Directory` -- the daily `tsx-aggregator-*.txt` file; the container image turns it off (stdout only)
 - `Aggregator.GrpcUrl` (stock-market-webapi) -- tsx-aggregator's gRPC address (default `http://localhost:7001`); `run.sh` sets it from `GRPC_PORT`
 - `HostedServices` -- Toggle individual background services
 - `FeatureFlags` -- Feature toggles (e.g., `CheckExistingRawReportUpdates`)
