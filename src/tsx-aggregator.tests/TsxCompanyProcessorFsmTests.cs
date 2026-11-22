@@ -179,4 +179,35 @@ public class TsxCompanyProcessorFsmTests {
 
         outputs.OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Should().ContainSingle();
     }
+
+    // Review P11: an error in our own symbol's response never ended the scrape, so each one waited out the 60 s timeout.
+    [Theory]
+    [InlineData('Q', """{"results":{"Company":{}}}""")]
+    [InlineData('A', "not json")]
+    public void BadBodyForOurSymbol_PutsTheParserInError(char reportType, string body) {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+
+        _ = fsm.Update(Financials(reportType, body));
+
+        fsm.IsInError.Should().BeTrue();
+        fsm.IsDone.Should().BeTrue();
+    }
+
+    [Fact]
+    public void BadQuoteForOurSymbol_PutsTheParserInError() {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+
+        _ = fsm.Update(Quote("""{"results":{"quote":[]}}"""));
+
+        fsm.IsInError.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ResponseForAnotherSymbol_DoesNotPutTheParserInError() {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+
+        _ = fsm.Update(Quote(symbol: "XYZ"));
+
+        fsm.IsInError.Should().BeFalse();
+    }
 }

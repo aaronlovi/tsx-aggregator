@@ -22,11 +22,13 @@ namespace tsx_aggregator;
 internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     private const int MaxRetries = 2;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan AttemptTimeout = TimeSpan.FromSeconds(60);
 
     private readonly ILogger _logger;
     private readonly InstrumentDto _instrumentDto;
     private readonly TsxCompanyProcessorFsm _fsm;
-    private TaskCompletionSource _tcs;
+    private int _currentAttempt;                  // owned by the ExecuteAsync loop
+    private TaskCompletionSource<string?>? _attemptDone; // owned by the ExecuteAsync loop; null result = success
     private readonly Channel<TsxCompanyProcessorFsmInputBase> _inputChannel;
     private readonly CancellationToken _externalCancellationToken;
     private readonly ScraperOptions _scraperOptions;
@@ -38,7 +40,6 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         _logger = svp.GetRequiredService<ILogger<TsxCompanyProcessor>>();
         _instrumentDto = instrumentDto;
         _fsm = new(_instrumentDto, svp.GetRequiredService<ILogger<TsxCompanyProcessorFsm>>());
-        _tcs = new();
         _inputChannel = Channel.CreateUnbounded<TsxCompanyProcessorFsmInputBase>();
         _externalCancellationToken = externalCancellationToken;
         _scraperOptions = svp.GetService<IOptions<ScraperOptions>>()?.Value ?? new ScraperOptions();
@@ -52,10 +53,20 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         CancellationToken ct = cts.Token;
 
         try {
-            while (!ct.IsCancellationRequested) {
-                await foreach (TsxCompanyProcessorFsmInputBase input in _inputChannel.Reader.ReadAllAsync(ct)) {
-                    IList<TsxCompanyProcessorFsmOutputBase> outputList = _fsm.Update(input);
-                    ProcessOutputs(outputList);
+            // Everything that touches the parser runs here, on this loop, so a retry cannot reset it mid-response.
+            await foreach (TsxCompanyProcessorFsmInputBase input in _inputChannel.Reader.ReadAllAsync(ct)) {
+                switch (input) {
+                    case StartAttemptInput start:
+                        _fsm.Reset();
+                        _currentAttempt = start.Attempt;
+                        _attemptDone = start.Done;
+                        break;
+                    case GotResponse response when response.Attempt != _currentAttempt:
+                        _logger.LogInformation("Ignoring a late response from attempt {Attempt} for {Instrument}", response.Attempt, _instrumentDto);
+                        break;
+                    default:
+                        ProcessOutputs(_fsm.Update(input));
+                        break;
                 }
             }
         } catch (OperationCanceledException) {
@@ -101,34 +112,58 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
                 }
             }
 
-            result = await GetRawFinancialsCore();
+            result = await GetRawFinancialsCore(attempt);
 
         } while (!result.Success && attempt <= MaxRetries && !_externalCancellationToken.IsCancellationRequested);
 
         return result;
     }
 
-    private async Task<Result<TsxCompanyData>> GetRawFinancialsCore() {
-        // Reset state for retry attempts
+    /// <summary>
+    /// Starts a scrape attempt: the parser is reset on the loop, and from then on only responses tagged with this
+    /// attempt count. The task ends with null when the company's data is complete, or with an error message as soon
+    /// as a response for this instrument cannot be used.
+    /// </summary>
+    internal Task<string?> BeginAttempt(int attempt) {
+        var done = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_inputChannel.Writer.TryWrite(new StartAttemptInput(attempt, done)))
+            done.TrySetResult("The processor is closed");
+        return done.Task;
+    }
+
+    internal bool PostResponse(GotResponse response) => _inputChannel.Writer.TryWrite(response);
+
+    private async Task<Result<TsxCompanyData>> GetRawFinancialsCore(int attempt) {
         CompanyReport = null;
-        _fsm.Reset();
-        _tcs = new TaskCompletionSource(); // Create new TCS for each attempt
+        Task<string?> attemptDone = BeginAttempt(attempt);
 
         try {
             LaunchOptions launchOptions = BuildLaunchOptions(_scraperOptions);
-            using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
-            using IPage page = await browser.NewPageAsync();
+            await using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
+            await using IPage page = await browser.NewPageAsync();
             page.DefaultNavigationTimeout = 60000;
-            page.Response += ProcessPageResponse;
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            void OnResponse(object? sender, ResponseCreatedEventArgs e) => ProcessPageResponse(e, attempt);
+            page.Response += OnResponse;
+
+            // The attempt ends on success, on an unusable response, after the timeout, or at shutdown.
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_externalCancellationToken);
+            timeout.CancelAfter(AttemptTimeout);
             _ = await page.GoToAsync($"https://money.tmx.com/en/quote/{_instrumentDto.InstrumentSymbol}/financials-filings");
 
-            await _tcs.Task.WaitAsync(cts.Token);
+            string? error = await attemptDone.WaitAsync(timeout.Token);
 
-            page.Response -= ProcessPageResponse;
+            page.Response -= OnResponse;
             await browser.CloseAsync();
 
+            if (error is not null) {
+                _logger.LogInformation("GetRawFinancials could not use a response for instrument {Instrument}: {Error}", _instrumentDto, error);
+                return Result<TsxCompanyData>.SetFailure("Unusable response: " + error);
+            }
             return Result<TsxCompanyData>.SetSuccess(CompanyReport!);
+        }
+        catch (OperationCanceledException) when (_externalCancellationToken.IsCancellationRequested) {
+            _logger.LogInformation("GetRawFinancials cancelled for instrument {Instrument}", _instrumentDto);
+            return Result<TsxCompanyData>.SetFailure("Cancelled");
         }
         catch (OperationCanceledException) {
             _logger.LogInformation("GetRawFinancials timed out for instrument {Instrument}", _instrumentDto);
@@ -145,7 +180,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         _ = await browserFetcher.DownloadAsync();
     }
 
-    private async void ProcessPageResponse(object? sender, ResponseCreatedEventArgs e) {
+    private async void ProcessPageResponse(ResponseCreatedEventArgs e, int attempt) {
         try {
             if (e.Response.Status != HttpStatusCode.OK)
                 return;
@@ -161,6 +196,7 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
             try {
                 string responseText = await e.Response.TextAsync();
                 _ = _inputChannel.Writer.TryWrite(new GotResponse() {
+                    Attempt = attempt,
                     Text = responseText,
                     Url = e.Response.Url
                 });
@@ -175,18 +211,31 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     }
 
     private void ProcessOutputs(IList<TsxCompanyProcessorFsmOutputBase> outputList) {
+        string? lastError = null;
         foreach (TsxCompanyProcessorFsmOutputBase output in outputList) {
             switch (output) {
                 case TsxCompanyProcessorFsmOutputInProgress: break; // Progress report
                 case TsxCompanyProcessorFsmOutputCompanyRawFinancials crf: // Processing complete
                     CompanyReport = crf.CompanyReport;
-                    _ = _tcs.TrySetResult();
+                    _ = _attemptDone?.TrySetResult(null);
                     break;
-                case TsxCompanyProcessorFsmOutputEncounteredError:
-                    break; // Error
+                case TsxCompanyProcessorFsmOutputEncounteredError err:
+                    lastError = err.ErrMsg;
+                    break;
                 default: break;
             }
         }
+
+        // An unusable response for this instrument ends the attempt now instead of at its timeout (review P11).
+        // Errors that leave the parser running (a response for another symbol) are only logged by the parser.
+        if (_fsm.IsInError)
+            _ = _attemptDone?.TrySetResult(lastError ?? "Unusable response");
+    }
+
+    /// <summary>Starts a scrape attempt on the processor's loop (see <see cref="BeginAttempt"/>).</summary>
+    private sealed class StartAttemptInput(int attempt, TaskCompletionSource<string?> done) : TsxCompanyProcessorFsmInputBase {
+        public int Attempt { get; } = attempt;
+        public TaskCompletionSource<string?> Done { get; } = done;
     }
 
     public override void Dispose() {

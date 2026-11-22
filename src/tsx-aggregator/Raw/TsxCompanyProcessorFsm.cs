@@ -16,6 +16,8 @@ internal abstract class TsxCompanyProcessorFsmInputBase { }
 
 
 internal class GotResponse : TsxCompanyProcessorFsmInputBase {
+    /// <summary>The scrape attempt whose page produced this response; responses from an earlier attempt are ignored.</summary>
+    public int Attempt { get; init; }
     public string Text { get; init; } = string.Empty;
     public string Url { get; init; } = string.Empty;
 }
@@ -46,6 +48,9 @@ internal class TsxCompanyProcessorFsm {
     }
 
     public bool IsDone => _state.IsCompleted();
+
+    /// <summary>A response for this instrument could not be used; the scrape attempt cannot succeed.</summary>
+    public bool IsInError => _state == TsxCompanyProcessorFsmStates.InError;
     public bool GotAllData => _gotQuarterlyFigures && _gotAnnualFigures && _gotEnhancedQuotes;
 
     /// <summary>
@@ -114,6 +119,7 @@ internal class TsxCompanyProcessorFsm {
                 return;
         }
 
+        int outputsBefore = outputList.Count;
         if (isEnhancedQuotesResponse)
             ProcessEnhancedQuote(gr.Text, outputList);
         if (isQuarterlyResponse)
@@ -121,12 +127,17 @@ internal class TsxCompanyProcessorFsm {
         if (isAnnualResponse)
             ProcessAnnualFigures(gr.Text, outputList);
 
+        // A response for this instrument that cannot be used means this attempt cannot succeed: say so now, rather
+        // than leave the caller waiting for its timeout. (Responses for other symbols returned above, harmlessly.)
+        if (outputList.Skip(outputsBefore).OfType<TsxCompanyProcessorFsmOutputEncounteredError>().Any()) {
+            _state = TsxCompanyProcessorFsmStates.InError;
+            return;
+        }
+
         if (GotAllData) {
             _logger.LogInformation("Update: Instrument {Instrument} complete", _instrumentDto);
             outputList.Add(new TsxCompanyProcessorFsmOutputCompanyRawFinancials(_companyData));
-
-            if (_state != TsxCompanyProcessorFsmStates.InError)
-                _state = TsxCompanyProcessorFsmStates.Done;
+            _state = TsxCompanyProcessorFsmStates.Done;
         } else {
             _logger.LogInformation("Update: Waiting on other responses");
             outputList.Add(new TsxCompanyProcessorFsmOutputInProgress());
