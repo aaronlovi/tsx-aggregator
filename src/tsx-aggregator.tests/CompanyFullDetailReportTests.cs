@@ -358,5 +358,55 @@ public class CompanyFullDetailReportTests {
         _ = report.LastUpdatedDate.Should().NotBeNull();
     }
 
+    [Fact]
+    public void FromReplyItem_ScoringSettings_AreRead_AndZeroFromAnOlderServerMeansTheDefaults() {
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, RoeConsistencyMinYears = 3, RoeConsistencyWindowYears = 6,
+            RoeConsistencyMinUsableYears = 2,
+        };
+
+        var report = CompanyFullDetailReport.FromReplyItem(item);
+        var olderServer = CompanyFullDetailReport.FromReplyItem(new GetStocksDataReplyItem { Exchange = "TSX", PerSharePrice = 10M });
+
+        _ = report.RoeConsistencyMinYears.Should().Be(3);
+        _ = report.RoeConsistencyWindowYears.Should().Be(6);
+        _ = report.RoeConsistencyMinUsableYears.Should().Be(2);
+        _ = olderServer.RoeConsistencyMinYears.Should().Be(ScoringOptions.DefaultRoeConsistencyMinYears);
+        _ = olderServer.RoeConsistencyWindowYears.Should().Be(ScoringOptions.DefaultRoeConsistencyWindowYears);
+        _ = olderServer.RoeConsistencyMinUsableYears.Should().Be(ScoringOptions.DefaultRoeConsistencyMinUsableYears);
+    }
+
+    [Fact]
+    public void FromReplyItem_RoeInputsDatesAndEstimatedFlags_AreRead() {
+        var annual = new System.DateTimeOffset(2025, 12, 31, 0, 0, 0, System.TimeSpan.Zero);
+        var quarterly = new System.DateTimeOffset(2026, 6, 30, 0, 0, 0, System.TimeSpan.Zero);
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, RoeCashFlowNumerator = 11, RoeCashFlowEquity = 22,
+            RoeOwnerEarningsNumerator = 33, RoeOwnerEarningsEquity = 44,
+            MostRecentAnnualReportDate = Timestamp.FromDateTimeOffset(annual),
+            MostRecentQuarterlyReportDate = Timestamp.FromDateTimeOffset(quarterly),
+            CurrentRetainedEarningsEstimated = true, OldestRetainedEarningsEstimated = true,
+        };
+        item.RoeOwnerEarningsByYear.Add(new AnnualRoe { YearEnd = "2025-12-31", Roe = 0.12M });
+        item.RoeOwnerEarningsByYear.Add(new AnnualRoe { YearEnd = "2024-12-31" });
+
+        var report = CompanyFullDetailReport.FromReplyItem(item);
+
+        _ = report.RoeCashFlowNumerator.Should().Be(11M);
+        _ = report.RoeCashFlowEquity.Should().Be(22M);
+        _ = report.RoeOwnerEarningsNumerator.Should().Be(33M);
+        _ = report.RoeOwnerEarningsEquity.Should().Be(44M);
+        _ = report.RoeOwnerEarningsByYear.Should().Equal(
+            new AnnualReturnOnEquity(new System.DateOnly(2025, 12, 31), 0.12M),
+            new AnnualReturnOnEquity(new System.DateOnly(2024, 12, 31), null));
+        _ = report.MostRecentAnnualReportDate.Should().Be(annual);
+        _ = report.MostRecentQuarterlyReportDate.Should().Be(quarterly);
+        _ = report.LastUpdatedDate.Should().BeNull();
+        _ = report.CurRetainedEarningsEstimated.Should().BeTrue();
+        _ = report.OldestRetainedEarningsEstimated.Should().BeTrue();
+    }
+
     #endregion
 }

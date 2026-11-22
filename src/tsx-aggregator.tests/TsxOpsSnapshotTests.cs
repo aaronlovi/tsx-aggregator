@@ -65,6 +65,22 @@ public class TsxOpsSnapshotTests {
     }
 
     [Fact]
+    public void RowBuilder_UsesTheGivenScoringSettings() {
+        // ROE (OE) over 10% in 3 of the last 5 years: check 16 (c16) fails with the default 4 of 5, passes with 3 of 5.
+        ProcessedReportFields fields = AllPassFields with {
+            RoeOwnerEarningsByYear = [
+                new AnnualReturnOnEquity(new DateOnly(2025, 12, 31), 0.2m),
+                new AnnualReturnOnEquity(new DateOnly(2024, 12, 31), 0.05m),
+                new AnnualReturnOnEquity(new DateOnly(2023, 12, 31), 0.2m),
+                new AnnualReturnOnEquity(new DateOnly(2022, 12, 31), 0.05m),
+                new AnnualReturnOnEquity(new DateOnly(2021, 12, 31), 0.2m)],
+        };
+
+        _ = SnapshotRowBuilder.Build(Instrument, fields, new ScoringOptions())["c16"].Should().Be("F");
+        _ = SnapshotRowBuilder.Build(Instrument, fields, new ScoringOptions { RoeConsistencyMinYears = 3 })["c16"].Should().Be("P");
+    }
+
+    [Fact]
     public void RowBuilder_NegativeEquity_FailsDebtToEquity() {
         // B7 sign rule: negative equity fails debt-to-equity (c01) instead of passing with a negative ratio.
         ProcessedReportFields fields = AllPassFields with { CurTotalShareholdersEquity = -200_000_000 };
