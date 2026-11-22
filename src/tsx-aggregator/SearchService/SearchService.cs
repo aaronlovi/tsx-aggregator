@@ -155,8 +155,10 @@ public class SearchService : BackgroundService, ISearchService {
     private void HandleQuickSearch(SearchServiceQuickSearchRequestInput inp, CancellationToken token) {
         const int MaxNumResults = 5;
 
-        if (token.IsCancellationRequested)
+        if (token.IsCancellationRequested) {
+            _ = inp.Completed.TrySetCanceled(token); // the caller has gone; still complete the request
             return;
+        }
 
         List<GetStockSearchResultsReplyItem> results = new();
 

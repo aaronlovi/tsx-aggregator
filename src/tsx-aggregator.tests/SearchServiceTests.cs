@@ -77,6 +77,20 @@ public sealed class SearchServiceTests : IAsyncLifetime {
     private static IEnumerable<string> Symbols(IEnumerable<GetStockSearchResultsReplyItem> results) =>
         results.Select(r => r.InstrumentSymbol);
 
+    [Fact]
+    public async Task CancelledRequest_IsCompletedAsCancelled() {
+        // The loop used to return without completing a request whose caller had gone, leaving Completed unset.
+        await LoadDirectory(Instrument("RY", "RY", "Royal Bank of Canada"));
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        using var req = new SearchServiceQuickSearchRequestInput(++_reqId, "ry", cts);
+        _ = _service.PostRequest(req).Should().BeTrue();
+
+        Func<Task> wait = () => req.Completed.Task.WaitAsync(Wait);
+
+        _ = await wait.Should().ThrowAsync<TaskCanceledException>();
+    }
+
     // ---- Prefix matching on symbols and names --------------------------------------------------
 
     [Fact]
