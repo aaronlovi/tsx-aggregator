@@ -158,7 +158,7 @@ internal class TsxCompanyProcessorFsm {
                 || !results.TryGetProperty("quote", out JsonElement resultsQuote)
                 || resultsQuote.ValueKind is not JsonValueKind.Array
                 || resultsQuote.GetArrayLength() == 0
-                || !resultsQuote.EnumerateArray().First().TryGetProperty("key", out JsonElement key)) {
+                || !resultsQuote.EnumerateArray().First().TryGetProperty("key", out _)) {
                 _logger.LogWarning("ProcessEnhancedQuote - cannot get exchange for this instrument, aborting");
                 fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessEnhancedQuote - cannot get exchange for this instrument"));
                 return;
@@ -176,15 +176,16 @@ internal class TsxCompanyProcessorFsm {
                 fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessEnhancedQuote - cannot find 'fundamental' element for this instrument"));
                 return;
             }
-            if (!fundamental.TryGetProperty("totalsharesoutstanding", out JsonElement fundamentalTotalSharesOutstanding)) {
-                if (!fundamental.TryGetProperty("sharesoutstanding", out fundamentalTotalSharesOutstanding)) {
-                    _logger.LogWarning("ProcessEnhancedQuote - cannot get shares outstanding for this instrument, aborting");
-                    fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessEnhancedQuote - cannot get shares outstanding for this instrument"));
-                }
+            if (!fundamental.TryGetProperty("totalsharesoutstanding", out JsonElement fundamentalTotalSharesOutstanding)
+                && !fundamental.TryGetProperty("sharesoutstanding", out fundamentalTotalSharesOutstanding)) {
+                _logger.LogWarning("ProcessEnhancedQuote - cannot get shares outstanding for this instrument, aborting");
+                fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessEnhancedQuote - cannot get shares outstanding for this instrument"));
+                return;
             }
             if (fundamentalTotalSharesOutstanding.ValueKind is not JsonValueKind.Number) {
                 _logger.LogWarning("ProcessEnhancedQuote - total shares outstanding is not numeric, aborting");
                 fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError("ProcessEnhancedQuote - total shares outstanding is not numeric"));
+                return;
             }
 
             _companyData.Symbol = _instrumentDto.InstrumentSymbol;
@@ -215,8 +216,8 @@ internal class TsxCompanyProcessorFsm {
         _logger.LogDebug("Body: {Text}", text);
 
         try {
-            var jsonData = JsonDocument.Parse(text);
-            var root = jsonData.RootElement;
+            using JsonDocument jsonData = JsonDocument.Parse(text);
+            JsonElement root = jsonData.RootElement;
             if (!root.TryGetProperty("results", out JsonElement results)
                 || !results.TryGetProperty("Company", out JsonElement companyResults)
                 || !companyResults.TryGetProperty("Report", out JsonElement reports)
