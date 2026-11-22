@@ -522,8 +522,9 @@ public class CompanyReportTests {
         _ = Process(report);
 
         _ = report.CurBookValue.Should().Be(470m);
-        // 200 + 20 dividends + 5 bought back
-        _ = report.CurAdjustedRetainedEarnings.Should().Be(225m);
+        // One year is both the oldest and the current: nothing falls after the oldest balance sheet, so nothing is
+        // added back (decision 3). This was 225 (200 + 20 dividends + 5 bought back), counting that year twice.
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(200m);
     }
 
     [Fact]
@@ -567,8 +568,10 @@ public class CompanyReportTests {
     private static readonly DateOnly Fy2023 = new(2023, 12, 31);
 
     /// <summary>Adds a full annual report set; the balance sheet has RetainedEarnings only when <paramref name="re"/> is set.</summary>
-    private static void AddYear(CompanyReport report, DateOnly date, decimal? re, decimal? netIncome, decimal dividends = 0m) {
+    private static void AddYear(CompanyReport report, DateOnly date, decimal? re, decimal? netIncome, decimal dividends = 0m, decimal? shareIssuance = null) {
         var cashFlow = CreateRawReport(("CashDividendsPaid", dividends));
+        if (shareIssuance is decimal issued)
+            cashFlow["NetCommonStockIssuance"] = issued;
         var income = CreateRawReport(("TotalRevenue", 1000m));
         if (netIncome is decimal ni) {
             cashFlow["NetIncomeFromContinuingOperations"] = ni;
@@ -612,6 +615,32 @@ public class CompanyReportTests {
         _ = report.OldestRetainedEarningsEstimated.Should().BeFalse();
         // Adjusted figure = current + all dividends in the window (0 + 10 + 5).
         _ = report.CurAdjustedRetainedEarnings.Should().Be(180m);
+    }
+
+    // Review P8 and R61, decision 3: the add-backs count only years after the oldest balance sheet, up to the current
+    // one. The oldest year's dividends and buybacks are already in OldestRetainedEarnings.
+    [Fact]
+    public void AdjustedRetainedEarnings_OldestYearsDividendsAreNotAddedBack() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 50m, dividends: 30m);
+        AddYear(report, Fy2022, re: 140m, netIncome: 50m, dividends: 10m);
+
+        _ = Process(report);
+
+        // 140 + 10 (FY2022 only). Counting FY2021 too gave 170.
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(150m);
+    }
+
+    [Fact]
+    public void AdjustedRetainedEarnings_OldestYearsShareIssuanceIsNotSubtracted() {
+        var report = NewReport();
+        AddYear(report, Fy2021, re: 100m, netIncome: 50m, shareIssuance: 400m);
+        AddYear(report, Fy2022, re: 140m, netIncome: 50m, shareIssuance: -20m);
+
+        _ = Process(report);
+
+        // 140 + 20 bought back in FY2022. Subtracting FY2021's 400 issuance too gave -240.
+        _ = report.CurAdjustedRetainedEarnings.Should().Be(160m);
     }
 
     [Fact]

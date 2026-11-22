@@ -395,6 +395,12 @@ public class CompanyReport
 
             var cashFlowReport = new CashFlowItem();
 
+            // Only years after the oldest balance sheet, up to the current one, are added back: dividends and
+            // buybacks on or before the oldest snapshot are already in OldestRetainedEarnings (review P8), and later
+            // ones are not in CurRetainedEarnings. The same window as EstimateMissingRetainedEarnings.
+            bool inAdjustmentWindow = (_oldestReportDate is not DateOnly oldest || reportDate > oldest)
+                && (_mostRecentReportDate is not DateOnly current || reportDate <= current);
+
             if (rawCashFlowReport.HasValue("NetIncomeFromContinuingOperations"))
             {
                 cashFlowReport.NetIncomeFromContinuingOperations = rawCashFlowReport["NetIncomeFromContinuingOperations"]!.Value;
@@ -431,13 +437,15 @@ public class CompanyReport
             if (rawCashFlowReport.HasValue("CashDividendsPaid"))
             {
                 cashFlowReport.DividendsPaid = rawCashFlowReport["CashDividendsPaid"]!.Value;
-                totalAnnualDividendsPaid += cashFlowReport.DividendsPaid;
+                if (inAdjustmentWindow)
+                    totalAnnualDividendsPaid += cashFlowReport.DividendsPaid;
             }
 
             if (rawCashFlowReport.HasValue("NetCommonStockIssuance"))
             {
                 cashFlowReport.NetIssuanceOfStock = rawCashFlowReport["NetCommonStockIssuance"]!.Value;
-                totalAnnualCommonStockIssuance += cashFlowReport.NetIssuanceOfStock;
+                if (inAdjustmentWindow)
+                    totalAnnualCommonStockIssuance += cashFlowReport.NetIssuanceOfStock;
             }
             else
             {
@@ -447,7 +455,8 @@ public class CompanyReport
             if (rawCashFlowReport.HasValue("NetPreferredStockIssuance"))
             {
                 cashFlowReport.NetIssuanceOfPreferredStock = rawCashFlowReport["NetPreferredStockIssuance"]!.Value;
-                totalAnnualPreferredStockIssuance += cashFlowReport.NetIssuanceOfPreferredStock;
+                if (inAdjustmentWindow)
+                    totalAnnualPreferredStockIssuance += cashFlowReport.NetIssuanceOfPreferredStock;
             }
             else
             {
