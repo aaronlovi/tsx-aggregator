@@ -188,6 +188,19 @@ public class CompanyReport
         return pick;
     }
 
+    /// <summary>The latest complete annual report set dated on or before <paramref name="notAfter"/>; null when there is none.</summary>
+    private (DateOnly Date, RawReportDataMap BalanceSheet)? LatestCompleteAnnualSet(DateOnly notAfter)
+    {
+        (DateOnly Date, RawReportDataMap BalanceSheet)? latest = null;
+        foreach ((DateOnly Date, RawReportDataMap BalanceSheet) set in CompleteReportSets(
+            _annualRawBalanceSheets, _annualRawCashFlowReports, _annualRawIncomeStatements, "Annual", warnings: null))
+        {
+            if (set.Date <= notAfter)
+                latest = set;
+        }
+        return latest;
+    }
+
     /// <summary>The balance sheets, oldest first, that have a cash flow and an income statement of the same date.</summary>
     private static List<(DateOnly Date, RawReportDataMap BalanceSheet)> CompleteReportSets(
         SortedDictionary<DateOnly, RawReportDataMap> balanceSheets,
@@ -271,8 +284,18 @@ public class CompanyReport
         else
             warnings.Add("Most recent figures: missing property current Intangibles");
 
+        // Debt missing from the latest sheet, usually an interim one, comes from the latest complete annual sheet
+        // (code review X4, decision 4): a sparse quarter must not make a company look debt-free. Goodwill and
+        // intangibles are not filled, because a key missing there is as often a reclassification as a gap.
+        (DateOnly Date, RawReportDataMap BalanceSheet)? latestAnnual = LatestCompleteAnnualSet(mostRecentReportDate);
+
         if (mostRecentBalanceSheet.FirstPresent(LongTermDebtKeys) is decimal longTermDebt)
             CurLongTermDebt = longTermDebt;
+        else if (latestAnnual is (DateOnly annualDate, var annualBalanceSheet) && annualBalanceSheet.FirstPresent(LongTermDebtKeys) is decimal annualLongTermDebt)
+        {
+            CurLongTermDebt = annualLongTermDebt;
+            warnings.Add($"Most recent figures: current LongTermDebt from the annual balance sheet of {annualDate}");
+        }
         else
             warnings.Add("Most recent figures: missing property current LongTermDebt");
 
