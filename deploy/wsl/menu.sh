@@ -106,7 +106,7 @@ EOF
     case "$choice" in
         1) bash "$stack" status; pause_for_enter ;;
         2) svc=$(choose_service); bash "$stack" logs "$svc" ;;
-        3) recent_lines '\] (ERR|FTL)' 24h || echo "No errors."; pause_for_enter ;;
+        3) recent_lines ' (ERR|FTL)\]' 24h || echo "No errors."; pause_for_enter ;;
         4) recent_lines 'new quotes|old quotes|Not time to fetch' 24h || echo "Nothing in the last 24 hours."; pause_for_enter ;;
         5) bash "$stack" up; pause_for_enter ;;
         6) confirm "Stop tsx-aggregator, tsx-webapi and tsx-web?" && bash "$stack" down; pause_for_enter ;;
