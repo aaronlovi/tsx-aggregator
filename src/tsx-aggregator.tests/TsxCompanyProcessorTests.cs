@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -6,7 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using PuppeteerSharp;
 using tsx_aggregator.models;
+using tsx_aggregator.shared;
 using Xunit;
 
 namespace tsx_aggregator.tests;
@@ -37,9 +42,9 @@ public sealed class TsxCompanyProcessorTests : IAsyncLifetime {
         _stop.Dispose();
     }
 
-    private async Task<TsxCompanyProcessor> Start() {
+    private async Task<TsxCompanyProcessor> Start(ILogger<TsxCompanyProcessor>? logger = null) {
         var services = new ServiceCollection();
-        _ = services.AddSingleton<ILogger<TsxCompanyProcessor>>(NullLogger<TsxCompanyProcessor>.Instance);
+        _ = services.AddSingleton(logger ?? NullLogger<TsxCompanyProcessor>.Instance);
         _ = services.AddSingleton<ILogger<TsxCompanyProcessorFsm>>(NullLogger<TsxCompanyProcessorFsm>.Instance);
         // An installed browser path, so Create does not download one; no browser is launched in these tests.
         _ = services.AddSingleton(Options.Create(new ScraperOptions { BrowserExecutablePath = "/usr/bin/true" }));
@@ -89,5 +94,71 @@ public sealed class TsxCompanyProcessorTests : IAsyncLifetime {
         _ = processor.PostResponse(Financials(2, 'A', Reports));
 
         (await second.WaitAsync(Deadline)).Should().BeNull();
+    }
+
+    /// <summary>Keeps each log entry's level, message and exception.</summary>
+    private sealed class RecordingLogger : ILogger<TsxCompanyProcessor> {
+        public ConcurrentQueue<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Entries.Enqueue((logLevel, formatter(state, exception), exception));
+        public List<(LogLevel Level, string Message, Exception? Exception)> At(LogLevel level) => Entries.Where(e => e.Level == level).ToList();
+    }
+
+    /// <summary>Feeds a complete set of responses for the attempt, as a page load that worked would.</summary>
+    private static async Task<string?> PageWithData(TsxCompanyProcessor processor, int attempt) {
+        Task<string?> done = processor.BeginAttempt(attempt);
+        _ = processor.PostResponse(new GotResponse { Attempt = attempt, Url = QuoteUrl, Text = QuoteBody });
+        _ = processor.PostResponse(Financials(attempt, 'Q', Reports));
+        _ = processor.PostResponse(Financials(attempt, 'A', Reports));
+        return await done;
+    }
+
+    private static NavigationException NavigationTimeout() => new("Navigation timeout of 60000 ms exceeded");
+
+    [Fact]
+    public async Task PageLoadTimeoutThatARetryRecovers_IsAWarning_NotAnError() {
+        // R97: each page load that timed out was logged as an error with a stack trace (34 on the deploy laptop in
+        // 12 hours), although the retry got the data every time.
+        var logger = new RecordingLogger();
+        TsxCompanyProcessor processor = await Start(logger);
+        processor.RetryDelay = TimeSpan.Zero;
+        processor.ScrapeAttempt = attempt => attempt == 1 ? throw NavigationTimeout() : PageWithData(processor, attempt);
+
+        Result<TsxCompanyData> result = await processor.GetRawFinancials().WaitAsync(Deadline);
+
+        result.Success.Should().BeTrue();
+        logger.At(LogLevel.Error).Should().BeEmpty();
+        logger.At(LogLevel.Warning).Should().ContainSingle(e => e.Message.Contains("Navigation timeout of 60000 ms exceeded"))
+            .Which.Exception.Should().BeNull("an expected page-load failure needs no stack trace");
+    }
+
+    [Fact]
+    public async Task PageLoadFailingEveryTry_IsOneError() {
+        var logger = new RecordingLogger();
+        TsxCompanyProcessor processor = await Start(logger);
+        processor.RetryDelay = TimeSpan.Zero;
+        processor.ScrapeAttempt = _ => throw NavigationTimeout();
+
+        Result<TsxCompanyData> result = await processor.GetRawFinancials().WaitAsync(Deadline);
+
+        result.Success.Should().BeFalse();
+        logger.At(LogLevel.Warning).Should().HaveCount(3);
+        logger.At(LogLevel.Error).Should().ContainSingle()
+            .Which.Message.Should().Contain("3 attempts").And.Contain("Navigation timeout");
+    }
+
+    [Fact]
+    public async Task UnexpectedException_IsStillAnErrorWithItsStackTrace() {
+        var logger = new RecordingLogger();
+        TsxCompanyProcessor processor = await Start(logger);
+        processor.RetryDelay = TimeSpan.Zero;
+        processor.ScrapeAttempt = attempt => attempt == 1 ? throw new InvalidOperationException("bug") : PageWithData(processor, attempt);
+
+        Result<TsxCompanyData> result = await processor.GetRawFinancials().WaitAsync(Deadline);
+
+        result.Success.Should().BeTrue();
+        logger.At(LogLevel.Error).Should().ContainSingle().Which.Exception.Should().BeOfType<InvalidOperationException>();
     }
 }

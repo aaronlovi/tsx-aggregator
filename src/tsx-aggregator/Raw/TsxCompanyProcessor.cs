@@ -21,7 +21,6 @@ namespace tsx_aggregator;
 /// </summary>
 internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
     private const int MaxRetries = 2;
-    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan AttemptTimeout = TimeSpan.FromSeconds(60);
 
     private readonly ILogger _logger;
@@ -43,7 +42,17 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         _inputChannel = Channel.CreateUnbounded<TsxCompanyProcessorFsmInputBase>();
         _externalCancellationToken = externalCancellationToken;
         _scraperOptions = svp.GetService<IOptions<ScraperOptions>>()?.Value ?? new ScraperOptions();
+        ScrapeAttempt = ScrapeWithBrowser;
     }
+
+    /// <summary>Wait before a retry.</summary>
+    internal TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// One scrape attempt: ends with null when the company's data is complete, or with an error message when a
+    /// response cannot be used. May throw. The browser, unless a test replaces it.
+    /// </summary>
+    internal Func<int, Task<string?>> ScrapeAttempt { get; set; }
 
     public bool IsFaulted { get; private set; }
     public TsxCompanyData? CompanyReport { get; private set; }
@@ -116,6 +125,11 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
 
         } while (!result.Success && attempt <= MaxRetries && !_externalCancellationToken.IsCancellationRequested);
 
+        // A failed try is expected now and then and is only a warning; the company getting no data is the error.
+        if (!result.Success && !_externalCancellationToken.IsCancellationRequested)
+            _logger.LogError("GetRawFinancials failed after {Attempts} attempts for instrument {Instrument}: {Error}",
+                attempt, _instrumentDto, result.ErrMsg);
+
         return result;
     }
 
@@ -135,25 +149,9 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
 
     private async Task<Result<TsxCompanyData>> GetRawFinancialsCore(int attempt) {
         CompanyReport = null;
-        Task<string?> attemptDone = BeginAttempt(attempt);
 
         try {
-            LaunchOptions launchOptions = BuildLaunchOptions(_scraperOptions);
-            await using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
-            await using IPage page = await browser.NewPageAsync();
-            page.DefaultNavigationTimeout = 60000;
-            void OnResponse(object? sender, ResponseCreatedEventArgs e) => ProcessPageResponse(e, attempt);
-            page.Response += OnResponse;
-
-            // The attempt ends on success, on an unusable response, after the timeout, or at shutdown.
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_externalCancellationToken);
-            timeout.CancelAfter(AttemptTimeout);
-            _ = await page.GoToAsync($"https://money.tmx.com/en/quote/{_instrumentDto.InstrumentSymbol}/financials-filings");
-
-            string? error = await attemptDone.WaitAsync(timeout.Token);
-
-            page.Response -= OnResponse;
-            await browser.CloseAsync();
+            string? error = await ScrapeAttempt(attempt);
 
             if (error is not null) {
                 _logger.LogInformation("GetRawFinancials could not use a response for instrument {Instrument}: {Error}", _instrumentDto, error);
@@ -169,10 +167,38 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
             _logger.LogInformation("GetRawFinancials timed out for instrument {Instrument}", _instrumentDto);
             return Result<TsxCompanyData>.SetFailure("Timed out");
         }
+        catch (NavigationException ex) {
+            // TMX did not answer within the navigation timeout, or the network failed: it happens, and a retry
+            // usually gets the data, so no stack trace (R97)
+            _logger.LogWarning("GetRawFinancials page load failed for instrument {Instrument}, attempt {Attempt}: {Error}",
+                _instrumentDto, attempt, ex.Message);
+            return Result<TsxCompanyData>.SetFailure("Page load failed: " + ex.Message);
+        }
         catch (Exception ex) {
             _logger.LogError(ex, "GetRawFinancials general fault for instrument {Instrument}", _instrumentDto);
             return Result<TsxCompanyData>.SetFailure("General fault: " + ex.Message);
         }
+    }
+
+    private async Task<string?> ScrapeWithBrowser(int attempt) {
+        Task<string?> attemptDone = BeginAttempt(attempt);
+        LaunchOptions launchOptions = BuildLaunchOptions(_scraperOptions);
+        await using IBrowser browser = await Puppeteer.LaunchAsync(launchOptions);
+        await using IPage page = await browser.NewPageAsync();
+        page.DefaultNavigationTimeout = 60000;
+        void OnResponse(object? sender, ResponseCreatedEventArgs e) => ProcessPageResponse(e, attempt);
+        page.Response += OnResponse;
+
+        // The attempt ends on success, on an unusable response, after the timeout, or at shutdown.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_externalCancellationToken);
+        timeout.CancelAfter(AttemptTimeout);
+        _ = await page.GoToAsync($"https://money.tmx.com/en/quote/{_instrumentDto.InstrumentSymbol}/financials-filings");
+
+        string? error = await attemptDone.WaitAsync(timeout.Token);
+
+        page.Response -= OnResponse;
+        await browser.CloseAsync();
+        return error;
     }
 
     private static async Task DownloadBrowser() {
