@@ -354,8 +354,9 @@ public class CompanyReport
             else
                 LogMissingPropertyWarning(reportDate, "NetIncomeFromContinuingOperations", warnings);
 
+            // The total first: capex covers the whole company, discontinued operations included (V1b)
             cashFlowReport.ReportedOperatingCashFlow =
-                rawCashFlowReport.FirstPresent("CashFlowFromContinuingOperatingActivities", "OperatingCashFlow");
+                rawCashFlowReport.FirstPresent("OperatingCashFlow", "CashFlowFromContinuingOperatingActivities");
 
             if ((rawCashFlowReport["ChangesInCash"]
                     ?? (rawCashFlowReport["EndCashPosition"] - rawCashFlowReport["BeginningCashPosition"])) is decimal grossCashFlow)

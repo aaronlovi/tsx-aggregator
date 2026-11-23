@@ -5,7 +5,7 @@ internal class CashFlowItem
     internal CashFlowItem() { }
 
     internal decimal? NetIncomeFromContinuingOperations { get; set; }
-    /// <summary>Operating cash flow as reported (continuing operations if given); null when the statement has none.</summary>
+    /// <summary>Operating cash flow as reported (the total, else continuing operations); null when the statement has none.</summary>
     internal decimal? ReportedOperatingCashFlow { get; set; }
     internal decimal GrossCashFlow { get; set; }
     /// <summary>CashDividendsPaid, positive as reported; 0 when the key is missing.</summary>
@@ -36,8 +36,8 @@ internal class CashFlowItem
     internal bool IsUsableForOwnerEarnings => HasCapExData || DepreciationAndAmortization + Depletion <= 0;
     /// <summary>
     /// Reported operating cash flow minus capex (V1). Only a statement without operating cash flow is rebuilt from
-    /// net income and the non-cash items, because the rebuild misses every line outside the keys it reads: IFRS
-    /// statements add back the whole tax expense (tagged DeferredTax) and subtract taxes paid on a line it never read.
+    /// net income and the non-cash items, because the rebuild misses every line outside the keys it reads, such as
+    /// operating gains and losses, impairments, and (where DeferredTax is the whole tax expense) taxes paid.
     /// </summary>
     internal decimal OwnerEarnings => ReportedOperatingCashFlow is decimal operatingCashFlow
         ? operatingCashFlow - CapEx

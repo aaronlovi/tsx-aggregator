@@ -150,21 +150,22 @@ public class CompanyReportTests {
     }
 
     [Fact]
-    public void OwnerEarnings_PreferContinuingOperations_OverOperatingCashFlow() {
-        // As net income: from continuing operations
+    public void OwnerEarnings_PreferTotalOperatingCashFlow_OverContinuingOperations() {
+        // V1b: capex covers the whole company, discontinued operations included. TECK 2023: continuing -563M,
+        // total 4,084M, capex 3,885M.
         _ = OwnerEarningsOf(
             ("CashFlowFromContinuingOperatingActivities", 70m),
             ("OperatingCashFlow", 90m),
             ("NetPPEPurchaseAndSale", -10m))
-            .Should().Be(60m);
+            .Should().Be(80m);
     }
 
     [Fact]
-    public void OwnerEarnings_FallBackToOperatingCashFlow() {
+    public void OwnerEarnings_FallBackToContinuingOperationsCashFlow() {
         _ = OwnerEarningsOf(
-            ("OperatingCashFlow", 90m),
+            ("CashFlowFromContinuingOperatingActivities", 70m),
             ("NetPPEPurchaseAndSale", -10m))
-            .Should().Be(80m);
+            .Should().Be(60m);
     }
 
     [Fact]
