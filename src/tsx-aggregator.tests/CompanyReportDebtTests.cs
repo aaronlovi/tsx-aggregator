@@ -157,6 +157,37 @@ public class CompanyReportDebtTests {
         _ = warnings.Should().NotContain(w => w.Contains("ShortTermDebt"));
     }
 
+    // R94: dividends averaged over the same annual statements as the average net cash flow.
+
+    [Fact]
+    public void AverageDividendsPaid_AveragesTheSameYearsAsNetCashFlow() {
+        // TBL-like: a special dividend in the latest year. Years without the key count as 0, as in net cash flow.
+        var report = NewReport();
+        decimal?[] dividends = [30m, null, 25m, null, 180m];
+        for (int i = 0; i < dividends.Length; i++) {
+            var date = new DateOnly(2021 + i, 12, 31);
+            report.AddAnnualCashFlowStatement(date, dividends[i] is decimal d
+                ? CreateRawReport(("NetIncomeFromContinuingOperations", 10m), ("ChangesInCash", 5m), ("CashDividendsPaid", d))
+                : CreateRawReport(("NetIncomeFromContinuingOperations", 10m), ("ChangesInCash", 5m)));
+        }
+
+        _ = Process(report);
+
+        _ = report.CurDividendsPaid.Should().Be(180m, "the latest year, still shown on the page");
+        _ = report.AverageDividendsPaid.Should().Be(47m, "(30 + 0 + 25 + 0 + 180) / 5");
+        _ = report.NumAnnualProcessedCashFlowReports.Should().Be(5);
+    }
+
+    [Fact]
+    public void AverageDividendsPaid_NoCashFlowStatements_IsNull() {
+        var report = NewReport();
+        AddQuarterSet(report, Q1Fy2022);
+
+        _ = Process(report);
+
+        _ = report.AverageDividendsPaid.Should().BeNull();
+    }
+
     [Fact]
     public void LatestCompleteAnnualSheet_IsTheOneUsed() {
         var report = NewReport();

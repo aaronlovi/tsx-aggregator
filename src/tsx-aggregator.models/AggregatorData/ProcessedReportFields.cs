@@ -32,7 +32,8 @@ public sealed record ProcessedReportFields(
     long? RoeOwnerEarningsEquity = null,
     IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null,
     string? ReportingCurrency = null,
-    long CurShortTermDebt = 0) {
+    long CurShortTermDebt = 0,
+    long? AverageDividendsPaid = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -78,6 +79,14 @@ public sealed record ProcessedReportFields(
             return false;
         }
 
+        // Optional: reports written before R94 don't have it. They keep the latest year's dividends, and score as
+        // before, until a rebuild.
+        long? averageDividendsPaid = curDividendsPaid;
+        if (root.TryGetProperty("AverageDividendsPaid", out _) && !GetNullableDataPoint(root, "AverageDividendsPaid", out averageDividendsPaid)) {
+            fields = null;
+            return false;
+        }
+
         fields = new ProcessedReportFields(
             curNumShares,
             curTotalShareholdersEquity,
@@ -102,7 +111,8 @@ public sealed record ProcessedReportFields(
             root.TryGetProperty("ReportingCurrency", out JsonElement currency) && currency.ValueKind == JsonValueKind.String
                 ? currency.GetString()
                 : null,
-            curShortTermDebt);
+            curShortTermDebt,
+            averageDividendsPaid);
         return true;
     }
 

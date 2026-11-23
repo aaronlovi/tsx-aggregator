@@ -31,6 +31,7 @@ export interface CompanyDetails {
     averageNetCashFlow: number | null;
     averageOwnerEarnings: number | null;
     curDividendsPaid: number | null;
+    averageDividendsPaid: number | null;
     curAdjustedRetainedEarnings: number | null;
     oldestRetainedEarnings: number | null;
     numAnnualProcessedCashFlowReports: number;

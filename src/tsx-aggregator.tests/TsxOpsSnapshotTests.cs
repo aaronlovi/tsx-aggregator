@@ -39,7 +39,8 @@ public class TsxOpsSnapshotTests {
         RoeCashFlowEquity: 5_000_000_000,
         RoeOwnerEarningsNumerator: 750_000_000,
         RoeOwnerEarningsEquity: 5_000_000_000,
-        RoeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears());
+        RoeOwnerEarningsByYear: TestDataFactory.ConsistentRoeYears(),
+        AverageDividendsPaid: 0);
 
     [Fact]
     public void Csv_RoundTripsQuotesCommasAndEmptyFields() {
@@ -51,6 +52,17 @@ public class TsxOpsSnapshotTests {
         _ = rows.Should().HaveCount(2);
         _ = rows[0].Should().Equal(fields);
         _ = rows[1].Should().Equal("a", "b", "c", "d", "e");
+    }
+
+    [Fact]
+    public void RowBuilder_AverageDividends_IsAColumnAndDrivesTheCashFlowReturn() {
+        // R94: net cash flow 150M + average dividends 50M over a 1B market cap = 20%; the latest year's 0 is not used.
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(
+            Instrument, AllPassFields with { CurDividendsPaid = 0, AverageDividendsPaid = 50_000_000 }, new ScoringOptions());
+
+        _ = row["cur_dividends_paid"].Should().Be("0");
+        _ = row["average_dividends_paid"].Should().Be("50000000");
+        _ = decimal.Parse(row["est_return_cf_pct"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(20M);
     }
 
     [Fact]

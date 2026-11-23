@@ -77,6 +77,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         ["CurLongTermDebt"] = 845_000_000m,
         ["CurShortTermDebt"] = 120_000_000m,
         ["CurDividendsPaid"] = 61_200_000m,
+        ["AverageDividendsPaid"] = 40_400_000m,
         ["CurRetainedEarnings"] = 1_085_000_000m,
         ["CurRetainedEarningsEstimated"] = true,
         ["CurAdjustedRetainedEarnings"] = 1_120_000_000m,
@@ -100,7 +101,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
 
     /// <summary>The optional figures (W1) and the ROE inputs (B11) of a report.</summary>
     private static readonly string[] OptionalFields = [
-        "CurTotalShareholdersEquity", "CurDividendsPaid", "CurAdjustedRetainedEarnings", "OldestRetainedEarnings",
+        "CurTotalShareholdersEquity", "CurDividendsPaid", "AverageDividendsPaid", "CurAdjustedRetainedEarnings", "OldestRetainedEarnings",
         "CurBookValue", "AverageNetCashFlow", "AverageOwnerEarnings",
         "RoeCashFlowNumerator", "RoeCashFlowEquity", "RoeOwnerEarningsNumerator", "RoeOwnerEarningsEquity",
     ];
@@ -187,6 +188,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.CurrentShortTermDebt.Should().Be(120_000_000);
         item.CurrentTotalShareholdersEquity.Should().Be(2_310_500_000);
         item.CurrentDividendsPaid.Should().Be(61_200_000);
+        item.AverageDividendsPaid.Should().Be(40_400_000);
         item.CurrentAdjustedRetainedEarnings.Should().Be(1_120_000_000);
         item.OldestRetainedEarnings.Should().Be(-40_000_000);
         item.CurrentBookValue.Should().Be(1_802_200_000);
@@ -219,6 +221,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
 
         item.HasCurrentTotalShareholdersEquity.Should().BeFalse();
         item.HasCurrentDividendsPaid.Should().BeFalse();
+        item.HasAverageDividendsPaid.Should().BeFalse();
         item.HasCurrentAdjustedRetainedEarnings.Should().BeFalse();
         item.HasOldestRetainedEarnings.Should().BeFalse();
         item.HasCurrentBookValue.Should().BeFalse();
@@ -237,6 +240,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
 
         item.HasCurrentTotalShareholdersEquity.Should().BeTrue();
         item.HasCurrentDividendsPaid.Should().BeTrue();
+        item.HasAverageDividendsPaid.Should().BeTrue();
         item.HasCurrentAdjustedRetainedEarnings.Should().BeTrue();
         item.HasOldestRetainedEarnings.Should().BeTrue();
         item.HasCurrentBookValue.Should().BeTrue();
@@ -325,6 +329,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.CurrentLongTermDebt.Should().Be(845_000_000);
         item.CurrentShortTermDebt.Should().Be(120_000_000);
         item.CurrentDividendsPaid.Should().Be(61_200_000);
+        item.AverageDividendsPaid.Should().Be(61_200_000);
         item.AverageNetCashFlow.Should().Be(35_000_000);
     }
 

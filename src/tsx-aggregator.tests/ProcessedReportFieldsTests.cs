@@ -45,7 +45,30 @@ public class ProcessedReportFieldsTests {
             RoeCashFlowNumerator: 50,
             RoeCashFlowEquity: 500,
             RoeOwnerEarningsNumerator: 60,
-            RoeOwnerEarningsEquity: 500));
+            RoeOwnerEarningsEquity: 500,
+            // A report written before R94 has no average: the latest year's dividends, so it scores as before.
+            AverageDividendsPaid: 2));
+    }
+
+    [Fact]
+    public void TryParse_AverageDividends_ReadsIt() {
+        string json = CompleteJson.Replace("\"CurDividendsPaid\": 2.5", "\"CurDividendsPaid\": 2.5, \"AverageDividendsPaid\": 40.4");
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.CurDividendsPaid.Should().Be(2);
+        _ = fields.AverageDividendsPaid.Should().Be(40);
+    }
+
+    [Fact]
+    public void TryParse_AverageDividendsNull_IsNull() {
+        string json = CompleteJson.Replace("\"CurDividendsPaid\": 2.5", "\"CurDividendsPaid\": 2.5, \"AverageDividendsPaid\": null");
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.AverageDividendsPaid.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_AverageDividendsNotANumber_Fails() {
+        string json = CompleteJson.Replace("\"CurDividendsPaid\": 2.5", "\"CurDividendsPaid\": 2.5, \"AverageDividendsPaid\": \"x\"");
+        _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
     }
 
     [Fact]

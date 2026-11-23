@@ -24,6 +24,7 @@ public class CompanyFullDetailReport {
         decimal? averageNetCashFlow,
         decimal? averageOwnerEarnings,
         decimal? curDividendsPaid,
+        decimal? averageDividendsPaid,
         decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
         decimal? oldestRetainedEarnings,
         int numAnnualProcessedCashFlowReports,
@@ -49,6 +50,7 @@ public class CompanyFullDetailReport {
         AverageNetCashFlow = averageNetCashFlow;
         AverageOwnerEarnings = averageOwnerEarnings;
         CurDividendsPaid = curDividendsPaid;
+        AverageDividendsPaid = averageDividendsPaid;
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
         OldestRetainedEarnings = oldestRetainedEarnings;
         NumAnnualProcessedCashFlowReports = numAnnualProcessedCashFlowReports;
@@ -87,6 +89,9 @@ public class CompanyFullDetailReport {
         averageNetCashFlow: item.HasAverageNetCashFlow ? item.AverageNetCashFlow : null,
         averageOwnerEarnings: item.HasAverageOwnerEarnings ? item.AverageOwnerEarnings : null,
         curDividendsPaid: item.HasCurrentDividendsPaid ? item.CurrentDividendsPaid : null,
+        // An older server doesn't send the average: the latest year's dividends, as before R94.
+        averageDividendsPaid: item.HasAverageDividendsPaid ? item.AverageDividendsPaid
+            : item.HasCurrentDividendsPaid ? item.CurrentDividendsPaid : null,
         curAdjustedRetainedEarnings: item.HasCurrentAdjustedRetainedEarnings ? item.CurrentAdjustedRetainedEarnings : null,
         oldestRetainedEarnings: item.HasOldestRetainedEarnings ? item.OldestRetainedEarnings : null,
         numAnnualProcessedCashFlowReports: item.NumAnnualProcessedCashFlowReports,
@@ -125,6 +130,8 @@ public class CompanyFullDetailReport {
     public decimal? AverageNetCashFlow { get; init; }
     public decimal? AverageOwnerEarnings { get; init; }
     public decimal? CurDividendsPaid { get; init; }
+    /// <summary>Dividends averaged over the same years as <see cref="AverageNetCashFlow"/> (R94).</summary>
+    public decimal? AverageDividendsPaid { get; init; }
     public decimal? CurAdjustedRetainedEarnings { get; init; }
     public decimal? OldestRetainedEarnings { get; init; }
     public int NumAnnualProcessedCashFlowReports { get; init; }
@@ -170,10 +177,11 @@ public class CompanyFullDetailReport {
     public decimal? EstimatedNextYearBookValue_FromOwnerEarnings => CurBookValue + AverageOwnerEarnings;
     /// <summary>
     /// Net cash flow is after dividends (a financing outflow) but before buybacks, so dividends are added back: cash
-    /// generated for shareholders, however it is returned (decision 2).
+    /// generated for shareholders, however it is returned (decision 2). The dividends are averaged over the same years
+    /// as the net cash flow, so a special dividend or a cut in the latest year doesn't skew the return (R94, decision 6).
     /// </summary>
     public decimal? EstimatedNextYearTotalReturnPercentage_FromCashFlow =>
-        Utilities.DivOrNull(100M * (AverageNetCashFlow + CurDividendsPaid), CurMarketCap);
+        Utilities.DivOrNull(100M * (AverageNetCashFlow + AverageDividendsPaid), CurMarketCap);
     /// <summary>Owner earnings are pre-dividend, so all of it is the shareholders' return (decision 2).</summary>
     public decimal? EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings =>
         Utilities.DivOrNull(100M * AverageOwnerEarnings, CurMarketCap);
@@ -184,7 +192,7 @@ public class CompanyFullDetailReport {
     public decimal? MaxPrice {
         get {
             if (CurNumShares <= 0 || CurBookValue is not decimal bookValue
-                || AverageNetCashFlow is not decimal netCashFlow || CurDividendsPaid is not decimal dividends
+                || AverageNetCashFlow is not decimal netCashFlow || AverageDividendsPaid is not decimal dividends
                 || AverageOwnerEarnings is not decimal ownerEarnings) {
                 return null;
             }

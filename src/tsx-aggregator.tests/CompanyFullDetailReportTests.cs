@@ -30,6 +30,7 @@ public class CompanyFullDetailReportTests {
         averageNetCashFlow: averageNetCashFlow,
         averageOwnerEarnings: averageOwnerEarnings,
         curDividendsPaid: curDividendsPaid,
+        averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
         numAnnualProcessedCashFlowReports: 5,
@@ -104,6 +105,7 @@ public class CompanyFullDetailReportTests {
         averageNetCashFlow: averageNetCashFlow,
         averageOwnerEarnings: averageOwnerEarnings,
         curDividendsPaid: 0M,
+        averageDividendsPaid: 0M,
         curAdjustedRetainedEarnings: 100M,
         oldestRetainedEarnings: 50M,
         numAnnualProcessedCashFlowReports: 5,
@@ -213,6 +215,7 @@ public class CompanyFullDetailReportTests {
         averageNetCashFlow: averageNetCashFlow,
         averageOwnerEarnings: averageOwnerEarnings,
         curDividendsPaid: curDividendsPaid,
+        averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: curAdjustedRetainedEarnings,
         oldestRetainedEarnings: oldestRetainedEarnings,
         numAnnualProcessedCashFlowReports: 5,
@@ -336,7 +339,7 @@ public class CompanyFullDetailReportTests {
             curLongTermDebt: longTermDebt,
             curShortTermDebt: shortTermDebt,
             curTotalShareholdersEquity: 1_000M, curBookValue: 800M, curNumShares: 100,
-            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
+            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 0M, averageDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
             oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
             roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
             scoring: new ScoringOptions());
@@ -367,6 +370,53 @@ public class CompanyFullDetailReportTests {
     [Fact]
     public void OnlyShortTermDebt_IsNotDebtFree() {
         _ = ReportWithDebt(0M, 600M).DoesPassCheck_DebtToEquitySmallEnough.Should().Be(CheckResult.Fail);
+    }
+
+    #endregion
+
+    #region R94 - dividends averaged like the net cash flow
+
+    private static CompanyFullDetailReport ReportWithDividends(decimal? current, decimal? average) =>
+        new CompanyFullDetailReport(
+            exchange: "TSX", companySymbol: "TST", instrumentSymbol: "TST", companyName: "Test Co",
+            instrumentName: "Test Co Common", pricePerShare: 10M,
+            curLongTermDebt: 0M,
+            curShortTermDebt: 0M,
+            curTotalShareholdersEquity: 1_000M, curBookValue: 1_000M, curNumShares: 100,
+            averageNetCashFlow: 30M, averageOwnerEarnings: 100M,
+            curDividendsPaid: current,
+            averageDividendsPaid: average,
+            curAdjustedRetainedEarnings: 100M, oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
+            roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
+            scoring: new ScoringOptions());
+
+    [Fact]
+    public void CashFlowReturn_AddsBackTheAverageDividends() {
+        // Market cap 1,000. A special dividend of 500 in the latest year, 120 a year on average:
+        // (30 + 120) / 1,000 = 15%, not (30 + 500) / 1,000 = 53%.
+        CompanyFullDetailReport report = ReportWithDividends(current: 500M, average: 120M);
+
+        _ = report.EstimatedNextYearTotalReturnPercentage_FromCashFlow.Should().Be(15M);
+        _ = report.DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig.Should().Be(CheckResult.Pass);
+    }
+
+    [Fact]
+    public void CashFlowReturn_SuspendedDividend_StillAddsBackTheEarlierOnes() {
+        // No dividend now, 40 a year on average: the cash generated was (30 + 40) / 1,000 = 7%.
+        _ = ReportWithDividends(current: 0M, average: 40M).EstimatedNextYearTotalReturnPercentage_FromCashFlow.Should().Be(7M);
+    }
+
+    [Fact]
+    public void CashFlowReturn_NoAverageDividends_IsNull() {
+        _ = ReportWithDividends(current: 10M, average: null).EstimatedNextYearTotalReturnPercentage_FromCashFlow.Should().BeNull();
+    }
+
+    [Fact]
+    public void MaxPrice_UsesTheAverageDividends() {
+        // Limits: 3 x book = 3,000; owner earnings 20 x 100 = 2,000; cash flow 20 x (30 + average 20) = 1,000.
+        // The lowest, 1,000, over 100 shares is 10. With the latest year's 500 it would be 20 x 530 = 10,600 and the
+        // price 20 (the owner-earnings limit).
+        _ = ReportWithDividends(current: 500M, average: 20M).MaxPrice.Should().Be(10M);
     }
 
     #endregion
@@ -406,6 +456,32 @@ public class CompanyFullDetailReportTests {
 
         _ = report.PricePerShare.Should().Be(0M);
         _ = report.CurMarketCap.Should().BeNull("no quote means no market cap (decision 20)");
+    }
+
+    [Fact]
+    public void FromReplyItem_ReadsAverageDividends() {
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, CurrentNumShares = 100,
+            CurrentDividendsPaid = 180, AverageDividendsPaid = 47, NumAnnualProcessedCashFlowReports = 5,
+        };
+
+        var report = CompanyFullDetailReport.FromReplyItem(item);
+
+        _ = report.CurDividendsPaid.Should().Be(180M);
+        _ = report.AverageDividendsPaid.Should().Be(47M);
+    }
+
+    [Fact]
+    public void FromReplyItem_NoAverageDividends_UsesTheLatestYear() {
+        // An older server doesn't send the average: score as before R94.
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, CurrentNumShares = 100,
+            CurrentDividendsPaid = 180, NumAnnualProcessedCashFlowReports = 5,
+        };
+
+        _ = CompanyFullDetailReport.FromReplyItem(item).AverageDividendsPaid.Should().Be(180M);
     }
 
     [Fact]

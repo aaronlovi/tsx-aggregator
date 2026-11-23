@@ -91,6 +91,14 @@ public class CompanyReport
             ? null
             : _annualProcessedCashFlowItems.Values.Sum(item => item.NetCashFlow) / _annualProcessedCashFlowItems.Count;
     /// <summary>
+    /// Dividends averaged over the same annual statements as <see cref="AverageNetCashFlow"/>, which is after dividends:
+    /// the add-back for the est. return from cash flow (R94). Null when there are no annual cash flow statements.
+    /// </summary>
+    public decimal? AverageDividendsPaid =>
+        _annualProcessedCashFlowItems.Count == 0
+            ? null
+            : _annualProcessedCashFlowItems.Values.Sum(item => item.DividendsPaid) / _annualProcessedCashFlowItems.Count;
+    /// <summary>
     /// Years without capex data are left out (decision 15). Null when no year is left, or there are no annual
     /// cash flow statements.
     /// </summary>

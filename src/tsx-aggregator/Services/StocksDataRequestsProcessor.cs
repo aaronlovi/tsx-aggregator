@@ -195,6 +195,8 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             item.CurrentTotalShareholdersEquity = equity;
         if (fields.CurDividendsPaid is long dividends)
             item.CurrentDividendsPaid = dividends;
+        if (fields.AverageDividendsPaid is long averageDividends)
+            item.AverageDividendsPaid = averageDividends;
         if (fields.CurAdjustedRetainedEarnings is long adjustedRetainedEarnings)
             item.CurrentAdjustedRetainedEarnings = adjustedRetainedEarnings;
         if (fields.OldestRetainedEarnings is long oldestRetainedEarnings)

@@ -292,12 +292,14 @@
             {{ (companyDetails.curTotalShareholdersEquity | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
           </td>
           <th class="mat-header-cell data-table__header">
-            <span matTooltip="Dividends paid in the last 12 months">
-              Cur. Dividends Paid
+            <span matTooltip="Dividends paid per year, averaged over the same years as the average net cash flow. Added back to it for the est. return from cash flow. The latest year is shown when you hover over the figure.">
+              Avg. Dividends Paid
             </span>
           </th>
           <td class="mat-cell data-table__data data-table__data--numeric">
-            {{ (companyDetails.curDividendsPaid | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            <span [matTooltip]="'Latest year ' + ((companyDetails.curDividendsPaid | currency:'USD':'symbol':'1.0-0') ?? 'n/a')">
+              {{ (companyDetails.averageDividendsPaid | currency:'USD':'symbol':'1.0-0') ?? 'n/a' }}
+            </span>
           </td>
         </tr>
         <tr class="mat-row data-table__row">
