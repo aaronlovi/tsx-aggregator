@@ -139,8 +139,38 @@ public class TsxCompanyProcessorFsmTests {
         fsm.Update(Financials('A', ReportsBody("2025-12-31"))).OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Should().ContainSingle();
     }
 
+    // TMX's whole answer when it has no reports of a kind (PRU has no quarterly ones, XNDU and RFA no annual ones).
+    private const string NoReportsBody = """{"results":{"copyright":"Copyright (c) 2026 QuoteMedia, Inc.","count":0}}""";
+
+    [Fact]
+    public void NoAnnualReports_IsAnErrorOfItsOwn() {
+        TsxCompanyProcessorFsm fsm = NewFsm();
+
+        IList<TsxCompanyProcessorFsmOutputBase> outputs = fsm.Update(Financials('A', NoReportsBody));
+
+        outputs.OfType<TsxCompanyProcessorFsmOutputEncounteredError>().Single().ErrMsg.Should().Be(TsxCompanyProcessorFsm.NoAnnualReportsError);
+        fsm.IsInError.Should().BeTrue();
+    }
+
     [Theory]
-    [InlineData("""{"results":{"Company":{}}}""")]                // no report list, as for XNDU in the logs
+    [InlineData("""{"results":{"copyright":"c"}}""")]              // no count
+    [InlineData("""{"results":{"count":1}}""")]                    // says there are some
+    [InlineData("""{"results":{"count":"0"}}""")]
+    [InlineData("""{"results":{"count":0,"Company":{}}}""")]
+    [InlineData("""{"count":0}""")]
+    [InlineData("{}")]
+    public void OnlyTmxsExactNoReportsAnswer_CountsAsNoReports(string body) {
+        foreach (char reportType in "QA") {
+            TsxCompanyProcessorFsm fsm = NewFsm();
+
+            IList<TsxCompanyProcessorFsmOutputBase> outputs = fsm.Update(Financials(reportType, body));
+
+            outputs.OfType<TsxCompanyProcessorFsmOutputEncounteredError>().Single().ErrMsg.Should().Be("ProcessReports: Invalid body");
+        }
+    }
+
+    [Theory]
+    [InlineData("""{"results":{"Company":{}}}""")]                // no report list
     [InlineData("""{"results":{"Company":{"Report":null}}}""")]
     [InlineData("not json")]
     public void BadFinancialsBody_IsReportedAsAnError(string body) {

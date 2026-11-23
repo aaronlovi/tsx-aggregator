@@ -32,6 +32,9 @@ internal record TsxCompanyProcessorFsmOutputCompanyRawFinancials(TsxCompanyData 
 internal record TsxCompanyProcessorFsmOutputEncounteredError(string ErrMsg) : TsxCompanyProcessorFsmOutputBase { }
 
 internal class TsxCompanyProcessorFsm {
+    /// <summary>The error when TMX says it has no annual reports for the instrument: nothing is wrong, there is nothing to score.</summary>
+    internal const string NoAnnualReportsError = "ProcessReports: TMX has no annual reports";
+
     private readonly ILogger _logger;
     private readonly InstrumentDto _instrumentDto;
     private bool _gotQuarterlyFigures;
@@ -234,6 +237,19 @@ internal class TsxCompanyProcessorFsm {
     private void ProcessAnnualFigures(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) =>
         ProcessReports(text, Constants.ReportPeriodTypes.Annual, fsmOutputs);
 
+    /// <summary>
+    /// TMX's answer when it has no reports of the requested kind: a count of 0 and no company. Anything else without a
+    /// report list is an unusable response.
+    /// </summary>
+    private static bool HasNoReports(JsonElement root) =>
+        root.ValueKind is JsonValueKind.Object
+        && root.TryGetProperty("results", out JsonElement results)
+        && results.ValueKind is JsonValueKind.Object
+        && !results.TryGetProperty("Company", out _)
+        && results.TryGetProperty("count", out JsonElement count)
+        && count.ValueKind is JsonValueKind.Number
+        && count.TryGetInt32(out int value) && value == 0;
+
     private void ProcessReports(string text, Constants.ReportPeriodTypes reportPeriodType, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) {
         _logger.LogInformation("ProcessReports - Instrument:{Instrument}, Period Type:{ReportPeriodType}", _instrumentDto, reportPeriodType);
         _logger.LogDebug("Body: {Text}", text);
@@ -241,6 +257,11 @@ internal class TsxCompanyProcessorFsm {
         try {
             using JsonDocument jsonData = JsonDocument.Parse(text);
             JsonElement root = jsonData.RootElement;
+            if (reportPeriodType is Constants.ReportPeriodTypes.Annual && HasNoReports(root)) {
+                _logger.LogInformation("ProcessReports - TMX has no {ReportPeriodType} reports", reportPeriodType);
+                fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError(NoAnnualReportsError));
+                return;
+            }
             if (!root.TryGetProperty("results", out JsonElement results)
                 || !results.TryGetProperty("Company", out JsonElement companyResults)
                 || !companyResults.TryGetProperty("Report", out JsonElement reports)

@@ -161,4 +161,25 @@ public sealed class TsxCompanyProcessorTests : IAsyncLifetime {
         result.Success.Should().BeTrue();
         logger.At(LogLevel.Error).Should().ContainSingle().Which.Exception.Should().BeOfType<InvalidOperationException>();
     }
+
+    [Theory]
+    [InlineData("""{"results":{"copyright":"c","count":0}}""", LogLevel.Warning)] // TMX has no annual reports for it
+    [InlineData("""{"results":{"Company":{}}}""", LogLevel.Error)]                // anything else is still an error
+    public async Task NoAnnualReports_IsAWarning_AnUnreadableResponseAnError(string annualBody, LogLevel expected) {
+        // After R97, each company TMX has no annual reports for would have put one error in the log on every pass.
+        var logger = new RecordingLogger();
+        TsxCompanyProcessor processor = await Start(logger);
+        processor.RetryDelay = TimeSpan.Zero;
+        processor.ScrapeAttempt = async attempt => {
+            Task<string?> done = processor.BeginAttempt(attempt);
+            _ = processor.PostResponse(Financials(attempt, 'A', annualBody));
+            return await done;
+        };
+
+        Result<TsxCompanyData> result = await processor.GetRawFinancials().WaitAsync(Deadline);
+
+        result.Success.Should().BeFalse();
+        logger.Entries.Where(e => e.Level >= LogLevel.Warning).Should().ContainSingle()
+            .Which.Level.Should().Be(expected);
+    }
 }

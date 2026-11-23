@@ -126,9 +126,14 @@ internal sealed class TsxCompanyProcessor : BackgroundService, IDisposable {
         } while (!result.Success && attempt <= MaxRetries && !_externalCancellationToken.IsCancellationRequested);
 
         // A failed try is expected now and then and is only a warning; the company getting no data is the error.
-        if (!result.Success && !_externalCancellationToken.IsCancellationRequested)
-            _logger.LogError("GetRawFinancials failed after {Attempts} attempts for instrument {Instrument}: {Error}",
+        // TMX having no annual reports for an instrument (funds, new listings) is not an error either: nothing is wrong.
+        if (!result.Success && !_externalCancellationToken.IsCancellationRequested) {
+            LogLevel level = result.ErrMsg.EndsWith(TsxCompanyProcessorFsm.NoAnnualReportsError, StringComparison.Ordinal)
+                ? LogLevel.Warning
+                : LogLevel.Error;
+            _logger.Log(level, "GetRawFinancials failed after {Attempts} attempts for instrument {Instrument}: {Error}",
                 attempt, _instrumentDto, result.ErrMsg);
+        }
 
         return result;
     }
