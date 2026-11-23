@@ -421,6 +421,7 @@ public class CompanyReport
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
 
+        LimitPPESalesToTheMedianYear();
         EstimateMissingRetainedEarnings();
 
         CurAdjustedRetainedEarnings = CurRetainedEarnings + totalAnnualDividendsPaid - totalAnnualCommonStockIssuance - totalAnnualPreferredStockIssuance;
@@ -584,6 +585,26 @@ public class CompanyReport
     }
 
     /// <summary>
+    /// PP&amp;E sales reduce capex only up to the company's median year (V7): a one-off asset sale is not earnings,
+    /// while regular equipment sales are part of the business. Without purchases to set sales against, a net sale
+    /// counts as no capex.
+    /// </summary>
+    private void LimitPPESalesToTheMedianYear()
+    {
+        if (_annualProcessedCashFlowItems.Count == 0)
+            return;
+
+        decimal[] sales = [.. _annualProcessedCashFlowItems.Values.Select(item => item.PPESales).Order()];
+        decimal medianSales = (sales[(sales.Length - 1) / 2] + sales[sales.Length / 2]) / 2;
+
+        foreach (CashFlowItem item in _annualProcessedCashFlowItems.Values)
+        {
+            decimal limit = item.PPEPurchases is decimal purchases ? purchases + Math.Min(item.PPESales, medianSales) : 0;
+            item.NetPPEPurchaseAndSale = Math.Min(item.NetPPEPurchaseAndSale, limit);
+        }
+    }
+
+    /// <summary>
     /// Net PP&amp;E purchases and sales, negative for a net outflow. Uses NetPPEPurchaseAndSale, or
     /// PurchaseOfPPE + SaleOfPPE when that is the larger outflow (NetPPEPurchaseAndSale sometimes misses most of
     /// the purchases; decisions 14 and 21). Falls back to PurchaseOfPPE + SaleOfPPE, then PurchaseOfPPE alone, then
@@ -593,6 +614,14 @@ public class CompanyReport
         DateOnly reportDate, RawReportDataMap rawCashFlowReport, CashFlowItem cashFlowReport, IList<string> warnings)
     {
         cashFlowReport.HasCapExData = true;
+
+        decimal ppeSale = rawCashFlowReport["SaleOfPPE"] ?? 0;
+        cashFlowReport.PPESales = Math.Max(ppeSale, 0);
+        if (rawCashFlowReport["PurchaseOfPPE"] is decimal purchase)
+        {
+            decimal purchases = purchase + Math.Min(ppeSale, 0);
+            cashFlowReport.PPEPurchases = rawCashFlowReport["NetPPEPurchaseAndSale"] is decimal net ? Math.Min(net, purchases) : purchases;
+        }
 
         if (rawCashFlowReport.HasValue("NetPPEPurchaseAndSale") && rawCashFlowReport.HasValue("PurchaseOfPPE"))
             cashFlowReport.NetPPEPurchaseAndSale = Math.Min(

@@ -21,13 +21,20 @@ internal class CashFlowItem
     internal decimal OtherNonCashItems { get; set; }
     /// <summary>Net purchases and sales of PP&amp;E, as reported: negative for a net outflow.</summary>
     internal decimal NetPPEPurchaseAndSale { get; set; }
+    /// <summary>PP&amp;E purchases alone, negative (a negative sale counts as one); null without a purchases key.</summary>
+    internal decimal? PPEPurchases { get; set; }
+    /// <summary>PP&amp;E sales, 0 or more.</summary>
+    internal decimal PPESales { get; set; }
     /// <summary>True when the statement had any capex key. Missing capex is unknown, not zero.</summary>
     internal bool HasCapExData { get; set; }
 
     // Derived properties
 
     internal decimal NetCashFlow => GrossCashFlow - (NetIssuanceOfDebt + NetIssuanceOfStock + NetIssuanceOfPreferredStock);
-    /// <summary>Total net capital expenditure, positive when the company spent more on PP&amp;E than it sold.</summary>
+    /// <summary>
+    /// Net capital expenditure, with sales counted up to the company's median year (V7): positive when the company
+    /// spent more on PP&amp;E than that.
+    /// </summary>
     internal decimal CapEx => -NetPPEPurchaseAndSale;
     /// <summary>
     /// A year with depreciation, amortization or depletion but no capex data would add the non-cash charges back

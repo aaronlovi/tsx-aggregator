@@ -227,9 +227,56 @@ public class CompanyReportTests {
             .Should().Be(70m);
     }
 
+    // V7: PP&E sales reduce capex only up to the company's median year, so a one-off asset sale is not earnings
+    // (POU 2025: 3,796M of sales), while regular equipment sales (PHX) still count.
+
     [Fact]
-    public void OwnerEarnings_CapEx_NetSaleOfPPE_IncreasesOwnerEarnings() {
-        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", 15m)).Should().Be(115m);
+    public void OwnerEarnings_CapEx_NetSaleOfPPEWithoutPurchases_IsNotEarnings() {
+        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", 15m)).Should().Be(100m);
+    }
+
+    /// <summary>Average owner earnings of years with operating cash flow 200, purchases of 100 and these PP&amp;E sales.</summary>
+    private static decimal? OwnerEarningsWithSales(params decimal[] sales) {
+        var report = NewReport();
+        for (int i = 0; i < sales.Length; i++) {
+            report.AddAnnualCashFlowStatement(Fy2020.AddYears(i), CreateRawReport(
+                ("OperatingCashFlow", 200m),
+                ("PurchaseOfPPE", -100m),
+                ("SaleOfPPE", sales[i]),
+                ("NetPPEPurchaseAndSale", sales[i] - 100m)));
+        }
+        return Process(report).AverageOwnerEarnings;
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_OneOffSaleOfPPE_IsNotEarnings() {
+        _ = OwnerEarningsWithSales(0m, 0m, 600m).Should().Be(100m, "the median year has no sales");
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_RegularSalesOfPPE_StillCount() {
+        _ = OwnerEarningsWithSales(30m, 30m, 30m).Should().Be(130m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_LargeSale_CountsUpToTheMedianYear() {
+        _ = OwnerEarningsWithSales(30m, 15m, 600m).Should().Be(125m, "sales count as 30, 15 and 30");
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_EvenNumberOfYears_MedianIsTheMiddlePairsAverage() {
+        _ = OwnerEarningsWithSales(0m, 10m, 20m, 600m).Should().Be(110m, "median 15: sales count as 0, 10, 15 and 15");
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_NegativeSale_IsStillAPurchase() {
+        // The shape of WCP 2023 (whose figures don't tie to its change in cash). V7 leaves this as it was.
+        _ = OwnerEarningsOf(
+            ("OperatingCashFlow", 1742m),
+            ("PurchaseOfPPE", -171m),
+            ("SaleOfPPE", -765m),
+            ("NetPPEPurchaseAndSale", -765m))
+            .Should().Be(806m, "capex is the larger outflow, 171 + 765");
     }
 
     [Fact]
@@ -463,7 +510,7 @@ public class CompanyReportTests {
     [Fact]
     public void OwnerEarnings_NonNegativeNetPPEWithoutPurchases_NoDepreciation_YearKept() {
         // Nothing is added back, so a net sale of PP&E is taken at face value.
-        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", 5m)).Should().Be(105m);
+        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", 5m)).Should().Be(100m, "the year counts, the net sale does not (V7)");
     }
 
     // Decision 16: Depletion is not added again when DepreciationAmortizationDepletion equals D&A.
