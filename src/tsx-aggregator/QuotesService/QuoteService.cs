@@ -24,6 +24,7 @@ public class QuoteService : BackgroundService, IQuoteService {
     private readonly Dictionary<string, CachedPrice> _pricesByInstrumentSymbol; // In-memory cache of stock prices
     private int _consecutiveFailures;
     private DateTime? _retryAtUtc; // set after a failed cycle: when to try again
+    private bool _fetchInFlight; // a fetch cycle runs in the background; only one at a time
 
     private readonly record struct CachedPrice(decimal Price, DateTime SeenUtc);
 
@@ -77,11 +78,20 @@ public class QuoteService : BackgroundService, IQuoteService {
                 _logger.LogInformation("QuoteService - Got a message {Input}", input);
 
                 using var reqIdContext = _logger.BeginScope(new Dictionary<string, long> { [LogUtils.ReqIdContext] = input.ReqId });
-                using var thisRequestCts = CancellationTokenSource.CreateLinkedTokenSource(input.CancellationToken, stoppingToken);
 
+                // Nothing here waits on Google: the fetch cycle runs in the background and posts its results back,
+                // so a price request is answered from the cache at once however slow the sheet is (R95).
                 switch (input) {
                     case QuoteServiceTimeoutInput ti: {
-                        await ProcessQuoteServiceTimeoutInput(ti, thisRequestCts.Token, stoppingToken);
+                        StartFetchCycle(ti, stoppingToken);
+                        break;
+                    }
+                    case QuoteServiceOldQuotesReadInput oldQuotes: {
+                        ProcessOldQuotesRead(oldQuotes);
+                        break;
+                    }
+                    case QuoteServiceFetchDoneInput done: {
+                        ProcessFetchDone(done, stoppingToken);
                         break;
                     }
                     case QuoteServiceFillPricesForSymbolsInput fillPricesInput:
@@ -115,9 +125,30 @@ public class QuoteService : BackgroundService, IQuoteService {
         }
     }
 
-    private async Task ProcessQuoteServiceTimeoutInput(QuoteServiceTimeoutInput ti, CancellationToken ct, CancellationToken stoppingToken) {
+    /// <summary>
+    /// Starts a fetch cycle in the background. Only the loop touches the cache and the fetch state; the cycle reports
+    /// back through <see cref="QuoteServiceOldQuotesReadInput"/> and <see cref="QuoteServiceFetchDoneInput"/>.
+    /// </summary>
+    private void StartFetchCycle(QuoteServiceTimeoutInput ti, CancellationToken stoppingToken) {
         _logger.LogInformation("ProcessQuoteServiceTimeoutInput {CurTime}", ti.CurTimeUtc);
 
+        if (_fetchInFlight) {
+            // Not expected: the next timeout is only set once a cycle has ended
+            _logger.LogWarning("QuoteService - A fetch cycle is already running, ignoring the timeout");
+            return;
+        }
+
+        _fetchInFlight = true;
+        bool fetchDue = !(ti.CurTimeUtc < _nextFetchQuotesTime);
+        // Task.Run: the clear and the writes are synchronous calls, and must not hold up the loop's thread either
+        _ = Task.Run(() => RunFetchCycle(ti.CurTimeUtc, fetchDue, stoppingToken), CancellationToken.None);
+    }
+
+    /// <summary>
+    /// The Google Sheets side of a cycle, off the input loop. It never throws: every outcome is posted to the loop.
+    /// </summary>
+    private async Task RunFetchCycle(DateTime curTimeUtc, bool fetchDue, CancellationToken ct) {
+        QuoteServiceFetchDoneInput done;
         try {
             // Read the quotes already in the sheet: the starting prices after a restart, and a fallback in an outage
             Dictionary<string, decimal> oldPrices = await _sheetsService.ReadQuotes("A", "B", new string[] { "C" }, ct);
@@ -125,51 +156,80 @@ public class QuoteService : BackgroundService, IQuoteService {
                 _logger.LogWarning("Failed to read old quotes");
 
             _logger.LogInformation("Found {NumPrices} old quotes", oldPrices.Count);
-            MergeIntoCache(oldPrices, DateTime.UtcNow);
+            _ = PostRequest(new QuoteServiceOldQuotesReadInput(oldPrices, DateTime.UtcNow));
 
-            // Mark the Quote service as ready to accept price requests
-            _ = QuoteServiceReady.TrySetResult();
-
-            if (ti.CurTimeUtc < _nextFetchQuotesTime) {
+            if (!fetchDue) {
                 _logger.LogInformation("Not time to fetch new quotes yet, skipping");
-                RecordSuccess();
-                return;
+                done = QuoteServiceFetchDoneInput.NotDue();
+            } else {
+                // Clear the worksheet
+                _sheetsService.ClearColumns();
+
+                // Write the raw instrument symbols to the worksheet
+                List<IList<object>> instrumentSymbols = GetInstrumentSymbols();
+                _sheetsService.WriteRawValuesToRange("A", instrumentSymbols);
+
+                // Write the formulas to the worksheet
+                ConvertInstrumentSymbolsToGoogleFinanceForumula(instrumentSymbols);
+                _sheetsService.WriteUserEnteredValuesToRange("B", instrumentSymbols);
+
+                await _sheetsService.FetchQuoteOverrides(ct);
+
+                // Get the new quotes. Cells Google has not computed yet are missing; those symbols keep their last price.
+                Dictionary<string, decimal> newPrices = await _sheetsService.ReadQuotes("A", "B", new string[] { "C" }, ct);
+                _logger.LogInformation("Found {NumPrices} new quotes", newPrices.Count);
+
+                // Only now that the quotes are in is the next fetch two hours away
+                done = QuoteServiceFetchDoneInput.Fetched(newPrices, DateTime.UtcNow, curTimeUtc + Constants.TwoHours);
             }
-
-            // Clear the worksheet
-            _sheetsService.ClearColumns();
-
-            // Write the raw instrument symbols to the worksheet
-            List<IList<object>> instrumentSymbols = GetInstrumentSymbols();
-            _sheetsService.WriteRawValuesToRange("A", instrumentSymbols);
-
-            // Write the formulas to the worksheet
-            ConvertInstrumentSymbolsToGoogleFinanceForumula(instrumentSymbols);
-            _sheetsService.WriteUserEnteredValuesToRange("B", instrumentSymbols);
-
-            await _sheetsService.FetchQuoteOverrides(ct);
-
-            // Get the new quotes. Cells Google has not computed yet are missing; those symbols keep their last price.
-            Dictionary<string, decimal> newPrices = await _sheetsService.ReadQuotes("A", "B", new string[] { "C" }, ct);
-            _logger.LogInformation("Found {NumPrices} new quotes", newPrices.Count);
-            MergeIntoCache(newPrices, DateTime.UtcNow);
-
-            // Only now that the quotes are in is the next fetch two hours away
-            _nextFetchQuotesTime = ti.CurTimeUtc + Constants.TwoHours;
-            Result saved = await _dbm.UpdateNextTimeToFetchQuotes(_nextFetchQuotesTime.Value, ct);
-            if (!saved.Success)
-                _logger.LogWarning("QuoteService - Failed to save the next fetch time: {ErrMsg}", saved.ErrMsg);
-
-            RecordSuccess();
         } catch (OperationCanceledException) {
             _logger.LogInformation("ProcessQuoteServiceTimeoutInput - Operation cancelled");
+            done = QuoteServiceFetchDoneInput.WasCancelled();
         } catch (Exception ex) {
+            done = QuoteServiceFetchDoneInput.Failed(ex);
+        }
+
+        _ = PostRequest(done);
+
+        if (done.NextFetchQuotesTimeUtc is DateTime next)
+            await SaveNextFetchTime(next, ct);
+    }
+
+    private async Task SaveNextFetchTime(DateTime nextFetchQuotesTimeUtc, CancellationToken ct) {
+        try {
+            Result saved = await _dbm.UpdateNextTimeToFetchQuotes(nextFetchQuotesTimeUtc, ct);
+            if (!saved.Success)
+                _logger.LogWarning("QuoteService - Failed to save the next fetch time: {ErrMsg}", saved.ErrMsg);
+        } catch (OperationCanceledException) {
+            _logger.LogInformation("QuoteService - Saving the next fetch time cancelled");
+        } catch (Exception ex) {
+            _logger.LogWarning(ex, "QuoteService - Failed to save the next fetch time");
+        }
+    }
+
+    private void ProcessOldQuotesRead(QuoteServiceOldQuotesReadInput input) {
+        MergeIntoCache(input.Prices, input.ReadUtc);
+
+        // Mark the Quote service as ready to accept price requests
+        _ = QuoteServiceReady.TrySetResult();
+    }
+
+    private void ProcessFetchDone(QuoteServiceFetchDoneInput done, CancellationToken stoppingToken) {
+        _fetchInFlight = false;
+
+        if (done.Failure is Exception ex) {
             TimeSpan retryIn = RecordFailure(DateTime.UtcNow);
             _logger.LogError(ex, "ProcessQuoteServiceTimeoutInput - general fault, retrying in {RetryIn}", retryIn);
-        } finally {
-            // The next timeout belongs to the service, not to this request, so it is cancelled only by shutdown
-            SetupTimeoutTask(stoppingToken);
+        } else if (!done.Cancelled) {
+            if (done.NewPrices is not null && done.ReadUtc is DateTime readUtc)
+                MergeIntoCache(done.NewPrices, readUtc);
+            if (done.NextFetchQuotesTimeUtc is DateTime next)
+                _nextFetchQuotesTime = next;
+            RecordSuccess();
         }
+
+        // The next timeout belongs to the service, not to a request, so it is cancelled only by shutdown
+        SetupTimeoutTask(stoppingToken);
     }
 
     /// <summary>

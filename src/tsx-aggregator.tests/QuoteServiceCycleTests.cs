@@ -154,6 +154,36 @@ public sealed class QuoteServiceCycleTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task PriceRequest_IsAnsweredFromTheCache_WhileTheSheetIsSlow() {
+        // R95: the fetch ran inside the input loop, and the clear and writes are synchronous calls that can take
+        // 100 s each. On 2026-11-23 a fetch took 11 minutes, and price requests waited behind it until they timed out.
+        using var sheetSlow = new ManualResetEventSlim(false);
+        int clears = 0;
+        _ = _sheets.Setup(s => s.ClearColumns()).Callback(() => { _ = Interlocked.Increment(ref clears); sheetSlow.Wait(Deadline); });
+        _reads.Enqueue(new() { ["ABC"] = 1m });   // the sheet before the refresh
+        _reads.Enqueue(new() { ["ABC"] = 1.5m }); // after it
+        try {
+            QuoteService service = await Start();
+            await service.QuoteServiceReady.Task.WaitAsync(Deadline);
+            await Eventually(() => Volatile.Read(ref clears) == 1); // the fetch is now stuck in the clear
+
+            using var input = new QuoteServiceFillPricesForSymbolsInput(1, null, ["ABC"]);
+            service.PostRequest(input).Should().BeTrue();
+            object? answered = await input.Completed.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            ((IDictionary<string, decimal>)answered!).Should().Equal(new Dictionary<string, decimal> { ["ABC"] = 1m });
+
+            sheetSlow.Set();
+            await Eventually(() => _readCount >= 2);
+            await Eventually(() => service.NextFetchQuotesTime is not null);
+            IDictionary<string, decimal> after = await Prices(service, "ABC");
+            after.Should().Equal(new Dictionary<string, decimal> { ["ABC"] = 1.5m });
+        } finally {
+            sheetSlow.Set();
+        }
+    }
+
+    [Fact]
     public async Task PriceNotSeenForLongerThanMaxPriceAge_IsDropped() {
         // A symbol that stops resolving must not keep a stale price forever.
         _reads.Enqueue(new() { ["ABC"] = 1m, ["XYZ"] = 2m });
