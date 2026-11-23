@@ -134,6 +134,55 @@ public class CompanyReportTests {
         _ = Process(report).AverageOwnerEarnings.Should().Be(-10m);
     }
 
+    // V1: owner earnings are the reported operating cash flow minus capex. Rebuilding it from parts missed every line
+    // outside the key list: IFRS statements add back the whole tax expense (tagged DeferredTax) and subtract the taxes
+    // paid on a line the model never read (TBL: 101M a year against 69M reported, minus capex).
+
+    [Fact]
+    public void OwnerEarnings_UseReportedOperatingCashFlow_MinusCapEx() {
+        _ = OwnerEarningsOf(
+            ("CashFlowFromContinuingOperatingActivities", 80m),
+            ("OperatingCashFlow", 80m),
+            ("DepreciationAndAmortization", 20m),
+            ("DeferredTax", 25m), // the whole tax expense; taxes paid (25) are on a line not read
+            ("NetPPEPurchaseAndSale", -30m))
+            .Should().Be(50m); // not 100 + 20 + 25 - 30 = 115
+    }
+
+    [Fact]
+    public void OwnerEarnings_PreferContinuingOperations_OverOperatingCashFlow() {
+        // As net income: from continuing operations
+        _ = OwnerEarningsOf(
+            ("CashFlowFromContinuingOperatingActivities", 70m),
+            ("OperatingCashFlow", 90m),
+            ("NetPPEPurchaseAndSale", -10m))
+            .Should().Be(60m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_FallBackToOperatingCashFlow() {
+        _ = OwnerEarningsOf(
+            ("OperatingCashFlow", 90m),
+            ("NetPPEPurchaseAndSale", -10m))
+            .Should().Be(80m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_ReportedOperatingCashFlow_AlsoDrivesRoeFromOwnerEarnings() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("NetIncomeFromContinuingOperations", 100m),
+            ("OperatingCashFlow", 60m),
+            ("DeferredTax", 25m),
+            ("NetPPEPurchaseAndSale", -10m)));
+        report.AddAnnualBalanceSheet(Fy2020, CreateRawReport(("StockholdersEquity", 400m)));
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(("StockholdersEquity", 600m)));
+
+        _ = Process(report);
+
+        _ = report.RoeOwnerEarningsNumerator.Should().Be(50m);
+    }
+
     // B2: capex is total net capex, -NetPPEPurchaseAndSale, with fallbacks
     // PurchaseOfPPE + SaleOfPPE -> PurchaseOfPPE -> -CapitalExpenditureReported (decision 1).
 

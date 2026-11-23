@@ -354,6 +354,9 @@ public class CompanyReport
             else
                 LogMissingPropertyWarning(reportDate, "NetIncomeFromContinuingOperations", warnings);
 
+            cashFlowReport.ReportedOperatingCashFlow =
+                rawCashFlowReport.FirstPresent("CashFlowFromContinuingOperatingActivities", "OperatingCashFlow");
+
             if ((rawCashFlowReport["ChangesInCash"]
                     ?? (rawCashFlowReport["EndCashPosition"] - rawCashFlowReport["BeginningCashPosition"])) is decimal grossCashFlow)
                 cashFlowReport.GrossCashFlow = grossCashFlow;
