@@ -334,7 +334,7 @@ public class CompanyReportInputSelectionTests {
 
         List<string> warnings = Process(report);
 
-        _ = report.AverageOwnerEarnings.Should().Be(0m);
+        _ = report.AverageOwnerEarnings.Should().BeNull("the year has neither net income nor operating cash flow (V8)");
         _ = warnings.Should().Contain($"Income statement(report date: {Fy2021}) missing property 'NetIncomeContinuousOperations'");
         _ = warnings.Should().Contain($"Missing property 'NetIncomeFromContinuingOperations'. Report date: {Fy2021}");
     }

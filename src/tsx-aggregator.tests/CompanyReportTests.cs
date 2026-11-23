@@ -124,14 +124,44 @@ public class CompanyReportTests {
             .Should().Be(98m);
     }
 
+    // V8: a year with neither operating cash flow nor net income says nothing about earnings. It used to count as
+    // minus its capex (Loblaw 2021: -1,182M).
+
     [Fact]
-    public void OwnerEarnings_NoNetIncome_StillSumsTheOtherTerms() {
+    public void OwnerEarnings_YearWithoutOperatingCashFlowOrNetIncome_IsLeftOut() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("OperatingCashFlow", 100m), ("NetPPEPurchaseAndSale", -10m)));
+
+        _ = Process(report).AverageOwnerEarnings.Should().Be(90m, "not (90 - 30) / 2");
+    }
+
+    [Fact]
+    public void OwnerEarnings_OnlyYearsWithoutOperatingCashFlowOrNetIncome_IsNull() {
         var report = NewReport();
         report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
-            ("Depreciation", 20m),
-            ("NetPPEPurchaseAndSale", -30m)));
+            ("Depreciation", 20m), ("NetPPEPurchaseAndSale", -30m)));
 
-        _ = Process(report).AverageOwnerEarnings.Should().Be(-10m);
+        _ = Process(report).AverageOwnerEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void OwnerEarnings_NetIncomeWithoutOperatingCashFlow_StillCounts() {
+        // KPT never has operating cash flow, but has net income: the rebuild is all there is.
+        _ = OwnerEarningsOf(("NetPPEPurchaseAndSale", -30m)).Should().Be(70m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_YearWithoutOperatingCashFlowOrNetIncome_IsNotARoeYear() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(("NetPPEPurchaseAndSale", -30m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(
+            ("OperatingCashFlow", 100m), ("NetPPEPurchaseAndSale", -10m)));
+        report.AddAnnualBalanceSheet(Fy2020, CreateRawReport(("StockholdersEquity", 400m)));
+        report.AddAnnualBalanceSheet(Fy2021, CreateRawReport(("StockholdersEquity", 600m)));
+
+        _ = Process(report).RoeOwnerEarningsByYear.Should().ContainSingle().Which.YearEnd.Should().Be(Fy2021);
     }
 
     // V1: owner earnings are the reported operating cash flow minus capex. Rebuilding it from parts missed every line

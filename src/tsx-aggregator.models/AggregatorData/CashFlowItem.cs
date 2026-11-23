@@ -31,9 +31,11 @@ internal class CashFlowItem
     internal decimal CapEx => -NetPPEPurchaseAndSale;
     /// <summary>
     /// A year with depreciation, amortization or depletion but no capex data would add the non-cash charges back
-    /// without subtracting the spending they stand for, so it is left out of the owner-earnings average.
+    /// without subtracting the spending they stand for, so it is left out of the owner-earnings average. So is a year
+    /// with neither operating cash flow nor net income, which would count as minus its capex (V8).
     /// </summary>
-    internal bool IsUsableForOwnerEarnings => HasCapExData || DepreciationAndAmortization + Depletion <= 0;
+    internal bool IsUsableForOwnerEarnings => (ReportedOperatingCashFlow is not null || NetIncomeFromContinuingOperations is not null)
+        && (HasCapExData || DepreciationAndAmortization + Depletion <= 0);
     /// <summary>
     /// Reported operating cash flow minus capex (V1). Only a statement without operating cash flow is rebuilt from
     /// net income and the non-cash items, because the rebuild misses every line outside the keys it reads, such as
