@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using tsx_aggregator.models;
@@ -6,12 +7,14 @@ using tsx_aggregator.models;
 namespace tsx_aggregator.tests;
 
 public class TopScoreDiffComputerTests {
+    private static readonly DateTimeOffset Now = new(2026, 11, 23, 17, 0, 0, TimeSpan.Zero);
 
     /// <summary>
     /// Creates a CompanyFullDetailReport that passes all 16 checks (OverallScore == 16).
     /// </summary>
     private static CompanyFullDetailReport MakeTopScoreCompany(
-        string symbol, string name, decimal roeEachYear = 0.2m, decimal oldestRetainedEarnings = 30_000_000M, int numYears = 5) {
+        string symbol, string name, decimal roeEachYear = 0.2m, decimal oldestRetainedEarnings = 30_000_000M, int numYears = 5,
+        DateTimeOffset? annual = null, DateTimeOffset? quarterly = null) {
         return new CompanyFullDetailReport(
             exchange: "TSX",
             companySymbol: symbol.Replace(".TO", ""),
@@ -37,7 +40,9 @@ public class TopScoreDiffComputerTests {
                 OwnerEarningsNumerator: 55_000_000M,
                 OwnerEarningsEquity: 500_000_000M,
                 OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears(roeEachYear)),
-            scoring: new ScoringOptions());
+            scoring: new ScoringOptions(),
+            mostRecentAnnualReportDate: annual,
+            mostRecentQuarterlyReportDate: quarterly);
     }
 
     /// <summary>
@@ -93,7 +98,7 @@ public class TopScoreDiffComputerTests {
         };
 
         // Act
-        var result = TopScoreDiffComputer.ComputeTopScoreList(reports);
+        var result = TopScoreDiffComputer.ComputeTopScoreList(reports, Now);
 
         // Assert
         _ = result.Should().HaveCount(2);
@@ -103,7 +108,7 @@ public class TopScoreDiffComputerTests {
 
     [Fact]
     public void ComputeTopScoreList_WithEmptyInput_ReturnsEmptyList() {
-        var result = TopScoreDiffComputer.ComputeTopScoreList([]);
+        var result = TopScoreDiffComputer.ComputeTopScoreList([], Now);
         _ = result.Should().BeEmpty();
     }
 
@@ -114,7 +119,7 @@ public class TopScoreDiffComputerTests {
             MakeLowScoreCompany("DEF.TO", "DEF Inc")
         };
 
-        var result = TopScoreDiffComputer.ComputeTopScoreList(reports);
+        var result = TopScoreDiffComputer.ComputeTopScoreList(reports, Now);
         _ = result.Should().BeEmpty();
     }
 
@@ -126,7 +131,7 @@ public class TopScoreDiffComputerTests {
             MakeTopScoreCompany("MMM.TO", "MMM Ltd")
         };
 
-        var result = TopScoreDiffComputer.ComputeTopScoreList(reports);
+        var result = TopScoreDiffComputer.ComputeTopScoreList(reports, Now);
         _ = result.Should().HaveCount(3);
         _ = result[0].InstrumentSymbol.Should().Be("AAA.TO");
         _ = result[1].InstrumentSymbol.Should().Be("MMM.TO");
@@ -136,7 +141,7 @@ public class TopScoreDiffComputerTests {
     [Fact]
     public void ComputeTopScoreList_PopulatesFinancialFields() {
         var report = MakeTopScoreCompany("ABC.TO", "ABC Corp");
-        var result = TopScoreDiffComputer.ComputeTopScoreList([report]);
+        var result = TopScoreDiffComputer.ComputeTopScoreList([report], Now);
 
         _ = result.Should().HaveCount(1);
         _ = result[0].PricePerShare.Should().Be(report.PricePerShare);
@@ -154,7 +159,7 @@ public class TopScoreDiffComputerTests {
         var report = MakeLowScoreCompany("ABC.TO", "ABC Corp");
         _ = report.OverallScore.Should().BeLessThan(ScoringOptions.TopScoreCutoff, "a company with no price data cannot reach the top-score cutoff");
 
-        var result = TopScoreDiffComputer.ComputeTopScoreList([report]);
+        var result = TopScoreDiffComputer.ComputeTopScoreList([report], Now);
         _ = result.Should().BeEmpty();
     }
 
@@ -514,8 +519,29 @@ public class TopScoreDiffComputerTests {
         CompanyFullDetailReport thirteen = MakeTopScoreCompany("THI.TO", "Thirteen", roeEachYear: 0.05m, oldestRetainedEarnings: 60_000_000M, numYears: 3);
         _ = new[] { fifteen.OverallScore, fourteen.OverallScore, thirteen.OverallScore }.Should().Equal(15, 14, 13);
 
-        IReadOnlyList<TopScoreCompany> list = TopScoreDiffComputer.ComputeTopScoreList([fifteen, fourteen, thirteen]);
+        IReadOnlyList<TopScoreCompany> list = TopScoreDiffComputer.ComputeTopScoreList([fifteen, fourteen, thirteen], Now);
 
         _ = list.Select(c => c.InstrumentSymbol).Should().BeEquivalentTo(["FIF.TO", "FOU.TO"]);
+    }
+
+    // V10: newest report, annual or quarterly, older than 18 months keeps a company off the top list.
+    [Theory]
+    [InlineData("2025-12-31", "2026-06-30", true)]
+    [InlineData("2022-12-31", "2026-06-30", true)]   // a current quarterly report is enough
+    [InlineData("2025-12-31", "2022-06-30", true)]   // and so is a current annual one
+    [InlineData("2022-12-31", "2023-06-30", false)]  // both old
+    [InlineData("2022-12-31", null, false)]          // a fund without quarterly reports
+    [InlineData(null, "2023-06-30", false)]
+    [InlineData("2025-05-23", null, true)]           // exactly 18 months, to the day
+    [InlineData("2025-05-22", null, false)]
+    [InlineData(null, null, true)]                   // no dates: unknown, not stale
+    public void ComputeTopScoreList_LeavesOutCompaniesWithStaleReports(string? annual, string? quarterly, bool listed) {
+        static DateTimeOffset? Date(string? d) => d is null ? null : new DateTimeOffset(DateTime.Parse(d, System.Globalization.CultureInfo.InvariantCulture), TimeSpan.Zero);
+        CompanyFullDetailReport report = MakeTopScoreCompany("FUND", "Fund", annual: Date(annual), quarterly: Date(quarterly));
+
+        IReadOnlyList<TopScoreCompany> list = TopScoreDiffComputer.ComputeTopScoreList([report], Now);
+
+        list.Any().Should().Be(listed);
+        report.OverallScore.Should().Be(16, "staleness does not change the score");
     }
 }

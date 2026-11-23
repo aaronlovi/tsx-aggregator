@@ -106,7 +106,7 @@ internal class TopScoreAlertService : BackgroundService {
         }
 
         // Step 5: Compute top-score list
-        IReadOnlyList<TopScoreCompany> currentList = TopScoreDiffComputer.ComputeTopScoreList(reports);
+        IReadOnlyList<TopScoreCompany> currentList = TopScoreDiffComputer.ComputeTopScoreList(reports, DateTimeOffset.UtcNow);
 
         _logger.LogInformation("TopScoreAlertService - Found {Count} top-score companies", currentList.Count);
 

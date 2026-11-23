@@ -42,9 +42,9 @@ public record TopScoreDiff(
 
 public static class TopScoreDiffComputer {
 
-    public static IReadOnlyList<TopScoreCompany> ComputeTopScoreList(IReadOnlyList<CompanyFullDetailReport> reports) {
+    public static IReadOnlyList<TopScoreCompany> ComputeTopScoreList(IReadOnlyList<CompanyFullDetailReport> reports, DateTimeOffset nowUtc) {
         return reports
-            .Where(r => r.OverallScore >= ScoringOptions.TopScoreCutoff)
+            .Where(r => r.IsTopScore(nowUtc))
             .Select(r => new TopScoreCompany(
                 r.InstrumentSymbol,
                 r.CompanyName,

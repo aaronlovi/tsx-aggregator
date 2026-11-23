@@ -11,6 +11,9 @@ public class ScoringOptions {
     /// <summary>A company in the top list scores at least this many passes (14 of 16 since C16, decision 28).</summary>
     public const int TopScoreCutoff = 14;
 
+    /// <summary>A company whose newest annual or quarterly report is older than this stays off the top list (V10).</summary>
+    public const int StaleReportMonths = 18;
+
     public const int DefaultRoeConsistencyMinYears = 4;
     public const int DefaultRoeConsistencyWindowYears = 5;
     public const int DefaultRoeConsistencyMinUsableYears = 3;

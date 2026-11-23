@@ -27,7 +27,13 @@ namespace tsx_aggregator.tests;
 public class CompaniesControllerListTests {
     private readonly Mock<StockDataServiceClient> _client = new();
 
-    private CompaniesController Controller => new(_client.Object);
+    private static readonly DateTimeOffset Now = new(2026, 11, 23, 17, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedClock : TimeProvider {
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    private CompaniesController Controller => new(_client.Object, new FixedClock());
 
     private static AsyncUnaryCall<T> UnaryCall<T>(T reply) => new(
         Task.FromResult(reply),
@@ -584,5 +590,25 @@ public class CompaniesControllerListTests {
         IConvertToActionResult result = await Controller.SearchCompanies("le");
 
         _ = ErrorOf(result.Convert().Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Be("boom");
+    }
+
+    [Fact]
+    public async Task StaleReports_KeepACompanyOffTheTopList_ButNotOffTheOthers() {
+        // V10: MMP.UN's newest report is from 2022; its score would pair that with today's price.
+        GetStocksDataReplyItem stale = Item("STALE");
+        stale.MostRecentAnnualReportDate = Timestamp.FromDateTimeOffset(Now.AddYears(-4));
+        GetStocksDataReplyItem current = Item("CURR");
+        current.MostRecentAnnualReportDate = Timestamp.FromDateTimeOffset(Now.AddYears(-4));
+        current.MostRecentQuarterlyReportDate = Timestamp.FromDateTimeOffset(Now.AddMonths(-2));
+        SetupStocksData(stale, current);
+
+        IEnumerable<CompanySummaryReport> top = OkValue<IEnumerable<CompanySummaryReport>>(await Controller.GetCompanies());
+        PagedCompanySummaryReports all = OkValue<PagedCompanySummaryReports>(await Controller.GetAllCompanies(1, 10));
+        IEnumerable<CompanySummaryReport> bottom = OkValue<IEnumerable<CompanySummaryReport>>(await Controller.GetBottomCompanies());
+
+        top.Select(c => c.InstrumentSymbol).Should().Equal("CURR");
+        all.Companies.Select(c => c.InstrumentSymbol).Should().BeEquivalentTo("CURR", "STALE");
+        bottom.Select(c => c.InstrumentSymbol).Should().BeEquivalentTo("CURR", "STALE");
+        all.Companies.Should().OnlyContain(c => c.OverallScore == 16);
     }
 }

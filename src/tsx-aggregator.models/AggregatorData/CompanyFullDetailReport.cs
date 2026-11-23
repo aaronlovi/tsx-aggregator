@@ -298,6 +298,20 @@ public class CompanyFullDetailReport {
     public int OverallScore => AllChecks.Count(check => check == CheckResult.Pass);
     public int NotAvailableCount => AllChecks.Count(check => check == CheckResult.NotAvailable);
 
+    /// <summary>
+    /// The newest report, annual or quarterly, is more than <see cref="ScoringOptions.StaleReportMonths"/> months old, so
+    /// the score pairs old figures with today's price (V10). Without any report date it is unknown, and not stale.
+    /// </summary>
+    public bool HasStaleReports(DateTimeOffset nowUtc) {
+        DateTimeOffset? newest = MostRecentAnnualReportDate;
+        if (newest is null || MostRecentQuarterlyReportDate > newest)
+            newest = MostRecentQuarterlyReportDate;
+        return newest is DateTimeOffset date && date.UtcDateTime.Date < nowUtc.UtcDateTime.Date.AddMonths(-ScoringOptions.StaleReportMonths);
+    }
+
+    /// <summary>In the top list: a high enough score, on reports that are not stale.</summary>
+    public bool IsTopScore(DateTimeOffset nowUtc) => OverallScore >= ScoringOptions.TopScoreCutoff && !HasStaleReports(nowUtc);
+
     private static CheckResult Check(decimal? value, Func<decimal, bool> passes) =>
         value is decimal v ? (passes(v) ? CheckResult.Pass : CheckResult.Fail) : CheckResult.NotAvailable;
 

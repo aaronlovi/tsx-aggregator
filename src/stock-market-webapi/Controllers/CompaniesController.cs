@@ -24,7 +24,12 @@ public class CompaniesController : Controller {
     /// <summary>How long a call to tsx-aggregator may take before the page gets an error instead of waiting forever.</summary>
     public static readonly TimeSpan AggregatorCallTimeout = TimeSpan.FromSeconds(30);
 
-    public CompaniesController(StockDataServiceClient client) => _client = client;
+    private readonly TimeProvider _clock;
+
+    public CompaniesController(StockDataServiceClient client, TimeProvider? clock = null) {
+        _client = client;
+        _clock = clock ?? TimeProvider.System;
+    }
 
     private static DateTime AggregatorDeadline() => DateTime.UtcNow + AggregatorCallTimeout;
 
@@ -42,9 +47,10 @@ public class CompaniesController : Controller {
         // Sort the output list first by overall score, then by the average of total return by cash flow and total return by owner earnings
         fullDetailReports.Sort(ByScoreThenAverageReturn(descending: true));
 
-        // Keep only top-score companies (14 of 16 since C16), and transform to summary reports
+        // Keep only top-score companies (14 of 16 since C16) whose reports are not stale (V10), and transform to summary reports
+        DateTimeOffset nowUtc = _clock.GetUtcNow();
         var summaryReports = fullDetailReports
-            .Where(r => r.OverallScore >= ScoringOptions.TopScoreCutoff)
+            .Where(r => r.IsTopScore(nowUtc))
             .Select(CompanySummaryReport.FromDetailedReport)
             .ToList();
 
