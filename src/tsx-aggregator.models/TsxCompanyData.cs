@@ -17,6 +17,10 @@ public class TsxCompanyData {
     public string Exchange { get; set; } = string.Empty;    // From enhanced quote
     public decimal PricePerShare { get; set; }              // From enhanced quote
     public ulong CurNumShares { get; set; }                 // From enhanced quote
+    /// <summary>TMX's sector (e.g. Finance), from the enhanced quote; null when it has none (V5).</summary>
+    public string? Sector { get; set; }
+    /// <summary>TMX's industry (e.g. Banking), from the enhanced quote; null when it has none (V5).</summary>
+    public string? Industry { get; set; }
     public IList<RawReportDataMap> AnnualRawCashFlowReports { get; init; }
     public IList<RawReportDataMap> AnnualRawIncomeStatements { get; init; }
     public IList<RawReportDataMap> AnnualRawBalanceSheets { get; init; }
@@ -33,6 +37,8 @@ public class TsxCompanyData {
         Exchange = string.Empty;
         PricePerShare = 0;
         CurNumShares = 0;
+        Sector = null;
+        Industry = null;
         AnnualRawCashFlowReports.Clear();
         AnnualRawIncomeStatements.Clear();
         AnnualRawBalanceSheets.Clear();

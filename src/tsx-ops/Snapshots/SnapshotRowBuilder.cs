@@ -18,7 +18,9 @@ internal sealed record SnapshotInstrument(
     string InstrumentName,
     decimal PricePerShare,
     long NumShares,
-    int NumAnnualCashFlowReports);
+    int NumAnnualCashFlowReports,
+    string? Sector,
+    string? Industry);
 
 /// <summary>
 /// Turns the fields read back from a processed report into one snapshot row, building the
@@ -61,6 +63,8 @@ internal static class SnapshotRowBuilder {
         "est_return_oe_pct",
         "max_price",
         "reporting_currency",
+        "sector",
+        "industry",
         .. CheckColumns,
         Snapshot.ScoreColumn,
         "na_count",
@@ -76,6 +80,8 @@ internal static class SnapshotRowBuilder {
         row["company_name"] = instrument.CompanyName;
         row[Snapshot.StatusColumn] = status;
         row["price_per_share"] = Format(instrument.PricePerShare);
+        row["sector"] = instrument.Sector ?? string.Empty;
+        row["industry"] = instrument.Industry ?? string.Empty;
         return row;
     }
 
@@ -120,6 +126,8 @@ internal static class SnapshotRowBuilder {
             [Snapshot.StatusColumn] = StatusOk,
             ["price_per_share"] = Format(instrument.PricePerShare),
             ["reporting_currency"] = fields.ReportingCurrency ?? string.Empty,
+            ["sector"] = instrument.Sector ?? string.Empty,
+            ["industry"] = instrument.Industry ?? string.Empty,
             ["num_shares"] = Format(fields.CurNumShares),
             ["cur_total_shareholders_equity"] = Format(fields.CurTotalShareholdersEquity),
             ["cur_book_value"] = Format(fields.CurBookValue),

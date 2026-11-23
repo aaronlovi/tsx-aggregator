@@ -19,7 +19,7 @@ internal static class SnapshotSource {
     /// </summary>
     private const string InstrumentsSql = """
         SELECT i.instrument_id, i.exchange, i.company_symbol, i.company_name, i.instrument_symbol, i.instrument_name,
-               ip.price_per_share, ip.num_shares, cf.num_annual_cash_flow_reports
+               ip.price_per_share, ip.num_shares, cf.num_annual_cash_flow_reports, i.sector, i.industry
         FROM instruments i
         JOIN instrument_prices ip ON ip.instrument_id = i.instrument_id AND ip.obsoleted_date IS NULL
         JOIN (SELECT instrument_id, COUNT(*)::int AS num_annual_cash_flow_reports
@@ -63,7 +63,9 @@ internal static class SnapshotSource {
                 InstrumentName: reader.GetString(5),
                 PricePerShare: reader.GetDecimal(6),
                 NumShares: reader.GetInt64(7),
-                NumAnnualCashFlowReports: reader.GetInt32(8)));
+                NumAnnualCashFlowReports: reader.GetInt32(8),
+                Sector: reader.IsDBNull(9) ? null : reader.GetString(9),
+                Industry: reader.IsDBNull(10) ? null : reader.GetString(10)));
         }
 
         return instruments;

@@ -62,7 +62,8 @@ internal partial class RawCollector : BackgroundService {
             _logger.LogInformation("ProcessFetchInstrumentData - Updated instrument reports success");
             // Stamp last-scraped time even when the delta was empty, so the UI
             // reflects "we checked recently" rather than "data hasn't changed".
-            Result stampRes = await _dbm.UpdateInstrumentLastScrapedDate(instrumentDto.InstrumentId, DateTimeOffset.UtcNow, ct);
+            Result stampRes = await _dbm.UpdateInstrumentScrapeResult(instrumentDto.InstrumentId, DateTimeOffset.UtcNow,
+                newRawCompanyData.Sector, newRawCompanyData.Industry, ct);
             if (!stampRes.Success)
                 _logger.LogWarning("ProcessFetchInstrumentData - Failed to stamp last_scraped_date: {Error}", stampRes.ErrMsg);
         }

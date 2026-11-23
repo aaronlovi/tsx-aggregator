@@ -92,6 +92,28 @@ public class TsxCompanyProcessorFsmTests {
     }
 
     [Fact]
+    public void Classification_IsKept() {
+        // V5: TMX's sector and industry, to tell banks, insurers and investment companies apart
+        TsxCompanyProcessorFsm fsm = NewFsm();
+        string body = QuoteBody.Replace("\"fundamental\"", "\"classification\":{\"sector\":\"Finance\",\"industry\":\"Banking\"},\"fundamental\"");
+
+        _ = fsm.Update(Quote(body));
+        _ = fsm.Update(Financials('Q', ReportsBody("2025-12-31")));
+        TsxCompanyData data = fsm.Update(Financials('A', ReportsBody("2025-12-31"))).OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Single().CompanyReport;
+
+        data.Sector.Should().Be("Finance");
+        data.Industry.Should().Be("Banking");
+    }
+
+    [Fact]
+    public void MissingClassification_IsNotAnError() {
+        TsxCompanyData data = FeedAll(NewFsm()).OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Single().CompanyReport;
+
+        data.Sector.Should().BeNull();
+        data.Industry.Should().BeNull();
+    }
+
+    [Fact]
     public void SharesOutstanding_FallsBackToSharesoutstanding() {
         TsxCompanyProcessorFsm fsm = NewFsm();
         string body = QuoteBody.Replace("totalsharesoutstanding", "sharesoutstanding");

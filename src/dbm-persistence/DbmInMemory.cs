@@ -150,7 +150,7 @@ public sealed class DbmInMemory : IDbmService {
         }
     }
 
-    public ValueTask<Result> UpdateInstrumentLastScrapedDate(long instrumentId, DateTimeOffset lastScrapedDate, CancellationToken ct) {
+    public ValueTask<Result> UpdateInstrumentScrapeResult(long instrumentId, DateTimeOffset lastScrapedDate, string? sector, string? industry, CancellationToken ct) {
         // No-op for the in-memory backend; only the Postgres implementation persists this.
         return ValueTask.FromResult(Result.SUCCESS);
     }

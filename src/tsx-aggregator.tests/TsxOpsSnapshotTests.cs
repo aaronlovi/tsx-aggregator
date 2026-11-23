@@ -20,7 +20,9 @@ public class TsxOpsSnapshotTests {
         InstrumentName: "Abc Corp",
         PricePerShare: 10M,
         NumShares: 100_000_000,
-        NumAnnualCashFlowReports: 5);
+        NumAnnualCashFlowReports: 5,
+        Sector: null,
+        Industry: null);
 
     // A company that passes all 16 checks at $10/share with 100M shares (market cap $1B).
     private static readonly ProcessedReportFields AllPassFields = new(
@@ -258,5 +260,15 @@ public class TsxOpsSnapshotTests {
 
         _ = row["reporting_currency"].Should().Be("USD");
         _ = SnapshotRowBuilder.Build(Instrument, AllPassFields, new ScoringOptions())["reporting_currency"].Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RowBuilder_HasTheSectorAndIndustry() {
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(Instrument with { Sector = "Finance", Industry = "Insurance" }, AllPassFields, new ScoringOptions());
+
+        _ = row["sector"].Should().Be("Finance");
+        _ = row["industry"].Should().Be("Insurance");
+        _ = SnapshotRowBuilder.Build(Instrument, AllPassFields, new ScoringOptions())["sector"].Should().BeEmpty();
+        _ = SnapshotRowBuilder.BuildUnreadable(Instrument with { Sector = "Finance" }, SnapshotRowBuilder.StatusInvalid)["sector"].Should().Be("Finance");
     }
 }

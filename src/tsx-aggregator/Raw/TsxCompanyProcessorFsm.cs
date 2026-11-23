@@ -158,6 +158,12 @@ internal class TsxCompanyProcessorFsm {
         }
     }
 
+    private static string? NonEmptyString(JsonElement element, string name) =>
+        element.TryGetProperty(name, out JsonElement value) && value.ValueKind is JsonValueKind.String
+            && value.GetString() is string text && text.Trim().Length > 0
+                ? text.Trim()
+                : null;
+
     private void ProcessEnhancedQuote(string text, List<TsxCompanyProcessorFsmOutputBase> fsmOutputs) {
         _logger.LogInformation("ProcessEnhancedQuote - Instrument:{Instrument}", _instrumentDto);
         _logger.LogDebug("Body: {Text}", text);
@@ -204,6 +210,12 @@ internal class TsxCompanyProcessorFsm {
             _companyData.Exchange = _instrumentDto.Exchange;
             _companyData.PricePerShare = lastPriceData.GetDecimal();
             _companyData.CurNumShares = fundamentalTotalSharesOutstanding.GetUInt64();
+            // Optional: a quote without a classification is still usable (V5)
+            if (quote.TryGetProperty("classification", out JsonElement classification)
+                && classification.ValueKind is JsonValueKind.Object) {
+                _companyData.Sector = NonEmptyString(classification, "sector");
+                _companyData.Industry = NonEmptyString(classification, "industry");
+            }
             _gotEnhancedQuotes = true;
 
             _logger.LogInformation("#ProcessEnhancedQuote - symbol: {InstrumentSymbol}", _instrumentDto.InstrumentSymbol);

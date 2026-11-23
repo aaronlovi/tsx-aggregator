@@ -33,7 +33,11 @@ public interface IDbmService {
     ValueTask<Result> UpdateNextTimeToFetchQuotes(DateTime nextTimeToFetchQuotes, CancellationToken ct);
     ValueTask<(Result, IReadOnlyList<CurrentInstrumentRawDataReportDto>)> GetRawFinancialsByInstrumentId(long instrumentId, CancellationToken ct);
     ValueTask<Result> UpdateRawInstrumentReports(RawFinancialsDelta rawFinancialsDelta, CancellationToken ct);
-    ValueTask<Result> UpdateInstrumentLastScrapedDate(long instrumentId, DateTimeOffset lastScrapedDate, CancellationToken ct);
+    /// <summary>
+    /// After a successful scrape: stamps last_scraped_date, and stores TMX's sector and industry when the scrape had
+    /// them (a null keeps the stored value).
+    /// </summary>
+    ValueTask<Result> UpdateInstrumentScrapeResult(long instrumentId, DateTimeOffset lastScrapedDate, string? sector, string? industry, CancellationToken ct);
 
     ValueTask<Result<PagedInstrumentInfoDto>> GetInstrumentsWithNoRawReports(string exchange, int pageNumber, int pageSize, CancellationToken ct);
 

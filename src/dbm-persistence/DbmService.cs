@@ -170,8 +170,8 @@ public sealed class DbmService : IDisposable, IDbmService {
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
-    public async ValueTask<Result> UpdateInstrumentLastScrapedDate(long instrumentId, DateTimeOffset lastScrapedDate, CancellationToken ct) {
-        var stmt = new UpdateInstrumentLastScrapedDateStmt(instrumentId, lastScrapedDate.UtcDateTime);
+    public async ValueTask<Result> UpdateInstrumentScrapeResult(long instrumentId, DateTimeOffset lastScrapedDate, string? sector, string? industry, CancellationToken ct) {
+        var stmt = new UpdateInstrumentScrapeResultStmt(instrumentId, lastScrapedDate.UtcDateTime, sector, industry);
         return await _exec.ExecuteWithRetry(stmt, ct);
     }
 
