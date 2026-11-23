@@ -81,15 +81,18 @@ internal class RawFinancialDeltaTool {
                 continue;
             }
 
-            List<CurrentInstrumentRawDataReportDto> existingReportDtoRows = reportPeriod == Constants.ReportPeriodTypes.Annual
-                ? existingRawReportList.Where(rpt => rpt.ReportDate.Year == newRawReport.ReportDate.Value.Year).ToList()
-                : existingRawReportList.Where(rpt => {
-                    var existingReportQuarter = DateQuarter.FromDate(rpt.ReportDate.ToDateTimeUtc());
-                    var newReportQuarter = DateQuarter.FromDate(newRawReport.ReportDate.Value.ToDateTimeUtc());
-                    return existingReportQuarter == newReportQuarter;
-                }).ToList();
+            // A stored report matches only on the same report date (code review R31). Matching by calendar year or
+            // quarter merged a second report of the same year (a changed fiscal year end) into the first one's row.
+            DateOnly newReportDate = newRawReport.ReportDate.Value;
+            List<CurrentInstrumentRawDataReportDto> existingReportDtoRows =
+                existingRawReportList.Where(rpt => rpt.ReportDate == newReportDate).ToList();
 
             if (existingReportDtoRows.Count > 0) {
+                if (existingReportDtoRows.Count > 1) {
+                    _logger.LogWarning("takeDeltaCore:{ReportType},{ReportPeriod} - {NumRows} current reports for {ReportDate}, using report {InstrumentReportId}",
+                        reportType, reportPeriod, existingReportDtoRows.Count, newReportDate, existingReportDtoRows[0].InstrumentReportId);
+                }
+
                 // Found a matching existing report. Check for field-by-field equivalence
                 CurrentInstrumentRawDataReportDto existingReportDto = existingReportDtoRows[0];
                 using JsonDocument existingReportJsonObj = JsonDocument.Parse(existingReportDto.ReportJson);

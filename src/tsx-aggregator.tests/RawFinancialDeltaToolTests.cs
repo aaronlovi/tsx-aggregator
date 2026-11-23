@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -197,6 +197,56 @@ public class RawFinancialDeltaToolTests {
         _ = result.InstrumentReportsToInsert.Count.Should().Be(1);
         _ = result.InstrumentReportsToUpdate.Count.Should().Be(0);
         _ = result.InstrumentReportsToObsolete.Count.Should().Be(0);
+    }
+
+    // Review R31: reports were matched to stored ones by calendar year (annual) or calendar quarter (quarterly), so a
+    // second report in the same year or quarter (a changed fiscal year end) was merged into the first one's row, under
+    // its date. Found in the dev data: 18 annual rows of 10 companies (DOO's 2022-01-31 row held its 2022-12-31 report)
+    // and 2 quarterly rows (RUP 2024-11-30 / 2024-12-31). No stored dates drift by 10 days or less, so the match is exact.
+
+    private static readonly DateOnly Jan2022 = new(2022, 1, 31);
+    private static readonly DateOnly Dec2022 = new(2022, 12, 31);
+    private static readonly DateOnly Nov2024 = new(2024, 11, 30);
+    private static readonly DateOnly Dec2024 = new(2024, 12, 31);
+
+    private async Task<RawFinancialsDelta> DeltaOf(CurrentInstrumentRawDataReportDto existing, Action<TsxCompanyData> addNew) {
+        var newRawCompanyData = new TsxCompanyData();
+        addNew(newRawCompanyData);
+        return await new RawFinancialDeltaTool(ServiceProvider).TakeDelta(
+            TestDataFactory.DefaultInstrumentId, [existing], newRawCompanyData, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task TakeDelta_SecondAnnualReportInTheSameYear_IsInsertedNotMerged() {
+        RawFinancialsDelta result = await DeltaOf(
+            TestDataFactory.CreateCurrentInstrumentReportDto(reportDate: Jan2022, reportJson: "{\"A\": 1}"),
+            d => d.AnnualRawCashFlowReports.Add(new RawReportDataMap { ReportDate = Dec2022, ["A"] = 5 }));
+
+        _ = result.InstrumentReportsToUpdate.Should().BeEmpty("the January row must keep its own figures");
+        _ = result.InstrumentReportsToInsert.Should().ContainSingle().Which.ReportDate.Should().Be(Dec2022);
+    }
+
+    [Fact]
+    public async Task TakeDelta_SecondQuarterlyReportInTheSameQuarter_IsInsertedNotMerged() {
+        RawFinancialsDelta result = await DeltaOf(
+            TestDataFactory.CreateCurrentInstrumentReportDto(
+                reportPeriodType: (int)tsx_aggregator.shared.Constants.ReportPeriodTypes.Quarterly, reportDate: Nov2024, reportJson: "{\"A\": 1}"),
+            d => d.QuarterlyRawCashFlowReports.Add(new RawReportDataMap { ReportDate = Dec2024, ["A"] = 5 }));
+
+        _ = result.InstrumentReportsToUpdate.Should().BeEmpty();
+        _ = result.InstrumentReportsToInsert.Should().ContainSingle().Which.ReportDate.Should().Be(Dec2024);
+    }
+
+    [Fact]
+    public async Task TakeDelta_ChangedQuarterlyReport_SameDate_IsMerged() {
+        RawFinancialsDelta result = await DeltaOf(
+            TestDataFactory.CreateCurrentInstrumentReportDto(
+                reportPeriodType: (int)tsx_aggregator.shared.Constants.ReportPeriodTypes.Quarterly, reportDate: Dec2024, reportJson: "{\"A\": 1}"),
+            d => d.QuarterlyRawCashFlowReports.Add(new RawReportDataMap { ReportDate = Dec2024, ["A"] = 5 }));
+
+        _ = result.InstrumentReportsToInsert.Should().BeEmpty();
+        _ = result.InstrumentReportsToUpdate.Should().ContainSingle();
+        TestDataFactory.AssertMergedJsonContains(result.InstrumentReportsToUpdate[0].MergedReportJson, ("A", 5));
     }
 
     [Fact]
