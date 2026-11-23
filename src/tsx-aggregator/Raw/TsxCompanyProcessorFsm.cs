@@ -257,9 +257,12 @@ internal class TsxCompanyProcessorFsm {
         try {
             using JsonDocument jsonData = JsonDocument.Parse(text);
             JsonElement root = jsonData.RootElement;
-            if (reportPeriodType is Constants.ReportPeriodTypes.Annual && HasNoReports(root)) {
+            if (HasNoReports(root)) {
                 _logger.LogInformation("ProcessReports - TMX has no {ReportPeriodType} reports", reportPeriodType);
-                fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError(NoAnnualReportsError));
+                if (reportPeriodType == Constants.ReportPeriodTypes.Quarterly)
+                    _gotQuarterlyFigures = true; // Some companies report only once a year; the annual reports are enough (R99)
+                else
+                    fsmOutputs.Add(new TsxCompanyProcessorFsmOutputEncounteredError(NoAnnualReportsError));
                 return;
             }
             if (!root.TryGetProperty("results", out JsonElement results)

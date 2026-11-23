@@ -142,6 +142,23 @@ public class TsxCompanyProcessorFsmTests {
     // TMX's whole answer when it has no reports of a kind (PRU has no quarterly ones, XNDU and RFA no annual ones).
     private const string NoReportsBody = """{"results":{"copyright":"Copyright (c) 2026 QuoteMedia, Inc.","count":0}}""";
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void NoQuarterlyReports_AnnualOnesAreEnough(bool quarterlyFirst) {
+        // R99: a company that reports only once a year was never stored.
+        TsxCompanyProcessorFsm fsm = NewFsm();
+        _ = fsm.Update(Quote());
+        GotResponse quarterly = Financials('Q', NoReportsBody), annual = Financials('A', ReportsBody("2025-12-31"));
+
+        _ = fsm.Update(quarterlyFirst ? quarterly : annual);
+        IList<TsxCompanyProcessorFsmOutputBase> outputs = fsm.Update(quarterlyFirst ? annual : quarterly);
+
+        TsxCompanyData data = outputs.OfType<TsxCompanyProcessorFsmOutputCompanyRawFinancials>().Single().CompanyReport;
+        data.QuarterlyRawCashFlowReports.Should().BeEmpty();
+        data.AnnualRawCashFlowReports.Should().ContainSingle();
+    }
+
     [Fact]
     public void NoAnnualReports_IsAnErrorOfItsOwn() {
         TsxCompanyProcessorFsm fsm = NewFsm();
