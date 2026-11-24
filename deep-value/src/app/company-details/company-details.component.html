@@ -65,7 +65,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data">
-            {{ companyDetails.mostRecentAnnualReportDate ? (companyDetails.mostRecentAnnualReportDate | date:'yyyy-MM-dd') : '—' }}
+            {{ companyDetails.mostRecentAnnualReportDate ? (companyDetails.mostRecentAnnualReportDate | date:'yyyy-MM-dd':'UTC') : '—' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="The date of the most recent quarterly financial report we have on file.">
@@ -73,7 +73,7 @@
             </span>
           </th>
           <td class="mat-cell data-table__data">
-            {{ companyDetails.mostRecentQuarterlyReportDate ? (companyDetails.mostRecentQuarterlyReportDate | date:'yyyy-MM-dd') : '—' }}
+            {{ companyDetails.mostRecentQuarterlyReportDate ? (companyDetails.mostRecentQuarterlyReportDate | date:'yyyy-MM-dd':'UTC') : '—' }}
           </td>
           <th class="mat-header-cell data-table__header">
             <span matTooltip="When the scraper last produced new data for this company. The dashboard shows the global last-fetch time; this is per-company.">

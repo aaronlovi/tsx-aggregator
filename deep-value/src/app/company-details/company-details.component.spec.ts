@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { DATE_PIPE_DEFAULT_OPTIONS } from '@angular/common';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -23,6 +24,8 @@ describe('CompanyDetailsComponent', () => {
       declarations: [CompanyDetailsComponent, RelativeTimePipe],
       providers: [
         { provide: CompanyService, useValue: companyServiceSpy },
+        // Toronto, whatever the machine's time zone
+        { provide: DATE_PIPE_DEFAULT_OPTIONS, useValue: { timezone: '-0500' } },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ exchange: 'TSX', instrumentSymbol: 'EXMP' })) } },
       ],
       // Template uses Material table/tooltip elements not declared here.
@@ -91,6 +94,17 @@ describe('CompanyDetailsComponent', () => {
     const latest = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.latest-year'))
       .map(cell => cell.textContent?.trim());
     expect(latest).toEqual(['latest $20,000,000', 'latest $0', 'latest -$5,000,000']);
+  });
+
+  it('shows report dates as they are, not a day early in a western time zone', () => {
+    // Report dates are midnight UTC.
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(detailsFixture as CompanyDetails));
+
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('2025-12-31');
+    expect(text).toContain('2026-06-30');
   });
 
   it('shows Yes and No for checks with data, and no n/a count', () => {
