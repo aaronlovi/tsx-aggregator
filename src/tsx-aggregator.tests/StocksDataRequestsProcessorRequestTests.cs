@@ -87,6 +87,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         ["AverageNetCashFlow"] = -12_500_000m,
         ["AverageOwnerEarnings"] = 198_000_000m,
         ["LatestOwnerEarnings"] = -7_500_000m,
+        ["LatestNetCashFlow"] = 3_200_000m,
         ["NumAnnualProcessedCashFlowReports"] = 6,
         ["RoeCashFlowNumerator"] = 293_500_000m,
         ["RoeCashFlowEquity"] = 10_950_000_000m,
@@ -103,7 +104,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
     /// <summary>The optional figures (W1) and the ROE inputs (B11) of a report.</summary>
     private static readonly string[] OptionalFields = [
         "CurTotalShareholdersEquity", "CurDividendsPaid", "AverageDividendsPaid", "CurAdjustedRetainedEarnings", "OldestRetainedEarnings",
-        "CurBookValue", "AverageNetCashFlow", "AverageOwnerEarnings", "LatestOwnerEarnings",
+        "CurBookValue", "AverageNetCashFlow", "AverageOwnerEarnings", "LatestOwnerEarnings", "LatestNetCashFlow",
         "RoeCashFlowNumerator", "RoeCashFlowEquity", "RoeOwnerEarningsNumerator", "RoeOwnerEarningsEquity",
     ];
 
@@ -196,6 +197,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.AverageNetCashFlow.Should().Be(-12_500_000);
         item.AverageOwnerEarnings.Should().Be(198_000_000);
         item.LatestOwnerEarnings.Should().Be(-7_500_000);
+        item.LatestNetCashFlow.Should().Be(3_200_000);
         item.CurrentRetainedEarningsEstimated.Should().BeTrue();
         item.OldestRetainedEarningsEstimated.Should().BeFalse();
 
@@ -230,6 +232,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.HasAverageNetCashFlow.Should().BeFalse();
         item.HasAverageOwnerEarnings.Should().BeFalse();
         item.HasLatestOwnerEarnings.Should().BeFalse();
+        item.HasLatestNetCashFlow.Should().BeFalse();
         item.HasRoeCashFlowNumerator.Should().BeFalse();
         item.HasRoeCashFlowEquity.Should().BeFalse();
         item.HasRoeOwnerEarningsNumerator.Should().BeFalse();
@@ -250,6 +253,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.HasAverageNetCashFlow.Should().BeTrue();
         item.HasAverageOwnerEarnings.Should().BeTrue();
         item.HasLatestOwnerEarnings.Should().BeTrue();
+        item.HasLatestNetCashFlow.Should().BeTrue();
         item.HasRoeCashFlowNumerator.Should().BeTrue();
         item.HasRoeCashFlowEquity.Should().BeTrue();
         item.HasRoeOwnerEarningsNumerator.Should().BeTrue();

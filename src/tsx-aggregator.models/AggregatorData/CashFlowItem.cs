@@ -30,6 +30,9 @@ internal class CashFlowItem
 
     // Derived properties
 
+    /// <summary>False for a nearly empty statement, with neither operating cash flow nor net income (V8).</summary>
+    internal bool HasOperatingFigures => ReportedOperatingCashFlow is not null || NetIncomeFromContinuingOperations is not null;
+
     internal decimal NetCashFlow => GrossCashFlow - (NetIssuanceOfDebt + NetIssuanceOfStock + NetIssuanceOfPreferredStock);
     /// <summary>
     /// Net capital expenditure, with sales counted up to the company's median year (V7): positive when the company
@@ -41,7 +44,7 @@ internal class CashFlowItem
     /// without subtracting the spending they stand for, so it is left out of the owner-earnings average. So is a year
     /// with neither operating cash flow nor net income, which would count as minus its capex (V8).
     /// </summary>
-    internal bool IsUsableForOwnerEarnings => (ReportedOperatingCashFlow is not null || NetIncomeFromContinuingOperations is not null)
+    internal bool IsUsableForOwnerEarnings => HasOperatingFigures
         && (HasCapExData || DepreciationAndAmortization + Depletion <= 0);
     /// <summary>
     /// Reported operating cash flow minus capex (V1). Only a statement without operating cash flow is rebuilt from

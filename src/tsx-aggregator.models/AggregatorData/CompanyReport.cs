@@ -117,9 +117,14 @@ public class CompanyReport
     }
     /// <summary>
     /// Owner earnings of the newest annual statement; null when they can't stand for the latest year (V2, see
-    /// <see cref="CalcLatestOwnerEarnings"/>).
+    /// <see cref="CalcLatestYear"/>).
     /// </summary>
     public decimal? LatestOwnerEarnings { get; private set; }
+    /// <summary>
+    /// Net cash flow of the newest annual statement, for display next to the average (V6); null under the same rules as
+    /// <see cref="LatestOwnerEarnings"/>, except that it needs no capex.
+    /// </summary>
+    public decimal? LatestNetCashFlow { get; private set; }
     public int NumAnnualProcessedCashFlowReports => _annualProcessedCashFlowItems.Count;
     // Return on equity inputs (B11, decisions 8 and 24): a numerator sum and an equity sum per ROE, so the checks can
     // fail a non-positive equity. Null when there is no figure to use.
@@ -166,7 +171,7 @@ public class CompanyReport
         TransformMostRecentAnnualDividends();
         TransformRawFinancialReports(warnings);
         CalcReturnOnEquityInputs();
-        LatestOwnerEarnings = CalcLatestOwnerEarnings();
+        CalcLatestYear();
     }
 
     #endregion
@@ -455,14 +460,14 @@ public class CompanyReport
     }
 
     /// <summary>
-    /// Owner earnings of the newest annual cash-flow statement. Null when it is not a full year after the one before,
-    /// when it is old, or when it doesn't count for owner earnings. The year before is not used in its place: it would
-    /// not be recent (V2).
+    /// The figures of the newest annual cash-flow statement. Null when it is not a full year after the one before, or is
+    /// old; owner earnings also when the statement doesn't count for them, and net cash flow when the statement is nearly
+    /// empty. The year before is not used in its place: it would not be recent (V2, V6).
     /// </summary>
-    private decimal? CalcLatestOwnerEarnings()
+    private void CalcLatestYear()
     {
         if (_annualProcessedCashFlowItems.Count == 0)
-            return null;
+            return;
 
         DateOnly[] years = [.. _annualProcessedCashFlowItems.Keys];
         DateOnly latest = years[^1];
@@ -473,9 +478,14 @@ public class CompanyReport
             _nonAnnualRawCashFlowReports, _nonAnnualRawIncomeStatements, _nonAnnualRawBalanceSheets];
         bool isOld = otherReports.Any(reports => reports.Count > 0
             && reports.Keys.Last().DayNumber - latest.DayNumber > MaxDaysFromLatestYearToNewestReport);
+        if (!isFullYear || isOld)
+            return;
 
         CashFlowItem item = _annualProcessedCashFlowItems[latest];
-        return isFullYear && !isOld && item.IsUsableForOwnerEarnings ? item.OwnerEarnings : null;
+        if (item.IsUsableForOwnerEarnings)
+            LatestOwnerEarnings = item.OwnerEarnings;
+        if (item.HasOperatingFigures)
+            LatestNetCashFlow = item.NetCashFlow;
     }
 
     private (decimal? Numerator, decimal? Equity) CalcReturnOnEquityInputs(

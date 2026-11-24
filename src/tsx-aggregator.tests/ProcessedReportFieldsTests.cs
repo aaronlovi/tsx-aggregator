@@ -82,6 +82,21 @@ public class ProcessedReportFieldsTests {
         _ = fields.AverageOwnerEarnings.Should().Be(60);
     }
 
+    [Theory]
+    [InlineData("40.4", 40L)]
+    [InlineData("null", null)]
+    public void TryParse_LatestNetCashFlow_ReadsIt(string stored, long? expected) {
+        string json = CompleteJson.Replace("\"AverageNetCashFlow\": 50", $"\"AverageNetCashFlow\": 50, \"LatestNetCashFlow\": {stored}");
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.LatestNetCashFlow.Should().Be(expected);
+    }
+
+    [Fact]
+    public void TryParse_LatestNetCashFlowNotANumber_Fails() {
+        string json = CompleteJson.Replace("\"AverageNetCashFlow\": 50", "\"AverageNetCashFlow\": 50, \"LatestNetCashFlow\": \"x\"");
+        _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
+    }
+
     [Fact]
     public void TryParse_WithoutLatestOwnerEarnings_IsNull() {
         // Reports written before V2 score on the average alone until a rebuild.

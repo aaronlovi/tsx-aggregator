@@ -329,6 +329,50 @@ public class CompanyReportTests {
         _ = Process(report).LatestOwnerEarnings.Should().BeNull();
     }
 
+    // V6: the latest year's net cash flow, shown next to its average. Same latest year as V2's, but it needs no capex.
+
+    private static CompanyReport TwoYearNetCashFlowReport(params (string Key, decimal Value)[] latestYear) {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("OperatingCashFlow", 100m), ("ChangesInCash", 50m)));
+        report.AddAnnualCashFlowStatement(Fy2022, CreateRawReport(latestYear));
+        return report;
+    }
+
+    [Fact]
+    public void LatestNetCashFlow_IsTheNewestAnnualStatement() {
+        CompanyReport report = Process(TwoYearNetCashFlowReport(
+            ("OperatingCashFlow", 100m), ("ChangesInCash", 20m), ("NetIssuancePaymentsOfDebt", 5m), ("Depreciation", 10m)));
+
+        _ = report.LatestNetCashFlow.Should().Be(15m);
+        _ = report.AverageNetCashFlow.Should().Be(32.5m);
+        _ = report.LatestOwnerEarnings.Should().BeNull("no capex");
+    }
+
+    [Fact]
+    public void LatestNetCashFlow_NearlyEmptyStatement_IsNull() {
+        _ = Process(TwoYearNetCashFlowReport(("NetPPEPurchaseAndSale", -30m))).LatestNetCashFlow.Should().BeNull();
+    }
+
+    [Fact]
+    public void LatestNetCashFlow_OldStatement_IsNull() {
+        CompanyReport report = TwoYearNetCashFlowReport(("OperatingCashFlow", 100m), ("ChangesInCash", 20m));
+        AddNewerReport(report, "non-annual balance sheet", Fy2022.AddDays(461));
+        _ = Process(report).LatestNetCashFlow.Should().BeNull();
+    }
+
+    [Fact]
+    public void LatestNetCashFlow_NotAFullYear_IsNull() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("OperatingCashFlow", 100m), ("ChangesInCash", 50m)));
+        report.AddAnnualCashFlowStatement(Fy2021.AddDays(90), CreateRawReport(("OperatingCashFlow", 100m), ("ChangesInCash", 20m)));
+        _ = Process(report).LatestNetCashFlow.Should().BeNull();
+    }
+
+    [Fact]
+    public void LatestNetCashFlow_NoStatements_IsNull() {
+        _ = Process(NewReport()).LatestNetCashFlow.Should().BeNull();
+    }
+
     // V7: PP&E sales reduce capex only up to the company's median year, so a one-off asset sale is not earnings
     // (POU 2025: 3,796M of sales), while regular equipment sales (PHX) still count.
 

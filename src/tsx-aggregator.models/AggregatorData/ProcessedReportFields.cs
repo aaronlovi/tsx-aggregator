@@ -34,7 +34,8 @@ public sealed record ProcessedReportFields(
     string? ReportingCurrency = null,
     long CurShortTermDebt = 0,
     long? AverageDividendsPaid = null,
-    long? LatestOwnerEarnings = null) {
+    long? LatestOwnerEarnings = null,
+    long? LatestNetCashFlow = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -95,6 +96,13 @@ public sealed record ProcessedReportFields(
             return false;
         }
 
+        // Optional, for display only: reports written before V6 don't have it.
+        long? latestNetCashFlow = null;
+        if (root.TryGetProperty("LatestNetCashFlow", out _) && !GetNullableDataPoint(root, "LatestNetCashFlow", out latestNetCashFlow)) {
+            fields = null;
+            return false;
+        }
+
         fields = new ProcessedReportFields(
             curNumShares,
             curTotalShareholdersEquity,
@@ -121,7 +129,8 @@ public sealed record ProcessedReportFields(
                 : null,
             curShortTermDebt,
             averageDividendsPaid,
-            latestOwnerEarnings);
+            latestOwnerEarnings,
+            latestNetCashFlow);
         return true;
     }
 

@@ -82,6 +82,8 @@ message GetStocksDataReplyItem {
     // Owner earnings of the newest annual report (V2): the est. return uses the lower of them and the average. Unset
     // when there is no usable latest year, or from an older server: the average alone.
     optional int64 latest_owner_earnings = 35;
+    // Net cash flow of the newest annual report, for display only (V6). Unset like latest_owner_earnings.
+    optional int64 latest_net_cash_flow = 36;
 }
 
 message GetStockSearchResultsRequest {

@@ -13,6 +13,7 @@
   "averageNetCashFlow": 40000000,
   "averageOwnerEarnings": 90000000,
   "latestOwnerEarnings": null,
+  "latestNetCashFlow": null,
   "curDividendsPaid": 20000000,
   "averageDividendsPaid": 20000000,
   "curAdjustedRetainedEarnings": 400000000,

@@ -103,6 +103,7 @@ internal static class SnapshotRowBuilder {
             averageNetCashFlow: fields.AverageNetCashFlow,
             averageOwnerEarnings: fields.AverageOwnerEarnings,
             latestOwnerEarnings: fields.LatestOwnerEarnings,
+            latestNetCashFlow: fields.LatestNetCashFlow,
             curDividendsPaid: fields.CurDividendsPaid,
             averageDividendsPaid: fields.AverageDividendsPaid,
             curAdjustedRetainedEarnings: fields.CurAdjustedRetainedEarnings,

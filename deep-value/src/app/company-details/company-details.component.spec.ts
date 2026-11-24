@@ -61,6 +61,38 @@ describe('CompanyDetailsComponent', () => {
     expect(root.querySelector('.roe-years')?.textContent).toContain('(4 of 5)');
   });
 
+  it('shows the latest year under the averages', () => {
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(detailsFixture as CompanyDetails));
+
+    fixture.detectChanges();
+
+    const latest = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.latest-year'))
+      .map(cell => cell.textContent?.trim());
+    expect(latest).toEqual(['latest $20,000,000', 'latest $30,000,000', 'latest $95,000,000']);
+  });
+
+  it('shows n/a for a latest year that is missing', () => {
+    const details = { ...detailsFixture, curDividendsPaid: null, latestNetCashFlow: null, latestOwnerEarnings: null } as CompanyDetails;
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(details));
+
+    fixture.detectChanges();
+
+    const latest = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.latest-year'))
+      .map(cell => cell.textContent?.trim());
+    expect(latest).toEqual(['latest n/a', 'latest n/a', 'latest n/a']);
+  });
+
+  it('shows a latest year of 0 or less as a figure', () => {
+    const details = { ...detailsFixture, latestNetCashFlow: 0, latestOwnerEarnings: -5000000 } as CompanyDetails;
+    companyServiceSpy.getCompanyDetails.mockReturnValue(of(details));
+
+    fixture.detectChanges();
+
+    const latest = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.latest-year'))
+      .map(cell => cell.textContent?.trim());
+    expect(latest).toEqual(['latest $20,000,000', 'latest $0', 'latest -$5,000,000']);
+  });
+
   it('shows Yes and No for checks with data, and no n/a count', () => {
     companyServiceSpy.getCompanyDetails.mockReturnValue(of(detailsFixture as CompanyDetails));
 

@@ -28,7 +28,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: 1_000M,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: latestOwnerEarnings,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: latestOwnerEarnings, latestNetCashFlow: null,
         curDividendsPaid: curDividendsPaid,
         averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: 100M,
@@ -103,7 +103,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: bookValue,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null, latestNetCashFlow: null,
         curDividendsPaid: 0M,
         averageDividendsPaid: 0M,
         curAdjustedRetainedEarnings: 100M,
@@ -213,7 +213,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: bookValue,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null, latestNetCashFlow: null,
         curDividendsPaid: curDividendsPaid,
         averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: curAdjustedRetainedEarnings,
@@ -339,7 +339,7 @@ public class CompanyFullDetailReportTests {
             curLongTermDebt: longTermDebt,
             curShortTermDebt: shortTermDebt,
             curTotalShareholdersEquity: 1_000M, curBookValue: 800M, curNumShares: 100,
-            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, latestOwnerEarnings: null, curDividendsPaid: 0M, averageDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
+            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, latestOwnerEarnings: null, latestNetCashFlow: null, curDividendsPaid: 0M, averageDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
             oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
             roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
             scoring: new ScoringOptions());
@@ -383,7 +383,7 @@ public class CompanyFullDetailReportTests {
             curLongTermDebt: 0M,
             curShortTermDebt: 0M,
             curTotalShareholdersEquity: 1_000M, curBookValue: 1_000M, curNumShares: 100,
-            averageNetCashFlow: 30M, averageOwnerEarnings: 100M, latestOwnerEarnings: null,
+            averageNetCashFlow: 30M, averageOwnerEarnings: 100M, latestOwnerEarnings: null, latestNetCashFlow: null,
             curDividendsPaid: current,
             averageDividendsPaid: average,
             curAdjustedRetainedEarnings: 100M, oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
@@ -506,6 +506,18 @@ public class CompanyFullDetailReportTests {
 
         item.LatestOwnerEarnings = 30;
         _ = CompanyFullDetailReport.FromReplyItem(item).EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(3M);
+    }
+
+    [Fact]
+    public void FromReplyItem_ReadsLatestNetCashFlow_UnsetIsNull() {
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, CurrentNumShares = 100,
+        };
+        _ = CompanyFullDetailReport.FromReplyItem(item).LatestNetCashFlow.Should().BeNull();
+
+        item.LatestNetCashFlow = 0;
+        _ = CompanyFullDetailReport.FromReplyItem(item).LatestNetCashFlow.Should().Be(0M, "0 is a figure, not missing");
     }
 
     #endregion

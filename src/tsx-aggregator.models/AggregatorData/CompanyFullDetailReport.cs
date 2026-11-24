@@ -24,6 +24,7 @@ public class CompanyFullDetailReport {
         decimal? averageNetCashFlow,
         decimal? averageOwnerEarnings,
         decimal? latestOwnerEarnings,
+        decimal? latestNetCashFlow,
         decimal? curDividendsPaid,
         decimal? averageDividendsPaid,
         decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
@@ -51,6 +52,7 @@ public class CompanyFullDetailReport {
         AverageNetCashFlow = averageNetCashFlow;
         AverageOwnerEarnings = averageOwnerEarnings;
         LatestOwnerEarnings = latestOwnerEarnings;
+        LatestNetCashFlow = latestNetCashFlow;
         CurDividendsPaid = curDividendsPaid;
         AverageDividendsPaid = averageDividendsPaid;
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
@@ -91,6 +93,7 @@ public class CompanyFullDetailReport {
         averageNetCashFlow: item.HasAverageNetCashFlow ? item.AverageNetCashFlow : null,
         averageOwnerEarnings: item.HasAverageOwnerEarnings ? item.AverageOwnerEarnings : null,
         latestOwnerEarnings: item.HasLatestOwnerEarnings ? item.LatestOwnerEarnings : null,
+        latestNetCashFlow: item.HasLatestNetCashFlow ? item.LatestNetCashFlow : null,
         curDividendsPaid: item.HasCurrentDividendsPaid ? item.CurrentDividendsPaid : null,
         // An older server doesn't send the average: the latest year's dividends, as before R94.
         averageDividendsPaid: item.HasAverageDividendsPaid ? item.AverageDividendsPaid
@@ -134,6 +137,8 @@ public class CompanyFullDetailReport {
     public decimal? AverageOwnerEarnings { get; init; }
     /// <summary>The latest year's owner earnings; null when there is no usable latest year (V2).</summary>
     public decimal? LatestOwnerEarnings { get; init; }
+    /// <summary>The latest year's net cash flow, for display only (V6); null when there is no usable latest year.</summary>
+    public decimal? LatestNetCashFlow { get; init; }
     public decimal? CurDividendsPaid { get; init; }
     /// <summary>Dividends averaged over the same years as <see cref="AverageNetCashFlow"/> (R94).</summary>
     public decimal? AverageDividendsPaid { get; init; }
