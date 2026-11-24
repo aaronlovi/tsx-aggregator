@@ -1,12 +1,13 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using dbm_persistence;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using tsx_aggregator.models;
 using tsx_aggregator.Raw;
@@ -17,7 +18,7 @@ using Xunit;
 namespace tsx_aggregator.tests;
 
 /// <summary>
-/// The QuoteService fetch cycle against a fake Google sheet (code review step 2: P3, P4, P5, M2, M6).
+/// The QuoteService fetch cycle against a fake Google sheet (code review step 2: P3, P4, P5, M2, M6; R95, R100).
 /// </summary>
 public sealed class QuoteServiceCycleTests : IAsyncLifetime {
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(10);
@@ -26,6 +27,7 @@ public sealed class QuoteServiceCycleTests : IAsyncLifetime {
     private readonly Mock<IDbmService> _dbm = new(MockBehavior.Strict);
     private readonly Mock<IGoogleSheetsService> _sheets = new();
     private readonly Queue<Dictionary<string, decimal>> _reads = new();
+    private readonly RecordingLogger _logger = new();
     private int _readCount;
     private QuoteService? _service;
 
@@ -44,6 +46,10 @@ public sealed class QuoteServiceCycleTests : IAsyncLifetime {
             });
     }
 
+    /// <summary>What HttpClient throws when its own 100 s timeout ends a call: a cancellation nobody asked for.</summary>
+    private static TaskCanceledException HttpTimeout() =>
+        new("The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing.", new TimeoutException());
+
     private void SetupSavedState(Result result, DateTime? nextFetch) =>
         _dbm.Setup(d => d.GetApplicationCommonState(It.IsAny<CancellationToken>()))
             .ReturnsAsync((result, result.Success ? new ApplicationCommonState(false, null, null, nextFetch, InstrumentKey.Empty) : null));
@@ -61,7 +67,7 @@ public sealed class QuoteServiceCycleTests : IAsyncLifetime {
         var registry = new Registry();
         registry.InitializeDirectory([]);
         var services = new ServiceCollection();
-        _ = services.AddSingleton<ILogger<QuoteService>>(new NullLogger<QuoteService>());
+        _ = services.AddSingleton<ILogger<QuoteService>>(_logger);
         _ = services.AddSingleton(registry);
         _ = services.AddSingleton(_dbm.Object);
         _ = services.AddSingleton(_sheets.Object);
@@ -194,5 +200,64 @@ public sealed class QuoteServiceCycleTests : IAsyncLifetime {
         IDictionary<string, decimal> prices = await Prices(service, "ABC", "XYZ");
 
         prices.Should().Equal(new Dictionary<string, decimal> { ["ABC"] = 1.5m });
+    }
+
+    [Fact]
+    public async Task FirstReadTimingOut_IsRetriedSoon_AndPricesBecomeReady() {
+        // R100: on 2026-11-23 the first read after a restart timed out. It was taken for a shutdown, so nothing was
+        // logged as an error, and the company list had no prices until the next fetch time, 33 minutes later.
+        SetupSavedState(Result.SUCCESS, nextFetch: DateTime.UtcNow.AddHours(1));
+        int reads = 0;
+        _ = _sheets.Setup(s => s.ReadQuotes("A", "B", Fallback, It.IsAny<CancellationToken>()))
+            .Returns(() => Interlocked.Increment(ref reads) == 1
+                ? Task.FromException<Dictionary<string, decimal>>(HttpTimeout())
+                : Task.FromResult(new Dictionary<string, decimal> { ["ABC"] = 1m }));
+        QuoteService service = await Start();
+
+        await service.QuoteServiceReady.Task.WaitAsync(Deadline);
+
+        (await Prices(service, "ABC")).Should().Equal(new Dictionary<string, decimal> { ["ABC"] = 1m });
+        _logger.Errors.Should().ContainSingle().Which.Should().BeOfType<TaskCanceledException>();
+        _sheets.Verify(s => s.ClearColumns(), Times.Never()); // the retry is of the read; the fetch is still not due
+    }
+
+    [Fact]
+    public async Task SheetTimingOutWhileAFetchIsDue_IsRetriedWithBackOff_NotInATightLoop() {
+        // R100: a timeout set no retry time either, so a fetch that was due started again with no delay.
+        int clears = 0;
+        _ = _sheets.Setup(s => s.ClearColumns()).Callback(() => Interlocked.Increment(ref clears)).Throws(HttpTimeout());
+        _ = await Start();
+
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        clears.Should().BeInRange(1, 6);
+    }
+
+    [Fact]
+    public async Task ShutdownDuringARead_IsACancellation_NotAFailure() {
+        var reading = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _ = _sheets.Setup(s => s.ReadQuotes("A", "B", Fallback, It.IsAny<CancellationToken>()))
+            .Returns(async (string _, string _, string[] _, CancellationToken ct) => {
+                _ = reading.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+                return [];
+            });
+        QuoteService service = await Start();
+        await reading.Task.WaitAsync(Deadline);
+
+        await service.StopAsync(CancellationToken.None);
+
+        await Eventually(() => _logger.Messages.Any(m => m.Contains("Operation cancelled")));
+        _logger.Errors.Should().BeEmpty();
+    }
+
+    private sealed class RecordingLogger : ILogger<QuoteService> {
+        private readonly ConcurrentQueue<(LogLevel Level, string Message, Exception? Exception)> _entries = new();
+        public IEnumerable<string> Messages => _entries.Select(e => e.Message);
+        public IEnumerable<Exception?> Errors => _entries.Where(e => e.Level >= LogLevel.Error).Select(e => e.Exception);
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            _entries.Enqueue((logLevel, formatter(state, exception), exception));
     }
 }

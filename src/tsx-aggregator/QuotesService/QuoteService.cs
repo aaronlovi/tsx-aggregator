@@ -182,7 +182,8 @@ public class QuoteService : BackgroundService, IQuoteService {
                 // Only now that the quotes are in is the next fetch two hours away
                 done = QuoteServiceFetchDoneInput.Fetched(newPrices, DateTime.UtcNow, curTimeUtc + Constants.TwoHours);
             }
-        } catch (OperationCanceledException) {
+        } catch (OperationCanceledException) when (ct.IsCancellationRequested) {
+            // Only a shutdown. A timed-out HTTP call is a cancellation too, and must be retried as a failure (R100).
             _logger.LogInformation("ProcessQuoteServiceTimeoutInput - Operation cancelled");
             done = QuoteServiceFetchDoneInput.WasCancelled();
         } catch (Exception ex) {
