@@ -15,7 +15,7 @@ namespace tsx_aggregator.tests;
 public class CompanyFullDetailReportTests {
     /// <summary>Market cap 1,000 (100 shares at 10); book value and equity 1,000.</summary>
     private static CompanyFullDetailReport Report(
-        decimal averageNetCashFlow, decimal averageOwnerEarnings, decimal curDividendsPaid) => new(
+        decimal averageNetCashFlow, decimal? averageOwnerEarnings, decimal curDividendsPaid, decimal? latestOwnerEarnings = null) => new(
         exchange: "TSX",
         companySymbol: "TST",
         instrumentSymbol: "TST",
@@ -28,7 +28,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: 1_000M,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: latestOwnerEarnings,
         curDividendsPaid: curDividendsPaid,
         averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: 100M,
@@ -103,7 +103,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: bookValue,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null,
         curDividendsPaid: 0M,
         averageDividendsPaid: 0M,
         curAdjustedRetainedEarnings: 100M,
@@ -213,7 +213,7 @@ public class CompanyFullDetailReportTests {
         curBookValue: bookValue,
         curNumShares: 100,
         averageNetCashFlow: averageNetCashFlow,
-        averageOwnerEarnings: averageOwnerEarnings,
+        averageOwnerEarnings: averageOwnerEarnings, latestOwnerEarnings: null,
         curDividendsPaid: curDividendsPaid,
         averageDividendsPaid: curDividendsPaid,
         curAdjustedRetainedEarnings: curAdjustedRetainedEarnings,
@@ -339,7 +339,7 @@ public class CompanyFullDetailReportTests {
             curLongTermDebt: longTermDebt,
             curShortTermDebt: shortTermDebt,
             curTotalShareholdersEquity: 1_000M, curBookValue: 800M, curNumShares: 100,
-            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 0M, averageDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
+            averageNetCashFlow: 50M, averageOwnerEarnings: 60M, latestOwnerEarnings: null, curDividendsPaid: 0M, averageDividendsPaid: 0M, curAdjustedRetainedEarnings: 100M,
             oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
             roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
             scoring: new ScoringOptions());
@@ -383,7 +383,7 @@ public class CompanyFullDetailReportTests {
             curLongTermDebt: 0M,
             curShortTermDebt: 0M,
             curTotalShareholdersEquity: 1_000M, curBookValue: 1_000M, curNumShares: 100,
-            averageNetCashFlow: 30M, averageOwnerEarnings: 100M,
+            averageNetCashFlow: 30M, averageOwnerEarnings: 100M, latestOwnerEarnings: null,
             curDividendsPaid: current,
             averageDividendsPaid: average,
             curAdjustedRetainedEarnings: 100M, oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
@@ -417,6 +417,95 @@ public class CompanyFullDetailReportTests {
         // The lowest, 1,000, over 100 shares is 10. With the latest year's 500 it would be 20 x 530 = 10,600 and the
         // price 20 (the owner-earnings limit).
         _ = ReportWithDividends(current: 500M, average: 20M).MaxPrice.Should().Be(10M);
+    }
+
+    #endregion
+
+    #region V2 - the lower of the average and the latest year's owner earnings
+
+    // Market cap 1,000; net cash flow 50 + dividends 20.
+    private static CompanyFullDetailReport ReportWithLatest(decimal? average, decimal? latest) =>
+        Report(averageNetCashFlow: 50M, averageOwnerEarnings: average, curDividendsPaid: 20M, latestOwnerEarnings: latest);
+
+    [Fact]
+    public void OwnerEarningsReturn_LatestYearBelowTheAverage_UsesTheLatestYear() {
+        CompanyFullDetailReport report = ReportWithLatest(average: 60M, latest: 30M);
+
+        _ = report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(3M);
+        _ = report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough.Should().Be(CheckResult.Fail);
+    }
+
+    [Theory]
+    [InlineData(90)]
+    [InlineData(60)]
+    public void OwnerEarningsReturn_LatestYearNotBelowTheAverage_UsesTheAverage(int latest) {
+        _ = ReportWithLatest(average: 60M, latest: latest)
+            .EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(6M);
+    }
+
+    [Fact]
+    public void OwnerEarningsReturn_NoUsableLatestYear_UsesTheAverage() {
+        CompanyFullDetailReport report = ReportWithLatest(average: 60M, latest: null);
+
+        _ = report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(6M);
+        _ = report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough.Should().Be(CheckResult.Pass);
+        _ = report.MaxPrice.Should().Be(12M);
+    }
+
+    [Fact]
+    public void OwnerEarningsReturn_LatestYearWithoutAnAverage_IsNotAvailable() {
+        CompanyFullDetailReport report = ReportWithLatest(average: null, latest: 30M);
+
+        _ = report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().BeNull();
+        _ = report.MaxPrice.Should().BeNull();
+    }
+
+    [Fact]
+    public void AverageOwnerEarningsPositive_LowLatestYear_StaysOnTheAverage() {
+        _ = ReportWithLatest(average: 60M, latest: -10M).DoesPassCheck_AvgOwnerEarningsPositive.Should().Be(CheckResult.Pass);
+    }
+
+    [Fact]
+    public void OwnerEarningsReturnNotTooBig_LowLatestYear_StaysOnTheAverage() {
+        // 45% on the average looks like wrong data; a weak latest year (10%) must not turn that into a pass.
+        CompanyFullDetailReport report = ReportWithLatest(average: 450M, latest: 100M);
+
+        _ = report.EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(10M);
+        _ = report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig.Should().Be(CheckResult.Fail);
+        _ = report.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough.Should().Be(CheckResult.Pass);
+    }
+
+    [Fact]
+    public void OtherFigures_LowLatestYear_AreUnchanged() {
+        CompanyFullDetailReport low = ReportWithLatest(average: 60M, latest: -10M);
+        CompanyFullDetailReport none = ReportWithLatest(average: 60M, latest: null);
+
+        _ = low.EstimatedNextYearTotalReturnPercentage_FromCashFlow.Should().Be(none.EstimatedNextYearTotalReturnPercentage_FromCashFlow);
+        _ = low.EstimatedNextYearBookValue_FromOwnerEarnings.Should().Be(none.EstimatedNextYearBookValue_FromOwnerEarnings);
+        _ = low.ReturnOnEquity_FromOwnerEarnings.Should().Be(none.ReturnOnEquity_FromOwnerEarnings);
+        _ = low.OverallScore.Should().Be(none.OverallScore - 1, "only check 7 fails");
+    }
+
+    [Fact]
+    public void MaxPrice_LatestYearBelowTheAverage_UsesTheLatestYear() {
+        // min(3 x book 1,000 = 3,000; 20 x (50 + 20) = 1,400; 20 x 30 = 600) / 100 shares
+        _ = ReportWithLatest(average: 60M, latest: 30M).MaxPrice.Should().Be(6M);
+    }
+
+    [Fact]
+    public void FromReplyItem_ReadsLatestOwnerEarnings_UnsetIsNull() {
+        var item = new GetStocksDataReplyItem {
+            Exchange = "TSX", CompanySymbol = "TST", InstrumentSymbol = "TST", CompanyName = "Test Co",
+            InstrumentName = "Test Co Common", PerSharePrice = 10M, CurrentNumShares = 100,
+            AverageOwnerEarnings = 60,
+        };
+        _ = CompanyFullDetailReport.FromReplyItem(item).LatestOwnerEarnings.Should().BeNull();
+
+        item.LatestOwnerEarnings = 0;
+        _ = CompanyFullDetailReport.FromReplyItem(item).LatestOwnerEarnings.Should().Be(0M, "0 is a figure, not missing");
+
+        item.LatestOwnerEarnings = 30;
+        _ = CompanyFullDetailReport.FromReplyItem(item).EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings.Should().Be(3M);
     }
 
     #endregion

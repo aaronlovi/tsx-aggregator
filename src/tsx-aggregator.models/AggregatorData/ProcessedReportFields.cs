@@ -33,7 +33,8 @@ public sealed record ProcessedReportFields(
     IReadOnlyList<AnnualReturnOnEquity>? RoeOwnerEarningsByYear = null,
     string? ReportingCurrency = null,
     long CurShortTermDebt = 0,
-    long? AverageDividendsPaid = null) {
+    long? AverageDividendsPaid = null,
+    long? LatestOwnerEarnings = null) {
 
     /// <summary>
     /// Reads the fields from a serialized processed report.
@@ -87,6 +88,13 @@ public sealed record ProcessedReportFields(
             return false;
         }
 
+        // Optional: reports written before V2 don't have it, and score on the average alone until a rebuild.
+        long? latestOwnerEarnings = null;
+        if (root.TryGetProperty("LatestOwnerEarnings", out _) && !GetNullableDataPoint(root, "LatestOwnerEarnings", out latestOwnerEarnings)) {
+            fields = null;
+            return false;
+        }
+
         fields = new ProcessedReportFields(
             curNumShares,
             curTotalShareholdersEquity,
@@ -112,7 +120,8 @@ public sealed record ProcessedReportFields(
                 ? currency.GetString()
                 : null,
             curShortTermDebt,
-            averageDividendsPaid);
+            averageDividendsPaid,
+            latestOwnerEarnings);
         return true;
     }
 

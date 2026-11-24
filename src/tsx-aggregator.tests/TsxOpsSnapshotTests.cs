@@ -57,6 +57,18 @@ public class TsxOpsSnapshotTests {
     }
 
     [Fact]
+    public void RowBuilder_LatestOwnerEarnings_IsAColumnAndLimitsTheOwnerEarningsReturn() {
+        // V2: latest 40M against an average of 150M, over a 1B market cap.
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(
+            Instrument, AllPassFields with { LatestOwnerEarnings = 40_000_000 }, new ScoringOptions());
+
+        _ = row["average_owner_earnings"].Should().Be("150000000");
+        _ = row["latest_owner_earnings"].Should().Be("40000000");
+        _ = decimal.Parse(row["est_return_oe_pct"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(4M);
+        _ = row["c07"].Should().Be("F");
+    }
+
+    [Fact]
     public void RowBuilder_AverageDividends_IsAColumnAndDrivesTheCashFlowReturn() {
         // R94: net cash flow 150M + average dividends 50M over a 1B market cap = 20%; the latest year's 0 is not used.
         Dictionary<string, string> row = SnapshotRowBuilder.Build(

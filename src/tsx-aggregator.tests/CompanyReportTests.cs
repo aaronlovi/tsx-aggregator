@@ -227,6 +227,108 @@ public class CompanyReportTests {
             .Should().Be(70m);
     }
 
+    // V2: the latest year is the newest annual cash-flow statement, if it is a full year, not old, and counts for
+    // owner earnings. Otherwise there is none: no stepping back to an older year.
+
+    private static RawReportDataMap YearWithOwnerEarnings(decimal ownerEarnings) =>
+        CreateRawReport(("OperatingCashFlow", ownerEarnings + 10m), ("NetPPEPurchaseAndSale", -10m));
+
+    /// <summary>Owner earnings of 90 in 2021 and 40 in 2022.</summary>
+    private static CompanyReport TwoYearReport() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, YearWithOwnerEarnings(90m));
+        report.AddAnnualCashFlowStatement(Fy2022, YearWithOwnerEarnings(40m));
+        return report;
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_IsTheNewestAnnualStatement() {
+        CompanyReport report = Process(TwoYearReport());
+
+        _ = report.LatestOwnerEarnings.Should().Be(40m);
+        _ = report.AverageOwnerEarnings.Should().Be(65m);
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_OnlyOneStatement_IsThatOne() {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, YearWithOwnerEarnings(90m));
+        _ = Process(report).LatestOwnerEarnings.Should().Be(90m);
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_NoStatements_IsNull() {
+        _ = Process(NewReport()).LatestOwnerEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_AfterLimitingPPESales() {
+        // V7 comes first: a one-off sale in the latest year is not earnings there either.
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2020, CreateRawReport(("OperatingCashFlow", 200m), ("PurchaseOfPPE", -100m)));
+        report.AddAnnualCashFlowStatement(Fy2021, CreateRawReport(("OperatingCashFlow", 200m), ("PurchaseOfPPE", -100m)));
+        report.AddAnnualCashFlowStatement(Fy2022, CreateRawReport(
+            ("OperatingCashFlow", 200m), ("PurchaseOfPPE", -100m), ("SaleOfPPE", 600m)));
+        _ = Process(report).LatestOwnerEarnings.Should().Be(100m);
+    }
+
+    [Theory]
+    [InlineData(330, true)]
+    [InlineData(329, false)]
+    [InlineData(89, false)] // IMG: an "annual" sheet three months after the one before
+    public void LatestOwnerEarnings_NeedsAFullYear(int daysAfterTheYearBefore, bool usable) {
+        var report = NewReport();
+        report.AddAnnualCashFlowStatement(Fy2021, YearWithOwnerEarnings(90m));
+        report.AddAnnualCashFlowStatement(Fy2021.AddDays(daysAfterTheYearBefore), YearWithOwnerEarnings(40m));
+        _ = Process(report).LatestOwnerEarnings.Should().Be(usable ? 40m : null);
+    }
+
+    public static TheoryData<string> NewerReports => [
+        "non-annual cash flow", "non-annual income", "non-annual balance sheet", "annual income", "annual balance sheet"];
+
+    private static void AddNewerReport(CompanyReport report, string kind, DateOnly date) {
+        RawReportDataMap data = CreateRawReport(("Revenue", 1m));
+        switch (kind) {
+            case "non-annual cash flow": report.AddNonAnnualCashFlowStatement(date, data); break;
+            case "non-annual income": report.AddNonAnnualIncomeStatement(date, data); break;
+            case "non-annual balance sheet": report.AddNonAnnualBalanceSheet(date, data); break;
+            case "annual income": report.AddAnnualIncomeStatement(date, data); break;
+            default: report.AddAnnualBalanceSheet(date, data); break;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NewerReports))]
+    public void LatestOwnerEarnings_ReportsTooMuchNewer_IsNull(string kind) {
+        // An annual statement is missing (BNT, SDE: newest annual 2024-12-31, quarterly reports into 2026).
+        CompanyReport report = TwoYearReport();
+        AddNewerReport(report, kind, Fy2022.AddDays(461));
+        _ = Process(report).LatestOwnerEarnings.Should().BeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(NewerReports))]
+    public void LatestOwnerEarnings_ReportsNotTooMuchNewer_Counts(string kind) {
+        CompanyReport report = TwoYearReport();
+        AddNewerReport(report, kind, Fy2022.AddDays(460));
+        _ = Process(report).LatestOwnerEarnings.Should().Be(40m);
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_NewestYearWithoutCapEx_IsNull() {
+        // SU 2025: depreciation but no capex key. The year before is not the latest year.
+        CompanyReport report = TwoYearReport();
+        report.AddAnnualCashFlowStatement(Fy2022.AddYears(1), CreateRawReport(("OperatingCashFlow", 300m), ("Depreciation", 20m)));
+        _ = Process(report).LatestOwnerEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void LatestOwnerEarnings_NewestYearWithoutOperatingCashFlowOrNetIncome_IsNull() {
+        CompanyReport report = TwoYearReport();
+        report.AddAnnualCashFlowStatement(Fy2022.AddYears(1), CreateRawReport(("NetPPEPurchaseAndSale", -30m)));
+        _ = Process(report).LatestOwnerEarnings.Should().BeNull();
+    }
+
     // V7: PP&E sales reduce capex only up to the company's median year, so a one-off asset sale is not earnings
     // (POU 2025: 3,796M of sales), while regular equipment sales (PHX) still count.
 

@@ -20,6 +20,7 @@ public class CompanyReport
     private readonly SortedDictionary<DateOnly, CashFlowItem> _annualProcessedCashFlowItems;
 
     // An opening annual balance sheet counts for ROE only if it is about a year before the closing one (decision 24).
+    // The minimum also says whether the latest annual cash-flow statement is a full year (V2).
     private const int MinDaysBetweenAnnualBalanceSheets = 330;
     private const int MaxDaysBetweenAnnualBalanceSheets = 400;
 
@@ -30,6 +31,10 @@ public class CompanyReport
     // Debt due within a year, in the same order as LongTermDebtKeys, so leases are counted on both sides or on neither
     // (X3). Also the current debt taken out of working capital.
     private static readonly string[] ShortTermDebtKeys = ["CurrentDebtAndCapitalLeaseObligation", "CurrentDebt"];
+
+    // The newest annual cash-flow statement is the latest year only if the company's newest report is at most this much
+    // newer: a year, and the time an annual report takes. Beyond that an annual statement is missing (V2).
+    private const int MaxDaysFromLatestYearToNewestReport = 460;
 
     // Dates of the report sets the current and oldest balance sheet figures come from.
     private DateOnly? _mostRecentReportDate;
@@ -110,6 +115,11 @@ public class CompanyReport
             return usableItems.Count == 0 ? null : usableItems.Sum(item => item.OwnerEarnings) / usableItems.Count;
         }
     }
+    /// <summary>
+    /// Owner earnings of the newest annual statement; null when they can't stand for the latest year (V2, see
+    /// <see cref="CalcLatestOwnerEarnings"/>).
+    /// </summary>
+    public decimal? LatestOwnerEarnings { get; private set; }
     public int NumAnnualProcessedCashFlowReports => _annualProcessedCashFlowItems.Count;
     // Return on equity inputs (B11, decisions 8 and 24): a numerator sum and an equity sum per ROE, so the checks can
     // fail a non-positive equity. Null when there is no figure to use.
@@ -156,6 +166,7 @@ public class CompanyReport
         TransformMostRecentAnnualDividends();
         TransformRawFinancialReports(warnings);
         CalcReturnOnEquityInputs();
+        LatestOwnerEarnings = CalcLatestOwnerEarnings();
     }
 
     #endregion
@@ -441,6 +452,30 @@ public class CompanyReport
         RoeOwnerEarningsByYear = [.. MatchedRoeYears(item => item.IsUsableForOwnerEarnings)
             .Select(y => new AnnualReturnOnEquity(y.Date, y.AverageEquity > 0 ? y.Item.OwnerEarnings / y.AverageEquity : null))
             .Reverse()];
+    }
+
+    /// <summary>
+    /// Owner earnings of the newest annual cash-flow statement. Null when it is not a full year after the one before,
+    /// when it is old, or when it doesn't count for owner earnings. The year before is not used in its place: it would
+    /// not be recent (V2).
+    /// </summary>
+    private decimal? CalcLatestOwnerEarnings()
+    {
+        if (_annualProcessedCashFlowItems.Count == 0)
+            return null;
+
+        DateOnly[] years = [.. _annualProcessedCashFlowItems.Keys];
+        DateOnly latest = years[^1];
+        bool isFullYear = years.Length == 1 || latest.DayNumber - years[^2].DayNumber >= MinDaysBetweenAnnualBalanceSheets;
+
+        IEnumerable<SortedDictionary<DateOnly, RawReportDataMap>> otherReports = [
+            _annualRawIncomeStatements, _annualRawBalanceSheets,
+            _nonAnnualRawCashFlowReports, _nonAnnualRawIncomeStatements, _nonAnnualRawBalanceSheets];
+        bool isOld = otherReports.Any(reports => reports.Count > 0
+            && reports.Keys.Last().DayNumber - latest.DayNumber > MaxDaysFromLatestYearToNewestReport);
+
+        CashFlowItem item = _annualProcessedCashFlowItems[latest];
+        return isFullYear && !isOld && item.IsUsableForOwnerEarnings ? item.OwnerEarnings : null;
     }
 
     private (decimal? Numerator, decimal? Equity) CalcReturnOnEquityInputs(

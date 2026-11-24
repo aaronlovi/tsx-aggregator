@@ -207,6 +207,8 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             item.AverageNetCashFlow = netCashFlow;
         if (fields.AverageOwnerEarnings is long ownerEarnings)
             item.AverageOwnerEarnings = ownerEarnings;
+        if (fields.LatestOwnerEarnings is long latestOwnerEarnings)
+            item.LatestOwnerEarnings = latestOwnerEarnings;
         if (fields.RoeCashFlowNumerator is long roeCashFlowNumerator)
             item.RoeCashFlowNumerator = roeCashFlowNumerator;
         if (fields.RoeCashFlowEquity is long roeCashFlowEquity)

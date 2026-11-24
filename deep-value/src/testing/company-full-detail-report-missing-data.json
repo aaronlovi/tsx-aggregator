@@ -12,6 +12,7 @@
   "curNumShares": 50000000,
   "averageNetCashFlow": 40000000,
   "averageOwnerEarnings": 90000000,
+  "latestOwnerEarnings": null,
   "curDividendsPaid": 20000000,
   "averageDividendsPaid": 20000000,
   "curAdjustedRetainedEarnings": 400000000,

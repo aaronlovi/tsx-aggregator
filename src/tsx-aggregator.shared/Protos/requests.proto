@@ -79,6 +79,9 @@ message GetStocksDataReplyItem {
     // Dividends averaged over the same years as average_net_cash_flow (R94): the est. return's add-back. Unset from
     // an older server: use current_dividends_paid.
     optional int64 average_dividends_paid = 34;
+    // Owner earnings of the newest annual report (V2): the est. return uses the lower of them and the average. Unset
+    // when there is no usable latest year, or from an older server: the average alone.
+    optional int64 latest_owner_earnings = 35;
 }
 
 message GetStockSearchResultsRequest {

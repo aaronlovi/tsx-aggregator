@@ -71,6 +71,30 @@ public class ProcessedReportFieldsTests {
         _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("40.4", 40L)]
+    [InlineData("-40.4", -40L)]
+    [InlineData("null", null)]
+    public void TryParse_LatestOwnerEarnings_ReadsIt(string stored, long? expected) {
+        string json = CompleteJson.Replace("\"AverageOwnerEarnings\": 60", $"\"AverageOwnerEarnings\": 60, \"LatestOwnerEarnings\": {stored}");
+        _ = ProcessedReportFields.TryParse(json, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.LatestOwnerEarnings.Should().Be(expected);
+        _ = fields.AverageOwnerEarnings.Should().Be(60);
+    }
+
+    [Fact]
+    public void TryParse_WithoutLatestOwnerEarnings_IsNull() {
+        // Reports written before V2 score on the average alone until a rebuild.
+        _ = ProcessedReportFields.TryParse(CompleteJson, out ProcessedReportFields? fields).Should().BeTrue();
+        _ = fields!.LatestOwnerEarnings.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_LatestOwnerEarningsNotANumber_Fails() {
+        string json = CompleteJson.Replace("\"AverageOwnerEarnings\": 60", "\"AverageOwnerEarnings\": 60, \"LatestOwnerEarnings\": \"x\"");
+        _ = ProcessedReportFields.TryParse(json, out _).Should().BeFalse();
+    }
+
     [Fact]
     public void TryParse_WithoutShortTermDebt_ReadsZero() {
         // Reports written before X3 score as before (long-term debt only) until the rebuild.

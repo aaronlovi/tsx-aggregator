@@ -23,6 +23,7 @@ public class CompanyFullDetailReport {
         long curNumShares,
         decimal? averageNetCashFlow,
         decimal? averageOwnerEarnings,
+        decimal? latestOwnerEarnings,
         decimal? curDividendsPaid,
         decimal? averageDividendsPaid,
         decimal? curAdjustedRetainedEarnings, // current retained earnings + dividends + share buybacks
@@ -49,6 +50,7 @@ public class CompanyFullDetailReport {
         CurNumShares = curNumShares;
         AverageNetCashFlow = averageNetCashFlow;
         AverageOwnerEarnings = averageOwnerEarnings;
+        LatestOwnerEarnings = latestOwnerEarnings;
         CurDividendsPaid = curDividendsPaid;
         AverageDividendsPaid = averageDividendsPaid;
         CurAdjustedRetainedEarnings = curAdjustedRetainedEarnings;
@@ -88,6 +90,7 @@ public class CompanyFullDetailReport {
         curNumShares: item.CurrentNumShares,
         averageNetCashFlow: item.HasAverageNetCashFlow ? item.AverageNetCashFlow : null,
         averageOwnerEarnings: item.HasAverageOwnerEarnings ? item.AverageOwnerEarnings : null,
+        latestOwnerEarnings: item.HasLatestOwnerEarnings ? item.LatestOwnerEarnings : null,
         curDividendsPaid: item.HasCurrentDividendsPaid ? item.CurrentDividendsPaid : null,
         // An older server doesn't send the average: the latest year's dividends, as before R94.
         averageDividendsPaid: item.HasAverageDividendsPaid ? item.AverageDividendsPaid
@@ -129,6 +132,8 @@ public class CompanyFullDetailReport {
     public long CurNumShares { get; init; }
     public decimal? AverageNetCashFlow { get; init; }
     public decimal? AverageOwnerEarnings { get; init; }
+    /// <summary>The latest year's owner earnings; null when there is no usable latest year (V2).</summary>
+    public decimal? LatestOwnerEarnings { get; init; }
     public decimal? CurDividendsPaid { get; init; }
     /// <summary>Dividends averaged over the same years as <see cref="AverageNetCashFlow"/> (R94).</summary>
     public decimal? AverageDividendsPaid { get; init; }
@@ -182,9 +187,16 @@ public class CompanyFullDetailReport {
     /// </summary>
     public decimal? EstimatedNextYearTotalReturnPercentage_FromCashFlow =>
         Utilities.DivOrNull(100M * (AverageNetCashFlow + AverageDividendsPaid), CurMarketCap);
-    /// <summary>Owner earnings are pre-dividend, so all of it is the shareholders' return (decision 2).</summary>
+    /// <summary>
+    /// Owner earnings are pre-dividend, so all of it is the shareholders' return (decision 2). The lower of the average
+    /// and the latest year, so a company whose earnings fell doesn't score like a steady one (V2).
+    /// </summary>
     public decimal? EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings =>
-        Utilities.DivOrNull(100M * AverageOwnerEarnings, CurMarketCap);
+        Utilities.DivOrNull(100M * ConservativeOwnerEarnings, CurMarketCap);
+
+    /// <summary>The average owner earnings, or the latest year's when they are lower (V2); null without an average.</summary>
+    private decimal? ConservativeOwnerEarnings =>
+        LatestOwnerEarnings < AverageOwnerEarnings ? LatestOwnerEarnings : AverageOwnerEarnings;
 
     /// <summary>
     /// The highest price at which price-to-book is at most 3 and each est. return is at least 5% (20x its numerator).
@@ -193,7 +205,7 @@ public class CompanyFullDetailReport {
         get {
             if (CurNumShares <= 0 || CurBookValue is not decimal bookValue
                 || AverageNetCashFlow is not decimal netCashFlow || AverageDividendsPaid is not decimal dividends
-                || AverageOwnerEarnings is not decimal ownerEarnings) {
+                || ConservativeOwnerEarnings is not decimal ownerEarnings) {
                 return null;
             }
 
@@ -225,8 +237,9 @@ public class CompanyFullDetailReport {
         Check(EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings, value => value > 5M);
     public CheckResult DoesPassCheck_EstNextYearTotalReturn_CashFlow_NotTooBig =>
         Check(EstimatedNextYearTotalReturnPercentage_FromCashFlow, value => value < 40M);
+    /// <summary>On the average alone: a weak latest year must not make an average that looks like wrong data pass (V2).</summary>
     public CheckResult DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_NotTooBig =>
-        Check(EstimatedNextYearTotalReturnPercentage_FromOwnerEarnings, value => value < 40M);
+        Check(Utilities.DivOrNull(100M * AverageOwnerEarnings, CurMarketCap), value => value < 40M);
     public CheckResult DoesPassCheck_DebtToBookRatioSmallEnough =>
         CheckWithPositiveDenominator(CurBookValue, LongTermDebtToBookRatio, ratio => ratio < 1M);
     public CheckResult DoesPassCheck_RetainedEarningsPositive => Check(CurAdjustedRetainedEarnings, value => value > 0);

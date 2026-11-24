@@ -81,7 +81,7 @@ public class CompanyReportRoeTests {
             instrumentName: "Test Co Common", pricePerShare: 10M, curLongTermDebt: f!.CurLongTermDebt, curShortTermDebt: 0M,
             curTotalShareholdersEquity: f.CurTotalShareholdersEquity, curBookValue: f.CurBookValue,
             curNumShares: f.CurNumShares, averageNetCashFlow: f.AverageNetCashFlow,
-            averageOwnerEarnings: f.AverageOwnerEarnings, curDividendsPaid: f.CurDividendsPaid, averageDividendsPaid: f.CurDividendsPaid,
+            averageOwnerEarnings: f.AverageOwnerEarnings, latestOwnerEarnings: f.LatestOwnerEarnings, curDividendsPaid: f.CurDividendsPaid, averageDividendsPaid: f.CurDividendsPaid,
             curAdjustedRetainedEarnings: f.CurAdjustedRetainedEarnings, oldestRetainedEarnings: f.OldestRetainedEarnings,
             numAnnualProcessedCashFlowReports: report.NumAnnualProcessedCashFlowReports,
             roe: RoeInputs.From(f),
