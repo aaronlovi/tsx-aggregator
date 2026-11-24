@@ -23,6 +23,16 @@ public interface IDbmService {
     ValueTask<(Result, IReadOnlyList<RequeueCandidateDto>)> GetRequeueCandidates(CancellationToken ct);
     /// <summary>Queues one unprocessed RawDataChanged event per instrument, so the Aggregator rebuilds its report.</summary>
     ValueTask<Result> InsertRawDataChangedEvents(IReadOnlyCollection<long> instrumentIds, CancellationToken ct);
+    /// <summary>
+    /// Current raw reports of listed instruments that share a calendar year (annual) or quarter (others) with another
+    /// current report of their type, or whose JSON has another report date (tsx-ops merged-reports).
+    /// </summary>
+    ValueTask<(Result, IReadOnlyList<MergedReportCandidateDto>)> GetMergedReportCandidates(CancellationToken ct);
+    /// <summary>
+    /// Marks these raw reports as not current, and queues one RawDataChanged event per instrument that lost a report,
+    /// in one statement. The next scrape inserts a clean copy of those TMX still sends.
+    /// </summary>
+    ValueTask<Result> ResetRawReports(IReadOnlyCollection<long> instrumentReportIds, CancellationToken ct);
 
     // Raw
     ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct);

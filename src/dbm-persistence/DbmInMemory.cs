@@ -93,6 +93,13 @@ public sealed class DbmInMemory : IDbmService {
         return ValueTask.FromResult(Result.SUCCESS);
     }
 
+    // The in-memory fake starts empty, so it never holds reports merged before review R31.
+    public ValueTask<(Result, IReadOnlyList<MergedReportCandidateDto>)> GetMergedReportCandidates(CancellationToken ct) =>
+        ValueTask.FromResult<(Result, IReadOnlyList<MergedReportCandidateDto>)>((Result.SUCCESS, []));
+
+    public ValueTask<Result> ResetRawReports(IReadOnlyCollection<long> instrumentReportIds, CancellationToken ct) =>
+        ValueTask.FromResult(Result.SetFailure("Not supported in memory"));
+
     public ValueTask<(Result, IReadOnlyList<InstrumentDto>)> GetInstrumentList(CancellationToken ct) {
         lock (_data) {
             IReadOnlyList<InstrumentDto> instrumentList = _data.GetInstrumentList();

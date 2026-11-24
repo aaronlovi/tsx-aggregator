@@ -422,3 +422,19 @@ public record RequeueCandidateDto(
     string InstrumentSymbol,
     bool HasRawReports,
     bool HasPendingRawDataChanged);
+
+/// <summary>
+/// A current raw report that the year or quarter matching before review R31 may have merged with another one, or the
+/// other report of such a pair (<c>tsx-ops merged-reports</c>).
+/// </summary>
+/// <param name="AlreadyReset">An earlier version of the report of the same date is stored as not current.</param>
+public record MergedReportCandidateDto(
+    long InstrumentReportId,
+    long InstrumentId,
+    string CompanySymbol,
+    string InstrumentSymbol,
+    int ReportType,
+    int ReportPeriodType,
+    DateOnly ReportDate,
+    string ReportJson,
+    bool AlreadyReset);

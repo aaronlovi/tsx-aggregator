@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -154,6 +155,60 @@ internal sealed class AdminSvc : AdminService.AdminServiceBase {
             return new RequeueInstrumentsReply { Success = false, ErrorMessage = ex.Message };
         }
     }
+
+    public override async Task<RepairMergedReportsReply> RepairMergedReports(RepairMergedReportsRequest request, ServerCallContext context) {
+        CancellationToken ct = context.CancellationToken;
+        try {
+            (Result res, IReadOnlyList<MergedReportCandidateDto> candidates) = await _dbm.GetMergedReportCandidates(ct);
+            if (!res.Success)
+                return new RepairMergedReportsReply { Success = false, ErrorMessage = res.ErrMsg };
+
+            MergedReportPlan plan = MergedReportPlanner.Plan(candidates, request.InstrumentSymbols);
+            var reply = new RepairMergedReportsReply { Success = true };
+            reply.Reports.AddRange(plan.Items.Select(ToMergedReport));
+            reply.NotFoundSymbols.AddRange(plan.NotFoundSymbols);
+
+            // A typo shouldn't half-run a repair: a symbol with nothing to show resets nothing.
+            if (plan.NotFoundSymbols.Count > 0) {
+                reply.Success = false;
+                reply.ErrorMessage = $"No merged reports found for: {string.Join(", ", plan.NotFoundSymbols)}. Nothing reset.";
+                return reply;
+            }
+
+            long[] toReset = [.. plan.Items.Where(i => i.Reset).Select(i => i.Report.InstrumentReportId)];
+            if (!request.Execute || toReset.Length == 0)
+                return reply;
+
+            _logger.LogWarning("AdminSvc - merged reports: resetting {Count} raw reports: {InstrumentReportIds}", toReset.Length, toReset);
+            res = await _dbm.ResetRawReports(toReset, ct);
+            if (!res.Success)
+                return new RepairMergedReportsReply { Success = false, ErrorMessage = res.ErrMsg };
+
+            reply.Executed = true;
+            if (_aggregatorRuns && _eventQueueWaker is not null) {
+                _eventQueueWaker.CheckForEventsNow();
+                reply.AggregatorWoken = true;
+            }
+            return reply;
+        } catch (OperationCanceledException) {
+            return new RepairMergedReportsReply { Success = false, ErrorMessage = "Canceled" };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "AdminSvc - RepairMergedReports failed");
+            return new RepairMergedReportsReply { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    private static MergedReport ToMergedReport(MergedReportPlanItem item) => new() {
+        CompanySymbol = item.Report.CompanySymbol,
+        InstrumentSymbol = item.Report.InstrumentSymbol,
+        InstrumentReportId = item.Report.InstrumentReportId,
+        ReportType = item.Report.ReportType,
+        ReportPeriodType = item.Report.ReportPeriodType,
+        ReportDate = item.Report.ReportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        OtherReportDate = item.OtherReportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        Finding = item.Finding,
+        Reset = item.Reset,
+    };
 
     private bool IsRunning(IPausableService service) => _runningServiceNames.Contains(service.ServiceName);
 

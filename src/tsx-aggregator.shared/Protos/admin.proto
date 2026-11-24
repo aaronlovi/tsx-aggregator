@@ -15,6 +15,11 @@ service AdminService {
     // Queue a RawDataChanged event for listed instruments with raw data, so the Aggregator rebuilds their processed
     // reports (O1). Without execute it only reports what it would queue. Unknown symbols queue nothing.
     rpc RequeueInstruments(RequeueInstrumentsRequest) returns (RequeueInstrumentsReply);
+
+    // Find raw reports that were merged with another report of the same year or quarter before review R31, and mark
+    // the repairable ones as not current, so the next scrape inserts clean copies. Queues a rebuild for each instrument
+    // that lost a report. Without execute it only reports what it would do.
+    rpc RepairMergedReports(RepairMergedReportsRequest) returns (RepairMergedReportsReply);
 }
 
 message GetServiceStatusRequest {}
@@ -59,4 +64,38 @@ message RequeueInstrumentsReply {
     repeated string no_raw_data_symbols = 6; // Listed but no raw reports: nothing to rebuild
     repeated string unknown_symbols = 7;     // Not a listed instrument
     bool aggregator_woken = 8;               // The Aggregator runs here and was told to check now
+}
+
+message RepairMergedReportsRequest {
+    repeated string instrument_symbols = 1; // Only these (case-insensitive); empty: all
+    bool execute = 2;                       // False: dry run
+}
+
+enum MergedReportFinding {
+    MERGED_REPORT_FINDING_UNSPECIFIED = 0;
+    WRONG_DATE = 1;       // Reset: holds the other report, which is also stored under its own date
+    LEFTOVER_FIELDS = 2;  // Reset: holds fields of the other report; TMX still sends this one
+    ONLY_COPY = 3;        // Left: holds the other report, which is not stored under its own date
+    NOT_SENT = 4;         // Left: holds fields of the other report, and TMX has not sent this one lately
+}
+
+message MergedReport {
+    string company_symbol = 1;
+    string instrument_symbol = 2;
+    int64 instrument_report_id = 3;
+    int32 report_type = 4;
+    int32 report_period_type = 5;
+    string report_date = 6;       // yyyy-MM-dd, of the row
+    string other_report_date = 7; // yyyy-MM-dd, of the report it was merged with
+    MergedReportFinding finding = 8;
+    bool reset = 9;               // Marked as not current, or would be on a dry run
+}
+
+message RepairMergedReportsReply {
+    bool success = 1;
+    string error_message = 2;
+    bool executed = 3;                    // True when reports were reset
+    repeated MergedReport reports = 4;
+    repeated string not_found_symbols = 5; // Requested, but no merged report found
+    bool aggregator_woken = 6;            // The Aggregator runs here and was told to check now
 }

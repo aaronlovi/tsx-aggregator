@@ -18,6 +18,7 @@ public static class Program {
         new ServiceCommand(),
         new EventsCommand(),
         new RequeueCommand(),
+        new MergedReportsCommand(),
         new PriorityCommand(),
     ];
 
