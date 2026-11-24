@@ -329,6 +329,119 @@ public class CompanyReportTests {
         _ = Process(report).LatestOwnerEarnings.Should().BeNull();
     }
 
+    // V11: the provider sometimes files capex as investment purchases, in three equal keys. A year with D&A but no capex
+    // was then left out of owner earnings (CVE 2023-25, SU 2025).
+
+    /// <summary>A year with operating cash flow 300, D&amp;A 100 and these fields.</summary>
+    private static RawReportDataMap YearWithDA(params (string Key, decimal Value)[] fields) {
+        RawReportDataMap year = CreateRawReport(fields);
+        year["OperatingCashFlow"] = 300m;
+        year["DepreciationAndAmortization"] = 100m;
+        return year;
+    }
+
+    private static RawReportDataMap YearWithInvestments(decimal amount, params (string Key, decimal Value)[] fields) {
+        RawReportDataMap year = YearWithDA(fields);
+        year["NetInvestmentPropertiesPurchaseAndSale"] = amount;
+        year["NetInvestmentPurchaseAndSale"] = amount;
+        year["PurchaseOfInvestment"] = amount;
+        return year;
+    }
+
+    private static decimal? AverageOwnerEarningsOf(params RawReportDataMap[] years) {
+        var report = NewReport();
+        for (int i = 0; i < years.Length; i++)
+            report.AddAnnualCashFlowStatement(Fy2020.AddYears(i), years[i]);
+        return Process(report).AverageOwnerEarnings;
+    }
+
+    [Theory]
+    [InlineData(-50)]
+    [InlineData(-90)]
+    [InlineData(-200)]
+    public void OwnerEarnings_CapExFiledAsInvestments_IsCapEx(int amount) {
+        _ = AverageOwnerEarningsOf(YearWithInvestments(amount)).Should().Be(300m + amount);
+    }
+
+    [Theory]
+    [InlineData(-49)]  // SU 2020: 113M beside 9.5B of D&A is not its capex
+    [InlineData(-201)] // A REIT's purchases are not maintenance
+    [InlineData(90)]
+    public void OwnerEarnings_InvestmentsNotLikeCapEx_YearIsLeftOut(int amount) {
+        _ = AverageOwnerEarningsOf(YearWithInvestments(amount)).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("NetInvestmentPurchaseAndSale")]
+    [InlineData("PurchaseOfInvestment")]
+    public void OwnerEarnings_InvestmentKeysDiffer_YearIsLeftOut(string key) {
+        // IFC: securities bought and sold
+        RawReportDataMap year = YearWithInvestments(-90m);
+        year[key] = -95m;
+        _ = AverageOwnerEarningsOf(year).Should().BeNull();
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapExFiledAsInvestments_WithAnUntrustedNetSale() {
+        // SU 2025: NetPPEPurchaseAndSale has only the sales (66M)
+        _ = AverageOwnerEarningsOf(YearWithInvestments(-90m, ("NetPPEPurchaseAndSale", 6m), ("SaleOfPPE", 6m))).Should().Be(210m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapExFiledAsInvestments_OneOffSaleIsStillLimited() {
+        // V7 applies afterwards
+        _ = AverageOwnerEarningsOf(
+            YearWithDA(("PurchaseOfPPE", -90m)),
+            YearWithDA(("PurchaseOfPPE", -90m)),
+            YearWithInvestments(-90m, ("SaleOfPPE", 600m))).Should().Be(210m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapExFiledAsInvestments_AlsoInAYearWithANearlyEmptyCapExKey() {
+        // CVE 2022: PurchaseOfPPE -50M, and 3,708M as investments; capex filed there in 2023-25 too
+        _ = AverageOwnerEarningsOf(YearWithInvestments(-90m, ("PurchaseOfPPE", -10m)), YearWithInvestments(-90m))
+            .Should().Be(205m, "(300 - 100 + 300 - 90) / 2");
+    }
+
+    [Fact]
+    public void OwnerEarnings_NearlyEmptyCapExKey_CompanyNeverFilesCapExAsInvestments_InvestmentsAreNotCapEx() {
+        // BBUC: every year has a capex key
+        _ = AverageOwnerEarningsOf(YearWithInvestments(-90m, ("PurchaseOfPPE", -10m)), YearWithDA(("PurchaseOfPPE", -90m)))
+            .Should().Be(250m, "(300 - 10 + 300 - 90) / 2");
+    }
+
+    [Theory]
+    [InlineData(-24, 198)]   // (300 - 24 - 90 + 300 - 90) / 2
+    [InlineData(-25, 242.5)] // (300 - 25 + 300 - 90) / 2
+    [InlineData(-88, 211)]   // SU 2024 has its capex in both places; it must not count twice
+    public void OwnerEarnings_CapExKeyOfAQuarterOfDA_InvestmentsAreNotAddedToIt(int purchases, double expected) {
+        _ = AverageOwnerEarningsOf(YearWithInvestments(-90m, ("PurchaseOfPPE", purchases)), YearWithInvestments(-90m))
+            .Should().Be((decimal)expected);
+    }
+
+    [Fact]
+    public void OwnerEarnings_InvestmentsWithoutDA_AreNotCapEx() {
+        RawReportDataMap year = YearWithInvestments(-90m);
+        year["DepreciationAndAmortization"] = 0m;
+        _ = AverageOwnerEarningsOf(year).Should().Be(300m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_FallsBackToCapitalExpenditure() {
+        // CDE 2022, QSR 2022: negative, unlike CapitalExpenditureReported
+        _ = AverageOwnerEarningsOf(YearWithDA(("CapitalExpenditure", -40m))).Should().Be(260m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_CapitalExpenditureIsTheLastFallback() {
+        _ = AverageOwnerEarningsOf(YearWithDA(("CapitalExpenditure", -40m), ("CapitalExpenditureReported", 30m))).Should().Be(270m);
+    }
+
+    [Fact]
+    public void OwnerEarnings_CapEx_PositiveCapitalExpenditure_IsNotTrusted() {
+        _ = AverageOwnerEarningsOf(YearWithDA(("CapitalExpenditure", 40m))).Should().BeNull();
+    }
+
     // V6: the latest year's net cash flow, shown next to its average. Same latest year as V2's, but it needs no capex.
 
     private static CompanyReport TwoYearNetCashFlowReport(params (string Key, decimal Value)[] latestYear) {

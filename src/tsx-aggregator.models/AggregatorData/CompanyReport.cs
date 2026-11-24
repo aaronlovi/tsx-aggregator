@@ -437,6 +437,7 @@ public class CompanyReport
             _annualProcessedCashFlowItems.Add(reportDate, cashFlowReport);
         }
 
+        UseCapExFiledAsInvestments();
         LimitPPESalesToTheMedianYear();
         EstimateMissingRetainedEarnings();
 
@@ -630,6 +631,60 @@ public class CompanyReport
     }
 
     /// <summary>
+    /// The provider files some companies' capex as investment purchases (V11): CVE 2023-25, SU 2025. A year with D&amp;A
+    /// but no capex gets it from there, and so does a year of the same company whose capex key is nearly empty (CVE 2022).
+    /// </summary>
+    private void UseCapExFiledAsInvestments()
+    {
+        bool companyFilesCapExAsInvestments = false;
+        foreach ((DateOnly reportDate, CashFlowItem item) in _annualProcessedCashFlowItems)
+        {
+            if (!item.HasCapExData && CapExFiledAsInvestments(reportDate, item) is decimal capEx)
+            {
+                SetCapEx(item, capEx);
+                companyFilesCapExAsInvestments = true;
+            }
+        }
+        if (!companyFilesCapExAsInvestments)
+            return;
+
+        foreach ((DateOnly reportDate, CashFlowItem item) in _annualProcessedCashFlowItems)
+        {
+            // A year filled above is past this limit already: it has at least half of its D&A as capex.
+            if (item.CapEx < 0.25M * (item.DepreciationAndAmortization + item.Depletion)
+                && CapExFiledAsInvestments(reportDate, item) is decimal capEx)
+            {
+                SetCapEx(item, item.NetPPEPurchaseAndSale + capEx);
+            }
+        }
+
+        static void SetCapEx(CashFlowItem item, decimal capEx)
+        {
+            item.NetPPEPurchaseAndSale = capEx;
+            item.PPEPurchases = capEx;
+            item.HasCapExData = true;
+        }
+    }
+
+    /// <summary>
+    /// The investment purchases of a year that look like its capex (negative): the same amount under three keys, where
+    /// securities or property companies differ, and 50-200% of D&amp;A. Null otherwise.
+    /// </summary>
+    private decimal? CapExFiledAsInvestments(DateOnly reportDate, CashFlowItem item)
+    {
+        RawReportDataMap statement = _annualRawCashFlowReports[reportDate];
+        decimal depreciation = item.DepreciationAndAmortization + item.Depletion;
+        return depreciation > 0
+            && statement["NetInvestmentPropertiesPurchaseAndSale"] is decimal purchases
+            && purchases == statement["NetInvestmentPurchaseAndSale"]
+            && purchases == statement["PurchaseOfInvestment"]
+            && -purchases >= 0.5M * depreciation
+            && -purchases <= 2M * depreciation
+                ? purchases
+                : null;
+    }
+
+    /// <summary>
     /// PP&amp;E sales reduce capex only up to the company's median year (V7): a one-off asset sale is not earnings,
     /// while regular equipment sales are part of the business. Without purchases to set sales against, a net sale
     /// counts as no capex.
@@ -653,7 +708,7 @@ public class CompanyReport
     /// Net PP&amp;E purchases and sales, negative for a net outflow. Uses NetPPEPurchaseAndSale, or
     /// PurchaseOfPPE + SaleOfPPE when that is the larger outflow (NetPPEPurchaseAndSale sometimes misses most of
     /// the purchases; decisions 14 and 21). Falls back to PurchaseOfPPE + SaleOfPPE, then PurchaseOfPPE alone, then
-    /// -CapitalExpenditureReported (which is reported as a positive amount).
+    /// -CapitalExpenditureReported (which is reported as a positive amount), then CapitalExpenditure (negative; V11).
     /// </summary>
     private static void SetNetPPEPurchaseAndSale(
         DateOnly reportDate, RawReportDataMap rawCashFlowReport, CashFlowItem cashFlowReport, IList<string> warnings)
@@ -694,6 +749,8 @@ public class CompanyReport
             cashFlowReport.NetPPEPurchaseAndSale = rawCashFlowReport["PurchaseOfPPE"]!.Value;
         else if (rawCashFlowReport.HasValue("CapitalExpenditureReported"))
             cashFlowReport.NetPPEPurchaseAndSale = -rawCashFlowReport["CapitalExpenditureReported"]!.Value;
+        else if (rawCashFlowReport["CapitalExpenditure"] is decimal capEx and < 0)
+            cashFlowReport.NetPPEPurchaseAndSale = capEx;
         else
         {
             cashFlowReport.HasCapExData = false;
