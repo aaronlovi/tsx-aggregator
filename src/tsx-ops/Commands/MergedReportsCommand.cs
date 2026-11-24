@@ -32,10 +32,10 @@ internal sealed class MergedReportsCommand : ICommand {
     public string Usage => """
         Usage: tsx-ops merged-reports [<symbol>...] [--execute] [--grpc <url>]
 
-        Before review R31, two reports of one calendar year (annual) or quarter were stored in one row. This lists the
-        rows and, with --execute, marks the repairable ones as not current and queues a rebuild of their companies. The
-        next scrape inserts a clean copy of each one TMX still sends. Talks to tsx-aggregator's AdminService over gRPC,
-        so tsx-aggregator must be running.
+        Before review R31, two reports of one calendar year (annual) or quarter were merged into one row. This lists
+        the rows of such pairs and, with --execute, marks the repairable ones as not current and queues a rebuild of
+        their companies. The next scrape inserts a clean copy of each one TMX still sends (the same one if it was not
+        merged). Talks to tsx-aggregator's AdminService over gRPC, so tsx-aggregator must be running.
 
           <symbol>...         Only these instrument symbols (case-insensitive); default: all. One without a merged report
                               resets nothing
@@ -115,9 +115,9 @@ internal sealed class MergedReportsCommand : ICommand {
 
     private static string Reason(MergedReport report) => report.Finding switch {
         MergedReportFinding.WrongDate => $"holds the {report.OtherReportDate} report, which is stored under its own date too",
-        MergedReportFinding.LeftoverFields => $"holds fields of the {report.OtherReportDate} report; TMX still sends this one",
+        MergedReportFinding.LeftoverFields => $"may hold fields of the {report.OtherReportDate} report; TMX still sends this one",
         MergedReportFinding.OnlyCopy => $"holds the {report.OtherReportDate} report, which is stored nowhere else",
-        MergedReportFinding.NotSent => $"holds fields of the {report.OtherReportDate} report; TMX has not sent this one since the fix",
+        MergedReportFinding.NotSent => $"may hold fields of the {report.OtherReportDate} report; TMX has not sent this one since the fix",
         _ => $"merged with the {report.OtherReportDate} report",
     };
 

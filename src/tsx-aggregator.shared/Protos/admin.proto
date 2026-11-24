@@ -74,9 +74,9 @@ message RepairMergedReportsRequest {
 enum MergedReportFinding {
     MERGED_REPORT_FINDING_UNSPECIFIED = 0;
     WRONG_DATE = 1;       // Reset: holds the other report, which is also stored under its own date
-    LEFTOVER_FIELDS = 2;  // Reset: holds fields of the other report; TMX still sends this one
+    LEFTOVER_FIELDS = 2;  // Reset: may hold fields of the other report; TMX still sends this one
     ONLY_COPY = 3;        // Left: holds the other report, which is not stored under its own date
-    NOT_SENT = 4;         // Left: holds fields of the other report, and TMX has not sent this one lately
+    NOT_SENT = 4;         // Left: may hold fields of the other report, and TMX has not sent this one lately
 }
 
 message MergedReport {

@@ -18,16 +18,17 @@ internal sealed record MergedReportPlan(IReadOnlyList<MergedReportPlanItem> Item
 
 /// <summary>
 /// Finds raw reports that the matching before review R31 merged with another report. It matched annual reports by calendar
-/// year and the others by calendar quarter, first match wins, so after a change of fiscal year end both reports of the
-/// year were merged into the earlier one's row, on each scrape: the row holds the fields of both, under the date of
-/// whichever came last.
+/// year and the others by calendar quarter, so after a change of fiscal year end both reports of the year were merged
+/// into one row on each scrape: whichever row the database returned first. Either row can hold fields of both reports,
+/// and the date of either. Which fields the two share does not tell, because TMX adds fields over time, so every row of
+/// such a pair that TMX still sends is reset: a row that was not merged comes back the same.
 /// </summary>
 internal static class MergedReportPlanner {
     private const string ReportDateKey = "REPORTDATE";
     private const string CurrencyKey = "CURRENCY";
 
     /// <summary>A report's JSON. <see cref="HasCurrency"/>: TMX has sent it since the currency is stored, the same deploy as R31's fix.</summary>
-    private sealed record Content(DateOnly Date, HashSet<string> Fields, bool HasCurrency);
+    private sealed record Content(DateOnly Date, bool HasCurrency);
 
     private sealed record Row(MergedReportCandidateDto Report, Content Content) {
         public bool IsWrongDate => Content.Date != Report.ReportDate;
@@ -66,20 +67,19 @@ internal static class MergedReportPlanner {
 
     private static MergedReportPlanItem? Find(Row row, IReadOnlyList<Row> sameKind) {
         if (row.IsWrongDate) {
-            // Safe to drop only if the report it holds is also stored, undamaged, under its own date.
+            // Safe to drop only if the report it holds is also stored under its own date.
             bool hasOwnRow = sameKind.Any(r => r.Report.ReportDate == row.Content.Date && !r.IsWrongDate);
             return new MergedReportPlanItem(row.Report, row.Content.Date,
                 hasOwnRow ? MergedReportFinding.WrongDate : MergedReportFinding.OnlyCopy);
         }
 
-        // Reset before: this is the clean copy, which can hold every field of the later report as well.
+        // Reset before: this is the clean copy.
         if (row.Report.AlreadyReset)
             return null;
 
         Row? other = sameKind
-            .Where(r => r.Report.ReportDate > row.Report.ReportDate && !r.IsWrongDate && InSamePeriod(r, row)
-                && r.Content.Fields.Count > 0 && r.Content.Fields.IsSubsetOf(row.Content.Fields))
-            .MinBy(r => r.Report.ReportDate);
+            .Where(r => r.Report.ReportDate != row.Report.ReportDate && InSamePeriod(r, row))
+            .MinBy(r => Math.Abs(r.Report.ReportDate.DayNumber - row.Report.ReportDate.DayNumber));
         return other is null
             ? null
             : new MergedReportPlanItem(row.Report, other.Report.ReportDate,
@@ -101,17 +101,14 @@ internal static class MergedReportPlanner {
 
             DateOnly? date = null;
             bool hasCurrency = false;
-            var fields = new HashSet<string>(StringComparer.Ordinal);
             foreach (JsonProperty property in doc.RootElement.EnumerateObject()) {
                 string key = property.Name.ToUpperInvariant();
                 if (key == ReportDateKey)
                     date = ReadDate(property.Value);
                 else if (key == CurrencyKey)
                     hasCurrency = true;
-                else
-                    _ = fields.Add(key);
             }
-            return date is DateOnly d ? new Content(d, fields, hasCurrency) : null;
+            return date is DateOnly d ? new Content(d, hasCurrency) : null;
         } catch (JsonException) {
             return null;
         }

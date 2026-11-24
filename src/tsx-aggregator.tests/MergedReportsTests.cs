@@ -44,7 +44,9 @@ public class MergedReportsTests {
         MergedReportCandidateDto a = Row("CF", Mar, Json(Dec, "\"A\":1,\"B\":2"));
         MergedReportCandidateDto b = Row("CF", Dec, Json(Dec, "\"A\":1"));
 
-        Findings(b, a).Should().Equal((a.InstrumentReportId, Dec, MergedReportFinding.WrongDate, true));
+        Findings(b, a).Should().Equal(
+            (a.InstrumentReportId, Dec, MergedReportFinding.WrongDate, true),
+            (b.InstrumentReportId, Mar, MergedReportFinding.NotSent, false));
     }
 
     [Fact]
@@ -75,56 +77,62 @@ public class MergedReportsTests {
     }
 
     [Fact]
-    public void Plan_EarlierRowHoldingEveryFieldOfTheLater_SentByTmx_IsReset() {
-        MergedReportCandidateDto a = Row("MDP", Mar, Json(Mar, "\"A\":1,\"B\":2,\"C\":3", currency: true));
-        MergedReportCandidateDto b = Row("MDP", Dec, Json(Dec, "\"A\":9,\"b\":2", currency: true)); // keys compare case-insensitively
+    public void Plan_BothRowsOfAPair_SentByTmx_AreReset() {
+        // Either row can hold leftovers: the old matching took whichever the database returned first (live: CF's earlier
+        // rows, IFA's and MPC's later ones). Which fields they share says little: TMX adds fields, so a merged row need
+        // not hold every field of the other one (live: ATD, ATX). Both can be fetched again.
+        MergedReportCandidateDto a = Row("MPC", Mar, Json(Mar, "\"A\":1", currency: true));
+        MergedReportCandidateDto b = Row("MPC", Dec, Json(Dec, "\"A\":9,\"B\":2", currency: true));
 
-        Findings(a, b).Should().Equal((a.InstrumentReportId, Dec, MergedReportFinding.LeftoverFields, true));
+        Findings(b, a).Should().Equal(
+            (a.InstrumentReportId, Dec, MergedReportFinding.LeftoverFields, true),
+            (b.InstrumentReportId, Mar, MergedReportFinding.LeftoverFields, true));
     }
 
     [Fact]
-    public void Plan_EarlierRowHoldingEveryFieldOfTheLater_NotSentByTmx_IsLeft() {
+    public void Plan_RowOfAPair_NotSentByTmx_IsLeft() {
         MergedReportCandidateDto a = Row("MDP", Mar, Json(Mar, "\"A\":1,\"B\":2"));
-        MergedReportCandidateDto b = Row("MDP", Dec, Json(Dec, "\"A\":9", currency: true)); // its currency does not count as a field
+        MergedReportCandidateDto b = Row("MDP", Dec, Json(Dec, "\"A\":9", currency: true));
 
-        Findings(a, b).Should().Equal((a.InstrumentReportId, Dec, MergedReportFinding.NotSent, false));
+        Findings(a, b).Should().Equal(
+            (a.InstrumentReportId, Dec, MergedReportFinding.NotSent, false),
+            (b.InstrumentReportId, Mar, MergedReportFinding.LeftoverFields, true));
     }
 
     [Fact]
-    public void Plan_EarlierRowMissingAFieldOfTheLater_WasNotMerged() {
-        Findings(
-            Row("IMG", Mar, Json(Mar, "\"A\":1", currency: true)),
-            Row("IMG", Dec, Json(Dec, "\"A\":9,\"B\":2", currency: true))).Should().BeEmpty();
+    public void Plan_LaterRowHoldingTheEarlierReport_IsReset_AndTheEarlierOneToo() {
+        // IFA on live: the 2023-12-31 row holds the 2023-09-30 report, and may have been merged into that one before.
+        MergedReportCandidateDto a = Row("IFA", Mar, Json(Mar, "\"A\":1", currency: true));
+        MergedReportCandidateDto b = Row("IFA", Dec, Json(Mar, "\"A\":1,\"B\":2"));
+
+        Findings(a, b).Should().Equal(
+            (a.InstrumentReportId, Dec, MergedReportFinding.LeftoverFields, true),
+            (b.InstrumentReportId, Mar, MergedReportFinding.WrongDate, true));
     }
 
     [Fact]
-    public void Plan_LaterRowHoldingEveryFieldOfTheEarlier_WasNotMerged() {
-        Findings(
-            Row("X", Mar, Json(Mar, "\"A\":1", currency: true)),
-            Row("X", Dec, Json(Dec, "\"A\":9,\"B\":2,\"C\":3", currency: true))).Should().BeEmpty();
-    }
+    public void Plan_TheOtherRow_IsTheNearestInTime() {
+        MergedReportCandidateDto a = Row("IMG", new(2025, 4, 30), Json(new(2025, 4, 30), "\"A\":1", currency: true));
+        MergedReportCandidateDto b = Row("IMG", new(2025, 6, 30), Json(new(2025, 6, 30), "\"A\":1", currency: true));
+        MergedReportCandidateDto c = Row("IMG", new(2025, 12, 31), Json(new(2025, 12, 31), "\"A\":1", currency: true));
 
-    [Fact]
-    public void Plan_LaterRowThatIsItselfWrong_IsNotEvidence() {
-        MergedReportCandidateDto a = Row("X", Mar, Json(Mar, "\"A\":1,\"B\":2", currency: true));
-        MergedReportCandidateDto b = Row("X", Dec, Json(new DateOnly(2022, 6, 30), "\"A\":1"));
-
-        Findings(a, b).Should().Equal((b.InstrumentReportId, new DateOnly(2022, 6, 30), MergedReportFinding.OnlyCopy, false));
-    }
-
-    [Fact]
-    public void Plan_LaterRowWithoutFields_IsNotEvidence() {
-        Findings(
-            Row("X", Mar, Json(Mar, "\"A\":1", currency: true)),
-            Row("X", Dec, $"{{\"REPORTDATE\":\"{Dec:yyyy-MM-dd}T00:00:00Z\"}}")).Should().BeEmpty();
+        MergedReportPlanner.Plan([c, a, b], null).Items.Select(i => i.OtherReportDate)
+            .Should().Equal(new DateOnly(2025, 6, 30), new DateOnly(2025, 4, 30), new DateOnly(2025, 6, 30));
     }
 
     [Fact]
     public void Plan_ReportResetBefore_IsNotResetAgain() {
-        // Its clean copy can hold every field of the later report too.
         Findings(
             Row("MDP", Mar, Json(Mar, "\"A\":1,\"B\":2", currency: true), alreadyReset: true),
-            Row("MDP", Dec, Json(Dec, "\"A\":9", currency: true))).Should().BeEmpty();
+            Row("MDP", Dec, Json(Dec, "\"A\":9", currency: true), alreadyReset: true)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Plan_ReportResetBefore_IsLeftOutAlsoWhenTmxNoLongerSendsIt() {
+        MergedReportCandidateDto b = Row("MDP", Dec, Json(Dec, "\"A\":9", currency: true));
+
+        Findings(Row("MDP", Mar, Json(Mar, "\"A\":1"), alreadyReset: true), b)
+            .Should().Equal((b.InstrumentReportId, Mar, MergedReportFinding.LeftoverFields, true));
     }
 
     [Fact]
@@ -140,7 +148,9 @@ public class MergedReportsTests {
         MergedReportCandidateDto jul = Row("ATD", new(2025, 7, 31), Json(new(2025, 7, 31), "\"A\":1,\"B\":2", currency: true), period: ReportPeriodTypes.Quarterly);
         MergedReportCandidateDto sep = Row("ATD", new(2025, 9, 30), Json(new(2025, 9, 30), "\"A\":3", currency: true), period: ReportPeriodTypes.Quarterly);
 
-        Findings(sep, jun, jul).Should().Equal((jul.InstrumentReportId, new DateOnly(2025, 9, 30), MergedReportFinding.LeftoverFields, true));
+        Findings(sep, jun, jul).Should().Equal(
+            (jul.InstrumentReportId, new DateOnly(2025, 9, 30), MergedReportFinding.LeftoverFields, true),
+            (sep.InstrumentReportId, new DateOnly(2025, 7, 31), MergedReportFinding.LeftoverFields, true));
     }
 
     [Theory]
@@ -149,7 +159,7 @@ public class MergedReportsTests {
     [InlineData("{\"A\":1,\"B\":2,\"REPORTDATE\":\"soon\"}")]
     [InlineData("[1]")]
     public void Plan_RowThatCannotBeRead_IsLeftAlone(string json) {
-        Findings(Row("X", Mar, json), Row("X", Dec, Json(Dec, "\"A\":9"))).Should().BeEmpty();
+        Findings(Row("X", Mar, json), Row("X", Dec, Json(Dec, "\"A\":9", currency: true))).Should().BeEmpty();
     }
 
     [Fact]
@@ -207,13 +217,15 @@ public class MergedReportsTests {
 
         reply.Success.Should().BeTrue();
         reply.Executed.Should().BeFalse();
-        reply.Reports.Should().HaveCount(2);
+        reply.Reports.Should().HaveCount(3);
         reply.Reports[0].Should().BeEquivalentTo(new MergedReport {
             CompanySymbol = "ATX", InstrumentSymbol = "ATX", InstrumentReportId = AtxOnly.InstrumentReportId, ReportType = 1,
             ReportPeriodType = 1, ReportDate = "2022-03-31", OtherReportDate = "2022-12-31", Finding = MergedReportFinding.OnlyCopy, Reset = false,
         });
         reply.Reports[1].Finding.Should().Be(MergedReportFinding.WrongDate);
         reply.Reports[1].Reset.Should().BeTrue();
+        reply.Reports[2].Finding.Should().Be(MergedReportFinding.NotSent);
+        reply.Reports[2].Reset.Should().BeFalse();
         _reset.Should().BeNull();
         _waker.Calls.Should().Be(0);
     }
