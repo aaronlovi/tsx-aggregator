@@ -36,7 +36,7 @@
           <th class="mat-header-cell data-table__header">Instrument Name</th>
           <td class="mat-cell data-table__data">{{ companyDetails.instrumentName }}</td>
           <th class="mat-header-cell data-table__header">
-            <span matTooltip="The maximum per-share price at which the company passes all valuation checks. Based on the most conservative of: 3x book value, 20x estimated return from cash flow, and 20x estimated return from owner earnings (the lower of the average and the latest year).">
+            <span [matTooltip]="'The highest per-share price at which price-to-book is at most 3 and both estimated yearly returns (from cash flow, and from owner earnings: the lower of the average and the latest year) are at least ' + companyDetails.maxPriceTargetReturnPct + '%. Stricter than the 5% of the checks.'">
               Max Buy Price
             </span>
           </th>

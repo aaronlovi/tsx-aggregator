@@ -40,8 +40,8 @@ describe('CompanyService', () => {
         const details = fetchDetails(detailsFixture);
 
         expect(details.overallScore).toBe(13);
-        expect(details.maxPrice).toBe(24);
-        expect(details.percentageUpside).toBe(-4);
+        expect(details.maxPrice).toBe(15);
+        expect(details.percentageUpside).toBe(-40);
         expect(details.doesPassCheck_EstNextYearTotalReturn_CashFlow_BigEnough).toBe('Fail');
         expect(details.doesPassCheck_ROE_FromOwnerEarnings_BigEnough).toBe('Fail');
         expect(details.doesPassCheck_ROE_FromOwnerEarnings_Consistent).toBe('Pass');

@@ -33,12 +33,21 @@ public class ScoringOptions {
     [Range(1, 20)]
     public int RoeConsistencyMinUsableYears { get; set; } = DefaultRoeConsistencyMinUsableYears;
 
+    public const decimal DefaultMaxPriceTargetReturnPct = 8M;
+
+    /// <summary>
+    /// The est. return, in percent, that the max price is set for (V3). Not the 5% of the est. return checks.
+    /// </summary>
+    public decimal MaxPriceTargetReturnPct { get; set; } = DefaultMaxPriceTargetReturnPct;
+
     /// <returns>An error message, or null when the settings are valid.</returns>
     public string? Validate() {
         if (RoeConsistencyMinYears < 1 || RoeConsistencyWindowYears < 1 || RoeConsistencyMinYears > RoeConsistencyWindowYears)
             return $"Scoring: RoeConsistencyMinYears ({RoeConsistencyMinYears}) must be between 1 and RoeConsistencyWindowYears ({RoeConsistencyWindowYears})";
         if (RoeConsistencyMinUsableYears < 1 || RoeConsistencyMinUsableYears > RoeConsistencyWindowYears)
             return $"Scoring: RoeConsistencyMinUsableYears ({RoeConsistencyMinUsableYears}) must be between 1 and RoeConsistencyWindowYears ({RoeConsistencyWindowYears})";
+        if (MaxPriceTargetReturnPct <= 0 || MaxPriceTargetReturnPct > 100)
+            return $"Scoring: MaxPriceTargetReturnPct ({MaxPriceTargetReturnPct}) must be more than 0 and at most 100";
         return null;
     }
 }

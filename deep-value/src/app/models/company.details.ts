@@ -88,6 +88,8 @@ export interface CompanyDetails {
     roeConsistencyMinYears: number;
     roeConsistencyWindowYears: number;
     roeConsistencyMinUsableYears: number;
+    /** The est. return, in percent, that maxPrice is set for. */
+    maxPriceTargetReturnPct: number;
     doesPassCheck_Overall: boolean;
     overallScore: number;
     notAvailableCount: number;

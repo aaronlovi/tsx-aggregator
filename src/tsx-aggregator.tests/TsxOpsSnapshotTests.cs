@@ -56,6 +56,16 @@ public class TsxOpsSnapshotTests {
         _ = rows[1].Should().Equal("a", "b", "c", "d", "e");
     }
 
+    [Theory]
+    [InlineData(5, 30)]  // 3 x book 1B = 3B, as 20 x 150M
+    [InlineData(10, 15)] // 10 x 150M
+    public void RowBuilder_MaxPrice_UsesTheScoringTarget(int targetPct, int expected) {
+        Dictionary<string, string> row = SnapshotRowBuilder.Build(
+            Instrument, AllPassFields, new ScoringOptions { MaxPriceTargetReturnPct = targetPct });
+
+        _ = decimal.Parse(row["max_price"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(expected);
+    }
+
     [Fact]
     public void RowBuilder_LatestOwnerEarnings_IsAColumnAndLimitsTheOwnerEarningsReturn() {
         // V2: latest 40M against an average of 150M, over a 1B market cap.

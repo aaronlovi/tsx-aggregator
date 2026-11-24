@@ -15,7 +15,8 @@ namespace tsx_aggregator.tests;
 public class CompanyFullDetailReportTests {
     /// <summary>Market cap 1,000 (100 shares at 10); book value and equity 1,000.</summary>
     private static CompanyFullDetailReport Report(
-        decimal averageNetCashFlow, decimal? averageOwnerEarnings, decimal curDividendsPaid, decimal? latestOwnerEarnings = null) => new(
+        decimal averageNetCashFlow, decimal? averageOwnerEarnings, decimal curDividendsPaid, decimal? latestOwnerEarnings = null,
+        decimal maxPriceTargetReturnPct = 5M) => new(
         exchange: "TSX",
         companySymbol: "TST",
         instrumentSymbol: "TST",
@@ -40,7 +41,7 @@ public class CompanyFullDetailReportTests {
             OwnerEarningsNumerator: averageOwnerEarnings,
             OwnerEarningsEquity: 1_000M,
             OwnerEarningsByYear: TestDataFactory.ConsistentRoeYears()),
-        scoring: new ScoringOptions());
+        scoring: new ScoringOptions { MaxPriceTargetReturnPct = maxPriceTargetReturnPct });
 
     #region B5 - dividends in the est. return and max price
 
@@ -388,7 +389,7 @@ public class CompanyFullDetailReportTests {
             averageDividendsPaid: average,
             curAdjustedRetainedEarnings: 100M, oldestRetainedEarnings: 50M, numAnnualProcessedCashFlowReports: 5,
             roe: new RoeInputs(50M, 1_000M, 60M, 1_000M, TestDataFactory.ConsistentRoeYears()),
-            scoring: new ScoringOptions());
+            scoring: new ScoringOptions { MaxPriceTargetReturnPct = 5M });
 
     [Fact]
     public void CashFlowReturn_AddsBackTheAverageDividends() {
@@ -417,6 +418,71 @@ public class CompanyFullDetailReportTests {
         // The lowest, 1,000, over 100 shares is 10. With the latest year's 500 it would be 20 x 530 = 10,600 and the
         // price 20 (the owner-earnings limit).
         _ = ReportWithDividends(current: 500M, average: 20M).MaxPrice.Should().Be(10M);
+    }
+
+    #endregion
+
+    #region V3 - the max price's target return
+
+    [Theory]
+    [InlineData(5, 12)]    // min(3 x book 1,000 = 3,000; 20 x 70; 20 x 60 = 1,200) / 100 shares
+    [InlineData(8, 7.5)]   // 12.5 x 60 = 750
+    [InlineData(10, 6)]    // 10 x 60 = 600
+    [InlineData(2, 30)]    // 50 x 60 = 3,000, the same as the book limit
+    [InlineData(1, 30)]    // the book limit
+    public void MaxPrice_IsSetForTheTargetReturn(double targetPct, double expected) {
+        _ = Report(averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 20M, maxPriceTargetReturnPct: (decimal)targetPct)
+            .MaxPrice.Should().Be((decimal)expected);
+    }
+
+    [Fact]
+    public void MaxPrice_TargetReturn_AppliesToTheCashFlowReturnToo() {
+        // 12.5 x (20 + 20) = 500, below 12.5 x 60
+        _ = Report(averageNetCashFlow: 20M, averageOwnerEarnings: 60M, curDividendsPaid: 20M, maxPriceTargetReturnPct: 8M)
+            .MaxPrice.Should().Be(5M);
+    }
+
+    [Fact]
+    public void Checks_TargetReturn_LeavesThemAt5Percent() {
+        // 6% from owner earnings and 7% from cash flow pass the checks whatever the max price's target.
+        CompanyFullDetailReport at5 = Report(averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 20M, maxPriceTargetReturnPct: 5M);
+        CompanyFullDetailReport at10 = Report(averageNetCashFlow: 50M, averageOwnerEarnings: 60M, curDividendsPaid: 20M, maxPriceTargetReturnPct: 10M);
+
+        _ = at10.AllChecks.Should().Equal(at5.AllChecks);
+        _ = at10.DoesPassCheck_EstNextYeartotalReturn_OwnerEarnings_BigEnough.Should().Be(CheckResult.Pass);
+    }
+
+    [Fact]
+    public void ScoringOptions_MaxPriceTargetReturn_DefaultsTo8Percent() {
+        _ = new ScoringOptions().MaxPriceTargetReturnPct.Should().Be(8M);
+    }
+
+    [Theory]
+    [InlineData(0.1, true)]
+    [InlineData(8, true)]
+    [InlineData(100, true)]
+    [InlineData(0, false)]
+    [InlineData(-5, false)]
+    [InlineData(100.1, false)]
+    public void ScoringOptions_Validate_MaxPriceTargetReturn(double targetPct, bool valid) {
+        string? error = new ScoringOptions { MaxPriceTargetReturnPct = (decimal)targetPct }.Validate();
+
+        if (valid)
+            _ = error.Should().BeNull();
+        else
+            _ = error.Should().Contain("MaxPriceTargetReturnPct");
+    }
+
+    [Fact]
+    public void FromReplyItem_MaxPriceTargetReturn_IsRead_AndUnsetMeansTheDefault() {
+        var item = new GetStocksDataReplyItem { Exchange = "TSX", PerSharePrice = 10M };
+        _ = CompanyFullDetailReport.FromReplyItem(item).MaxPriceTargetReturnPct.Should().Be(8M, "an older server doesn't send it");
+
+        item.MaxPriceTargetReturnPct = 0M;
+        _ = CompanyFullDetailReport.FromReplyItem(item).MaxPriceTargetReturnPct.Should().Be(8M, "0 is not a target");
+
+        item.MaxPriceTargetReturnPct = 7.5M;
+        _ = CompanyFullDetailReport.FromReplyItem(item).MaxPriceTargetReturnPct.Should().Be(7.5M);
     }
 
     #endregion

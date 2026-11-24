@@ -84,6 +84,8 @@ message GetStocksDataReplyItem {
     optional int64 latest_owner_earnings = 35;
     // Net cash flow of the newest annual report, for display only (V6). Unset like latest_owner_earnings.
     optional int64 latest_net_cash_flow = 36;
+    // The est. return, in percent, that the max price is set for (V3). Unset from an older server: use the default.
+    DecimalValue max_price_target_return_pct = 37;
 }
 
 message GetStockSearchResultsRequest {

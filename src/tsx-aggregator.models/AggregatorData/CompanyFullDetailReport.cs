@@ -63,10 +63,11 @@ public class CompanyFullDetailReport {
         RoeOwnerEarningsNumerator = roe.OwnerEarningsNumerator;
         RoeOwnerEarningsEquity = roe.OwnerEarningsEquity;
         RoeOwnerEarningsByYear = roe.OwnerEarningsByYear;
-        // The check 16 settings are copied, so a later change to the options doesn't rescore this report.
+        // The scoring settings are copied, so a later change to the options doesn't rescore this report.
         RoeConsistencyMinYears = scoring.RoeConsistencyMinYears;
         RoeConsistencyWindowYears = scoring.RoeConsistencyWindowYears;
         RoeConsistencyMinUsableYears = scoring.RoeConsistencyMinUsableYears;
+        MaxPriceTargetReturnPct = scoring.MaxPriceTargetReturnPct;
         MostRecentAnnualReportDate = mostRecentAnnualReportDate;
         MostRecentQuarterlyReportDate = mostRecentQuarterlyReportDate;
         LastUpdatedDate = lastUpdatedDate;
@@ -113,6 +114,7 @@ public class CompanyFullDetailReport {
             RoeConsistencyMinYears = item.RoeConsistencyMinYears > 0 ? item.RoeConsistencyMinYears : ScoringOptions.DefaultRoeConsistencyMinYears,
             RoeConsistencyWindowYears = item.RoeConsistencyWindowYears > 0 ? item.RoeConsistencyWindowYears : ScoringOptions.DefaultRoeConsistencyWindowYears,
             RoeConsistencyMinUsableYears = item.RoeConsistencyMinUsableYears > 0 ? item.RoeConsistencyMinUsableYears : ScoringOptions.DefaultRoeConsistencyMinUsableYears,
+            MaxPriceTargetReturnPct = item.MaxPriceTargetReturnPct is { } target && target > 0M ? target : ScoringOptions.DefaultMaxPriceTargetReturnPct,
         },
         mostRecentAnnualReportDate: item.MostRecentAnnualReportDate?.ToDateTimeOffset(),
         mostRecentQuarterlyReportDate: item.MostRecentQuarterlyReportDate?.ToDateTimeOffset(),
@@ -158,6 +160,8 @@ public class CompanyFullDetailReport {
     public int RoeConsistencyWindowYears { get; init; }
     /// <summary>Fewer usable years than this makes check 16 n/a.</summary>
     public int RoeConsistencyMinUsableYears { get; init; }
+    /// <summary>The est. return, in percent, that <see cref="MaxPrice"/> is set for (V3).</summary>
+    public decimal MaxPriceTargetReturnPct { get; init; }
     public DateTimeOffset? MostRecentAnnualReportDate { get; init; }
     public DateTimeOffset? MostRecentQuarterlyReportDate { get; init; }
     public DateTimeOffset? LastUpdatedDate { get; init; }
@@ -204,7 +208,8 @@ public class CompanyFullDetailReport {
         LatestOwnerEarnings < AverageOwnerEarnings ? LatestOwnerEarnings : AverageOwnerEarnings;
 
     /// <summary>
-    /// The highest price at which price-to-book is at most 3 and each est. return is at least 5% (20x its numerator).
+    /// The highest price at which price-to-book is at most 3 and each est. return is at least
+    /// <see cref="MaxPriceTargetReturnPct"/> (12.5x its numerator at 8%).
     /// </summary>
     public decimal? MaxPrice {
         get {
@@ -214,9 +219,10 @@ public class CompanyFullDetailReport {
                 return null;
             }
 
+            decimal multiple = 100M / MaxPriceTargetReturnPct;
             decimal maxPriceSoFar = 3M * bookValue;
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * (netCashFlow + dividends));
-            maxPriceSoFar = Math.Min(maxPriceSoFar, 20M * ownerEarnings);
+            maxPriceSoFar = Math.Min(maxPriceSoFar, multiple * (netCashFlow + dividends));
+            maxPriceSoFar = Math.Min(maxPriceSoFar, multiple * ownerEarnings);
             return maxPriceSoFar / CurNumShares;
         }
     }

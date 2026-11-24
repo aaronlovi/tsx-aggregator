@@ -32,7 +32,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
 
     // Deliberately not the defaults, so a mapping that ignored the configuration would show.
     private static readonly ScoringOptions Scoring = new() {
-        RoeConsistencyMinYears = 3, RoeConsistencyWindowYears = 6, RoeConsistencyMinUsableYears = 4
+        RoeConsistencyMinYears = 3, RoeConsistencyWindowYears = 6, RoeConsistencyMinUsableYears = 4, MaxPriceTargetReturnPct = 7.5m
     };
 
     private static readonly DateTimeOffset ReportCreated = new(2026, 11, 20, 9, 15, 0, TimeSpan.Zero);
@@ -213,6 +213,7 @@ public sealed class StocksDataRequestsProcessorRequestTests : IAsyncLifetime {
         item.RoeConsistencyMinYears.Should().Be(3);
         item.RoeConsistencyWindowYears.Should().Be(6);
         item.RoeConsistencyMinUsableYears.Should().Be(4);
+        ((decimal?)item.MaxPriceTargetReturnPct).Should().Be(7.5m);
 
         // Filled in later by StockDataSvc from the quote service.
         ((decimal)item.PerSharePrice).Should().Be(0m);

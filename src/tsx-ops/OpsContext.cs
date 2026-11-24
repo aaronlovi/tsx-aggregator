@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -112,6 +113,9 @@ internal sealed class OpsContext : IDisposable {
             scoring.RoeConsistencyWindowYears = windowYears;
         if (int.TryParse(Configuration[$"{ScoringOptions.Scoring}:{nameof(ScoringOptions.RoeConsistencyMinUsableYears)}"], out int minUsableYears))
             scoring.RoeConsistencyMinUsableYears = minUsableYears;
+        if (decimal.TryParse(Configuration[$"{ScoringOptions.Scoring}:{nameof(ScoringOptions.MaxPriceTargetReturnPct)}"],
+                NumberStyles.Number, CultureInfo.InvariantCulture, out decimal targetReturnPct))
+            scoring.MaxPriceTargetReturnPct = targetReturnPct;
         if (scoring.Validate() is string error)
             throw new UsageException(error);
         return scoring;

@@ -182,6 +182,7 @@ public class StocksDataRequestsProcessor : BackgroundService, IStocksDataRequest
             RoeConsistencyMinYears = scoring.RoeConsistencyMinYears,
             RoeConsistencyWindowYears = scoring.RoeConsistencyWindowYears,
             RoeConsistencyMinUsableYears = scoring.RoeConsistencyMinUsableYears,
+            MaxPriceTargetReturnPct = scoring.MaxPriceTargetReturnPct,
             MostRecentAnnualReportDate = dto.MostRecentAnnualReportDate.HasValue
                 ? Timestamp.FromDateTimeOffset(dto.MostRecentAnnualReportDate.Value) : null,
             MostRecentQuarterlyReportDate = dto.MostRecentQuarterlyReportDate.HasValue
